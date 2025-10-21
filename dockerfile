@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copiar archivos de configuración primero (para mejor cache)
-COPY domain.yml config.yml ./
+COPY domain.yml config.yml credentials.yml endpoints.yml ./
 COPY data/ ./data/
 COPY actions/ ./actions/
 
@@ -34,8 +34,8 @@ RUN echo "📚 Entrenando modelo durante el build..." && \
 # Copiar el resto de archivos del proyecto
 COPY . .
 
-# Exponer puertos (Rasa: 5005, Actions: 5055)
-EXPOSE 5005 5055
+# Exponer puertos (Rasa usa el puerto de la variable $PORT)
+EXPOSE $PORT
 
 # Crear script de inicio
 RUN echo '#!/bin/bash\n\
@@ -73,9 +73,8 @@ echo "🤖 Iniciando Rasa Server en puerto ${PORT} con conector REST..."\n\
 exec rasa run \\\n\
     --enable-api \\\n\
     --cors "*" \\\n\
-    --connector rest \\\n\
     --port ${PORT} \\\n\
-    --debug\n' > /app/start.sh
+    --credentials credentials.yml\n' > /app/start.sh
 
 # Dar permisos de ejecución al script
 RUN chmod +x /app/start.sh
