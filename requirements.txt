@@ -2,9 +2,13 @@
 rasa==3.6.20
 rasa-sdk==3.6.2
 
+# Core dependencies (versiones específicas compatibles)
+numpy==1.24.3
+pydantic==1.10.9
+
 # NLP en Español
-spacy==3.7.2
-https://github.com/explosion/spacy-models/releases/download/es_core_news_md-3.7.0/es_core_news_md-3.7.0-py3-none-any.whl
+spacy==3.5.4
+https://github.com/explosion/spacy-models/releases/download/es_core_news_md-3.5.0/es_core_news_md-3.5.0-py3-none-any.whl
 
 # API & Conexiones
 requests==2.31.0
@@ -16,4 +20,4 @@ psycopg2-binary==2.9.9
 
 # Utilidades
 python-dateutil==2.8.2
-pytz==2023.3
+pytz==2022.7.1
