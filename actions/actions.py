@@ -1548,3 +1548,291 @@ class ActionBuscarFaqLibre(Action):
             f"Hubo un problema al procesar la información de *{postgrado_nombre}*. 😕\n\n"
             "Por favor, intenta con otra pregunta o contacta a un asesor."
         ))
+
+# ============================================
+# AGREGAR AL FINAL DE TU actions.py (después de ActionBuscarFaqLibre)
+# ============================================
+
+# ============================================
+# ACTION: Reiniciar Slots
+# ============================================
+
+class ActionReiniciarSlots(Action):
+    """Limpia todos los slots para volver al menú principal"""
+
+    def name(self) -> Text:
+        return "action_reiniciar_slots"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        logger.info("🧹 Ejecutando action_reiniciar_slots")
+        
+        return [
+            SlotSet("postgrado_id", None),
+            SlotSet("postgrado_nombre", None),
+            SlotSet("ultima_lista_postgrados", None),
+            SlotSet("ultima_respuesta", None),
+            SlotSet("contador_fallback", 0),
+            SlotSet("nombre_completo", None),
+            SlotSet("email", None),
+            SlotSet("telefono", None)
+        ]
+
+
+# ============================================
+# ACTION: Confirmar Cambio de Postgrado
+# ============================================
+
+class ActionConfirmarCambioPostgrado(Action):
+    """Confirma cuando el usuario quiere cambiar de postgrado seleccionado"""
+
+    def name(self) -> Text:
+        return "action_confirmar_cambio_postgrado"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        logger.info("🔄 Ejecutando action_confirmar_cambio_postgrado")
+        
+        postgrado_anterior = tracker.get_slot("postgrado_nombre")
+        
+        if postgrado_anterior:
+            mensaje = f"📝 Entendido, cambiaremos de *{postgrado_anterior}* a otro programa.\n\n"
+            dispatcher.utter_message(text=mensaje)
+        
+        return [
+            SlotSet("postgrado_id", None),
+            SlotSet("postgrado_nombre", None)
+        ]
+
+
+# ============================================
+# ACTION: Validar Email
+# ============================================
+
+class ActionValidarEmail(Action):
+    """Valida el formato del email durante el formulario"""
+
+    def name(self) -> Text:
+        return "action_validar_email"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        logger.info("📧 Ejecutando action_validar_email")
+        
+        email = tracker.get_slot("email")
+        
+        if not email:
+            return []
+        
+        import re
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        
+        if not re.match(email_pattern, email):
+            dispatcher.utter_message(
+                text="❌ El formato del correo no es válido.\n\n"
+                     "Ejemplo: tucorreo@gmail.com\n\n"
+                     "Por favor, intenta nuevamente."
+            )
+            return [SlotSet("email", None)]
+        
+        logger.info(f"✅ Email válido: {email}")
+        return []
+
+
+# ============================================
+# ACTION: Manejar Negación
+# ============================================
+
+class ActionManejarNegacion(Action):
+    """Maneja la negación del usuario según el contexto"""
+
+    def name(self) -> Text:
+        return "action_manejar_negacion"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        logger.info("❌ Ejecutando action_manejar_negacion")
+        
+        postgrado_id = tracker.get_slot("postgrado_id")
+        ultima_lista = tracker.get_slot("ultima_lista_postgrados")
+        
+        # Si hay lista activa, el usuario rechaza la lista
+        if ultima_lista:
+            mensaje = "Entendido. ¿Quieres buscar otro programa o necesitas ayuda?\n\n"
+            mensaje += "Escribe el nombre del programa o 'ver programas' para la lista completa."
+            dispatcher.utter_message(text=mensaje)
+            return [SlotSet("ultima_lista_postgrados", None)]
+        
+        # Si hay postgrado seleccionado, ofrecer cambiar
+        elif postgrado_id:
+            mensaje = "¿Prefieres ver otro programa?\n\n"
+            mensaje += "Escribe 'ver programas' o el nombre del programa que te interesa."
+            dispatcher.utter_message(text=mensaje)
+            return []
+        
+        # Sin contexto claro
+        else:
+            mensaje = "Está bien. ¿En qué puedo ayudarte?\n\n"
+            mensaje += "Puedo mostrarte los programas disponibles o responder tus preguntas."
+            dispatcher.utter_message(text=mensaje)
+            return []
+
+
+# ============================================
+# ACTION: Manejar Afirmación
+# ============================================
+
+class ActionManejarAfirmacion(Action):
+    """Maneja la afirmación del usuario según el contexto"""
+
+    def name(self) -> Text:
+        return "action_manejar_afirmacion"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        logger.info("✅ Ejecutando action_manejar_afirmacion")
+        
+        # Obtener el último bot event para entender el contexto
+        eventos = list(tracker.events)
+        ultimo_bot_message = None
+        
+        for evento in reversed(eventos):
+            if evento.get("event") == "bot" and evento.get("text"):
+                ultimo_bot_message = evento.get("text", "").lower()
+                break
+        
+        # Contexto: Oferta de contacto con asesor
+        if ultimo_bot_message and ("asesor" in ultimo_bot_message or "contactar" in ultimo_bot_message):
+            dispatcher.utter_message(
+                text="Perfecto, voy a registrar tu solicitud de contacto. 📞"
+            )
+            return [FollowupAction("datos_contacto_form")]
+        
+        # Contexto: Pregunta si ayudó la información
+        elif ultimo_bot_message and ("ayud" in ultimo_bot_message or "útil" in ultimo_bot_message):
+            dispatcher.utter_message(
+                text="¡Me alegra haberte ayudado! 😊\n\n¿Hay algo más que quieras saber?"
+            )
+            return []
+        
+        # Sin contexto específico
+        else:
+            dispatcher.utter_message(
+                text="Perfecto. ¿En qué más puedo ayudarte?"
+            )
+            return []
+
+
+# ============================================
+# ACTION: Escalar a Humano
+# ============================================
+
+class ActionEscalarAHumano(Action):
+    """Ofrece contacto humano después de múltiples fallbacks"""
+
+    def name(self) -> Text:
+        return "action_escalar_a_humano"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        logger.info("👤 Ejecutando action_escalar_a_humano")
+        
+        mensaje = "😔 Disculpa, parece que no estoy pudiendo ayudarte correctamente.\n\n"
+        mensaje += "🤝 *¿Te gustaría hablar con un asesor humano?*\n\n"
+        mensaje += "Un especialista puede resolver tus dudas de manera personalizada.\n\n"
+        mensaje += "📞 Escribe 'contactar asesor' o 'sí' para que te llamemos."
+        
+        dispatcher.utter_message(text=mensaje)
+        
+        return [SlotSet("contador_fallback", 0)]
+
+
+# ============================================
+# ACTION: Limpiar Slots Antiguos
+# ============================================
+
+class ActionLimpiarSlotsAntiguos(Action):
+    """Limpia slots que ya no son necesarios para mantener conversación fluida"""
+
+    def name(self) -> Text:
+        return "action_limpiar_slots_antiguos"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        logger.info("🧹 Ejecutando action_limpiar_slots_antiguos")
+        
+        # Limpiar solo slots temporales, mantener postgrado seleccionado
+        return [
+            SlotSet("ultima_lista_postgrados", None),
+            SlotSet("ultima_respuesta", None),
+            SlotSet("contador_fallback", 0)
+        ]
+
+
+# ============================================
+# ACTION: Log Unknown Intent
+# ============================================
+
+class ActionLogUnknownIntent(Action):
+    """Registra intents desconocidos para análisis"""
+
+    def name(self) -> Text:
+        return "action_log_unknown_intent"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        logger.info("❓ Ejecutando action_log_unknown_intent")
+        
+        mensaje_usuario = tracker.latest_message.get("text", "")
+        intent = tracker.latest_message.get("intent", {}).get("name", "unknown")
+        confidence = tracker.latest_message.get("intent", {}).get("confidence", 0)
+        
+        logger.warning(f"🔍 Intent desconocido detectado:")
+        logger.warning(f"   Mensaje: '{mensaje_usuario}'")
+        logger.warning(f"   Intent: {intent}")
+        logger.warning(f"   Confidence: {confidence:.2f}")
+        
+        # Aquí podrías enviar a una API de logging si tienes una
+        # Por ahora solo logueamos localmente
+        
+        return []

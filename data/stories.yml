@@ -91,7 +91,8 @@ stories:
       - intent: greet
       - action: action_saludo_mejorado
       - intent: contactar_asesor
-      - action: action_contactar_asesor
+      - action: datos_contacto_form  # ✅ CAMBIADO
+      - active_loop: datos_contacto_form
 
   # ==================== FLUJO 8: Consulta múltiple y luego contacto ====================
   - story: consultas multiples luego contacto
@@ -109,7 +110,8 @@ stories:
       - intent: consultar_becas
       - action: action_buscar_faq
       - intent: contactar_asesor
-      - action: action_contactar_asesor
+      - action: datos_contacto_form  # ✅ CAMBIADO
+      - active_loop: datos_contacto_form
 
   # ==================== FLUJO 9: No encuentra información ====================
   - story: info no encontrada solicita asesor
@@ -122,10 +124,9 @@ stories:
           - postgrado_id: "5"
       - intent: pregunta_general
       - action: action_manejar_pregunta_general
-      - intent: deny
-      - action: utter_ask_rephrase
       - intent: contactar_asesor
-      - action: action_contactar_asesor
+      - action: datos_contacto_form  # ✅ CAMBIADO
+      - active_loop: datos_contacto_form
 
   # ==================== FLUJO 10: Usuario pide ayuda ====================
   - story: usuario pide ayuda
@@ -195,7 +196,8 @@ stories:
       - intent: consultar_modalidad
       - action: action_buscar_faq
       - intent: contactar_asesor
-      - action: action_contactar_asesor
+      - action: datos_contacto_form  # ✅ CAMBIADO
+      - active_loop: datos_contacto_form
       - intent: agradecer
       - action: utter_de_nada
       - intent: goodbye
@@ -499,7 +501,7 @@ stories:
       - action: utter_opciones_ayuda
       - intent: deny
       - action: utter_ask_rephrase
-      - intent: deny
+      - intent: negate_and_end  # ✅ CAMBIADO de deny a negate_and_end
       - action: action_despedida
 
   # ==================== FLUJO 38: Consulta completa termina ====================
@@ -571,20 +573,25 @@ stories:
       - intent: negate_and_end
       - action: action_despedida
 
-  # ==================== FLUJO 42: Busca asesor niega termina ====================
+# ==================== FLUJO 42: Busca asesor niega termina ====================
   - story: busca asesor niega termina
     steps:
       - intent: contactar_asesor
-      - action: action_contactar_asesor
-      - intent: deny
-      - action: utter_ask_rephrase
-      - intent: negate_and_end
+      - action: datos_contacto_form
+      - active_loop: datos_contacto_form
+      - intent: deny  # Usuario cancela formulario
+      - action: action_deactivate_loop
+      - active_loop: null
+      - action: utter_formulario_cancelado
+      - action: utter_opciones_ayuda  # ✅ AGREGADO (coincide con la regla)
+      - intent: negate_and_end  # Usuario ahora sí quiere terminar
       - action: action_despedida
 
   # ==================== FLUJO 43: Volver al menu ====================
   - story: volver al menu
     steps:
       - intent: volver_menu
+      - action: action_reiniciar_slots  # ✅ AGREGADO
       - action: action_saludo_mejorado
       - action: action_listar_postgrados
 
@@ -638,4 +645,5 @@ stories:
       - intent: pregunta_postgrado
       - action: action_buscar_faq_libre
       - intent: contactar_asesor
-      - action: action_contactar_asesor
+      - action: datos_contacto_form  # ✅ CAMBIADO
+      - active_loop: datos_contacto_form

@@ -36,6 +36,10 @@ intents:
   - pregunta_general
   - volver_menu
   - pregunta_postgrado
+  - unknown_intent
+  - cancelar
+  - preguntar_privacidad
+  - que_puedes_hacer
 
 # ============================================
 # ENTITIES
@@ -120,6 +124,20 @@ slots:
         conditions:
           - active_loop: datos_contacto_form
             requested_slot: telefono
+  
+  fallback_count:
+    type: float
+    initial_value: 0
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  session_started:
+    type: bool
+    initial_value: false
+    influence_conversation: false
+    mappings:
+      - type: custom
 
 # ============================================
 # RESPONSES - ✅ ACTUALIZADAS
@@ -217,6 +235,27 @@ responses:
   utter_ask_telefono:
     - text: "📱 Para que un asesor te contacte, necesito tu número de teléfono.\n\nEjemplo: +573001234567 o 3001234567"
 
+  utter_postgrado_seleccionado:
+    - text: "Perfecto, seleccionaste {postgrado_nombre}. ¿Qué quieres saber?"
+  
+  utter_pregunta_adicional:
+    - text: "¿Hay algo más en lo que pueda ayudarte?"
+  
+  utter_informacion_general_universidad:
+    - text: "La Universidad Distrital ofrece diversos programas de postgrado. ¿Cuál te interesa?"
+  
+  utter_formulario_cancelado:
+    - text: "Proceso cancelado. ¿En qué más puedo ayudarte?"
+  
+  utter_ayuda_durante_formulario:
+    - text: "Estoy recopilando tus datos. Di 'cancelar' para detener."
+  
+  utter_capacidades_bot:
+    - text: "Puedo informarte sobre programas, costos, requisitos, fechas y más. ¿Qué necesitas?"
+  
+  utter_politica_privacidad:
+    - text: "Tus datos son tratados según la Ley 1581 de 2012 y solo para contacto académico."
+
 # ============================================
 # ACTIONS
 # ============================================
@@ -236,6 +275,14 @@ actions:
   - action_manejar_pregunta_general
   - validate_datos_contacto_form
   - action_buscar_faq_libre
+  - action_reiniciar_slots
+  - action_confirmar_cambio_postgrado
+  - action_validar_email
+  - action_manejar_negacion
+  - action_manejar_afirmacion
+  - action_escalar_a_humano
+  - action_limpiar_slots_antiguos
+  - action_log_unknown_intent
 
 # ============================================
 # FORMS

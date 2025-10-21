@@ -9,8 +9,7 @@ language: es
 pipeline:
   # ✅ SPACY NATIVO ESPAÑOL (CRÍTICO)
   - name: SpacyNLP
-    model: "es_core_news_md"  
-    case_sensitive: false
+    model: "es_core_news_md"
   
   - name: SpacyTokenizer
   

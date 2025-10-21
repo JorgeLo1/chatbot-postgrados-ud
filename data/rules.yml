@@ -38,7 +38,7 @@ rules:
 - rule: Volver al menú principal
   steps:
   - intent: volver_menu
-  - action: action_reiniciar_slots  # Nueva acción para limpiar contexto
+  - action: action_reiniciar_slots
   - action: action_saludo_mejorado
   - action: action_listar_postgrados
 
@@ -60,24 +60,11 @@ rules:
   steps:
   - intent: seleccionar_postgrado
   - action: action_seleccionar_postgrado
-  - action: utter_postgrado_seleccionado  # Confirmación explícita
 
 - rule: Seleccionar postgrado por número
   steps:
   - intent: seleccionar_numero
   - action: action_seleccionar_numero
-  - action: utter_postgrado_seleccionado
-
-# Nueva: Cambiar postgrado si ya hay uno seleccionado
-- rule: Cambiar postgrado seleccionado
-  condition:
-  - slot_was_set:
-    - postgrado_id
-  steps:
-  - intent: seleccionar_postgrado
-  - action: action_confirmar_cambio_postgrado  # Nueva acción
-  - action: action_seleccionar_postgrado
-  - action: utter_postgrado_seleccionado
 
 # ============================================
 # SECCIÓN 4: CONSULTAS CON POSTGRADO SELECCIONADO
@@ -101,7 +88,6 @@ rules:
     - intent: consultar_dirigido
     - intent: consultar_proceso_admision
   - action: action_buscar_faq
-  - action: utter_pregunta_adicional  # Nueva: Ofrecer más ayuda
 
 - rule: Información general con postgrado seleccionado
   condition:
@@ -110,7 +96,6 @@ rules:
   steps:
   - intent: solicitar_informacion_general
   - action: action_manejar_pregunta_general
-  - action: utter_pregunta_adicional
 
 - rule: Pregunta libre sobre postgrado seleccionado
   condition:
@@ -119,7 +104,6 @@ rules:
   steps:
   - intent: pregunta_postgrado
   - action: action_buscar_faq_libre
-  - action: utter_pregunta_adicional
 
 # ============================================
 # SECCIÓN 5: CONSULTAS SIN POSTGRADO SELECCIONADO
@@ -144,9 +128,8 @@ rules:
     - intent: consultar_proceso_admision
   - action: utter_ask_cual_programa
   - action: action_listar_postgrados
-  wait_for_user_input: true  # Mejora: Esperar explícitamente
+  wait_for_user_input: true
 
-# Nueva: Información general sin postgrado
 - rule: Información general sin contexto
   condition:
   - slot_was_set:
@@ -176,21 +159,18 @@ rules:
     - requested_slot: null
   - action: action_enviar_datos_contacto
 
-# Mejorada: Cancelar formulario
 - rule: Cancelar formulario explícitamente
   condition:
   - active_loop: datos_contacto_form
   steps:
   - or:
     - intent: deny
-    - intent: cancelar  # Nuevo intent recomendado
     - intent: volver_menu
   - action: action_deactivate_loop
   - active_loop: null
   - action: utter_formulario_cancelado
   - action: utter_opciones_ayuda
 
-# Nueva: Manejar interrupciones durante formulario
 - rule: Responder preguntas durante formulario
   condition:
   - active_loop: datos_contacto_form
@@ -198,15 +178,6 @@ rules:
   - intent: pedir_ayuda
   - action: utter_ayuda_durante_formulario
   - action: datos_contacto_form
-
-# Nueva: Validar email durante formulario
-- rule: Validar formato de email
-  condition:
-  - active_loop: datos_contacto_form
-  - slot_was_set:
-    - requested_slot: email
-  steps:
-  - action: action_validar_email  # Nueva acción custom
 
 # ============================================
 # SECCIÓN 7: MANEJO DE ERRORES Y FALLBACKS
@@ -221,28 +192,16 @@ rules:
   steps:
   - intent: out_of_scope
   - action: utter_out_of_scope
-  - action: utter_opciones_ayuda
 
-# Mejorada: Usuario niega sin contexto claro
 - rule: Manejo de negación ambigua
   steps:
   - intent: deny
-  - action: action_manejar_negacion  # Nueva acción que verifica contexto
+  - action: utter_ask_rephrase
 
-# Mejorada: Usuario afirma
 - rule: Manejo de afirmación
   steps:
   - intent: affirm
-  - action: action_manejar_afirmacion  # Nueva acción contextual
-
-# Nueva: Doble fallback
-- rule: Segundo intento fallido
-  condition:
-  - slot_was_set:
-    - fallback_count: 1
-  steps:
-  - intent: nlu_fallback
-  - action: action_escalar_a_humano  # Ofrecer contacto humano
+  - action: action_manejar_afirmacion
 
 # ============================================
 # SECCIÓN 8: RESPUESTAS EMOCIONALES
@@ -252,7 +211,6 @@ rules:
   steps:
   - intent: mood_great
   - action: utter_happy
-  - action: utter_pregunta_adicional
 
 - rule: Responder a emoción negativa
   steps:
@@ -268,35 +226,3 @@ rules:
   steps:
   - intent: bot_challenge
   - action: utter_iamabot
-
-# Nueva: Explicar capacidades del bot
-- rule: Explicar qué puede hacer el bot
-  steps:
-  - intent: que_puedes_hacer  # Nuevo intent recomendado
-  - action: utter_capacidades_bot
-  - action: action_listar_postgrados
-
-# Nueva: Preguntar sobre privacidad de datos
-- rule: Información sobre privacidad
-  steps:
-  - intent: preguntar_privacidad
-  - action: utter_politica_privacidad
-
-# ============================================
-# SECCIÓN 10: REGLAS DE BAJO NIVEL (SISTEMA)
-# ============================================
-
-# Nueva: Limpiar slots antiguos periódicamente
-- rule: Mantener conversación limpia
-  condition:
-  - slot_was_set:
-    - session_started: true
-  steps:
-  - action: action_limpiar_slots_antiguos
-
-# Nueva: Logging de intents no manejados
-- rule: Log de intents desconocidos
-  steps:
-  - intent: unknown_intent
-  - action: action_log_unknown_intent
-  - action: action_default_fallback
