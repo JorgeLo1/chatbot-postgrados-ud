@@ -31,13 +31,13 @@ RUN echo "📚 Entrenando modelo durante el build..." && \
     rasa train --fixed-model-name model && \
     echo "✅ Modelo entrenado correctamente"
 
-# Copiar el resto de archivos
+# Copiar el resto de archivos del proyecto
 COPY . .
 
 # Exponer puertos (Rasa: 5005, Actions: 5055)
 EXPOSE 5005 5055
 
-# Crear script de inicio y guardarlo en un archivo
+# Crear script de inicio
 RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
@@ -49,12 +49,12 @@ if [ ! -f "models/model.tar.gz" ]; then\n\
     rasa train --fixed-model-name model\n\
 fi\n\
 \n\
-# Iniciar action server en background\n\
+# Iniciar Action Server en background\n\
 echo "🔧 Iniciando Action Server en puerto 5055..."\n\
 rasa run actions --port 5055 &\n\
 ACTION_PID=$!\n\
 \n\
-# Esperar a que action server esté listo\n\
+# Esperar a que el Action Server esté listo\n\
 echo "⏳ Esperando Action Server..."\n\
 for i in {1..30}; do\n\
     if nc -z localhost 5055 2>/dev/null; then\n\
@@ -68,16 +68,17 @@ for i in {1..30}; do\n\
     sleep 1\n\
 done\n\
 \n\
-# Iniciar Rasa server\n\
-echo "🤖 Iniciando Rasa Server en puerto ${PORT}..."\n\
+# Iniciar Rasa Server con conector REST\n\
+echo "🤖 Iniciando Rasa Server en puerto ${PORT} con conector REST..."\n\
 exec rasa run \\\n\
     --enable-api \\\n\
     --cors "*" \\\n\
+    --connector rest \\\n\
     --port ${PORT} \\\n\
     --debug\n' > /app/start.sh
 
 # Dar permisos de ejecución al script
 RUN chmod +x /app/start.sh
 
-# Ejecutar el script al iniciar el contenedor
+# Comando de inicio
 CMD ["/app/start.sh"]
