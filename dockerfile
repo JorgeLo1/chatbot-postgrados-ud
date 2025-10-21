@@ -21,31 +21,52 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copiar todo el proyecto
+# Copiar archivos de configuración primero (para mejor cache)
+COPY domain.yml config.yml ./
+COPY data/ ./data/
+COPY actions/ ./actions/
+
+# Entrenar modelo DURANTE el build
+RUN echo "📚 Entrenando modelo durante el build..." && \
+    rasa train --fixed-model-name model && \
+    echo "✅ Modelo entrenado correctamente"
+
+# Copiar el resto de archivos
 COPY . .
 
 # Exponer puertos (Rasa: 5005, Actions: 5055)
 EXPOSE 5005 5055
 
-# Crear script de inicio
+# Crear script de inicio y guardarlo en un archivo
 RUN echo '#!/bin/bash\n\
 set -e\n\
 \n\
 echo "🚀 Iniciando servicios..."\n\
 \n\
-# Entrenar modelo si no existe\n\
-if [ ! -d "models" ] || [ -z "$(ls -A models 2>/dev/null)" ]; then\n\
-    echo "📚 Entrenando modelo..."\n\
+# Verificar que el modelo existe\n\
+if [ ! -f "models/model.tar.gz" ]; then\n\
+    echo "❌ Error: Modelo no encontrado. Entrenando..."\n\
     rasa train --fixed-model-name model\n\
 fi\n\
 \n\
 # Iniciar action server en background\n\
 echo "🔧 Iniciando Action Server en puerto 5055..."\n\
 rasa run actions --port 5055 &\n\
+ACTION_PID=$!\n\
 \n\
 # Esperar a que action server esté listo\n\
 echo "⏳ Esperando Action Server..."\n\
-sleep 15\n\
+for i in {1..30}; do\n\
+    if nc -z localhost 5055 2>/dev/null; then\n\
+        echo "✅ Action Server listo"\n\
+        break\n\
+    fi\n\
+    if [ $i -eq 30 ]; then\n\
+        echo "❌ Timeout esperando Action Server"\n\
+        exit 1\n\
+    fi\n\
+    sleep 1\n\
+done\n\
 \n\
 # Iniciar Rasa server\n\
 echo "🤖 Iniciando Rasa Server en puerto ${PORT}..."\n\
@@ -53,5 +74,10 @@ exec rasa run \\\n\
     --enable-api \\\n\
     --cors "*" \\\n\
     --port ${PORT} \\\n\
-    --debug\n\
-'
+    --debug\n' > /app/start.sh
+
+# Dar permisos de ejecución al script
+RUN chmod +x /app/start.sh
+
+# Ejecutar el script al iniciar el contenedor
+CMD ["/app/start.sh"]
