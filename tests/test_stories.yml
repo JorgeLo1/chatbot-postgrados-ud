@@ -1,0 +1,119 @@
+# ============================================
+# ARCHIVO: tests/test_stories.yml
+# Test stories para validar el comportamiento
+# ============================================
+
+version: "3.1"
+
+stories:
+  # ==================== TEST 1: Flujo básico ====================
+  - story: test flujo basico saludo y listar
+    steps:
+      - user: |
+          hola
+        intent: greet
+      - action: utter_greet
+      - user: |
+          qué programas tienen
+        intent: listar_postgrados
+      - action: action_listar_postgrados
+
+  # ==================== TEST 2: Selección de postgrado y consulta ====================
+  - story: test seleccion y consulta costos
+    steps:
+      - user: |
+          maestría en ingeniería de software
+        intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "maestría en ingeniería de software"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "1"
+      - user: |
+          cuánto cuesta
+        intent: consultar_costos
+      - action: action_buscar_faq
+      - action: action_guardar_historial
+
+  # ==================== TEST 3: Consulta sin contexto ====================
+  - story: test consulta sin postgrado
+    steps:
+      - user: |
+          cuáles son los requisitos
+        intent: consultar_requisitos
+      - action: utter_ask_postgrado
+
+  # ==================== TEST 4: Solicitar asesor ====================
+  - story: test solicitar asesor
+    steps:
+      - user: |
+          quiero hablar con un asesor
+        intent: contactar_asesor
+      - action: action_contactar_asesor
+
+  # ==================== TEST 5: Fallback ====================
+  - story: test fallback
+    steps:
+      - user: |
+          xyz123 abc456
+        intent: nlu_fallback
+      - action: action_default_fallback
+
+  # ==================== TEST 6: Negación ====================
+  - story: test negacion
+    steps:
+      - user: |
+          no
+        intent: deny
+      - action: utter_ask_rephrase
+
+  # ==================== TEST 7: Out of scope ====================
+  - story: test out of scope
+    steps:
+      - user: |
+          cuál es tu color favorito
+        intent: out_of_scope
+      - action: utter_out_of_scope
+
+  # ==================== TEST 8: Bot challenge ====================
+  - story: test bot challenge
+    steps:
+      - user: |
+          eres un bot?
+        intent: bot_challenge
+      - action: utter_iamabot
+
+  # ==================== TEST 9: Múltiples consultas ====================
+  - story: test multiples consultas
+    steps:
+      - user: |
+          MBA
+        intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "MBA"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "2"
+      - user: |
+          cuánto cuesta
+        intent: consultar_costos
+      - action: action_buscar_faq
+      - action: action_guardar_historial
+      - user: |
+          requisitos
+        intent: consultar_requisitos
+      - action: action_buscar_faq
+      - action: action_guardar_historial
+      - user: |
+          fechas de inscripción
+        intent: consultar_fechas
+      - action: action_buscar_faq
+      - action: action_guardar_historial
+
+  # ==================== TEST 10: Ayuda y opciones ====================
+  - story: test pedir ayuda
+    steps:
+      - user: |
+          ayuda
+        intent: pedir_ayuda
+      - action: utter_opciones_ayuda

@@ -1,0 +1,1659 @@
+version: "3.1"
+
+nlu:
+# ============================================
+# INTENT: greet (Saludos)
+# ============================================
+- intent: greet
+  examples: |
+    - hola
+    - buenos días
+    - buenas tardes
+    - buenas noches
+    - hey
+    - hola bot
+    - saludos
+    - qué tal
+    - hola, ¿cómo estás?
+    - buenas
+    - holi
+    - ey
+    - hello
+    - hi
+    - buen dia
+    - que mas
+    - buenas buenas
+    - que hubo
+    - hola como estas
+    - que tal todo
+    - muy buenas
+    - hola quisiera informacion
+    - buenas quisiera saber
+    - hola me puedes ayudar
+    - buenos dias necesito informacion
+    - hola estoy interesado
+    - buenos días quisiera consultar
+
+# ============================================
+# INTENT: goodbye (Despedidas)
+# ============================================
+- intent: goodbye
+  examples: |
+    - adiós
+    - hasta luego
+    - nos vemos
+    - chao
+    - bye
+    - hasta pronto
+    - me voy
+    - tengo que irme
+    - gracias, eso es todo
+    - ya no necesito más ayuda
+    - perfecto, gracias
+    - ok gracias adiós
+    - hasta la proxima
+    - nos vemos luego
+    - eso es todo gracias
+    - nada mas gracias
+    - ya termine
+    - listo gracias
+    - ok perfecto chao
+    - bueno gracias nos vemos
+    - ya esta bien gracias
+
+# ============================================
+# INTENT: negate_and_end (Negación con intención de terminar) ✅ MEJORADO
+# ============================================
+- intent: negate_and_end
+  examples: |
+    - nada mas
+    - nada más
+    - nada
+    - solo eso
+    - eso es todo
+    - ya
+    - ya está
+    - ya esta
+    - listo
+    - perfecto
+    - suficiente
+    - no gracias eso es todo
+    - no nada mas
+    - no nada más
+    - no, nada más gracias
+    - no necesito nada mas
+    - no necesito nada más
+    - no gracias
+    - ya no necesito más ayuda
+    - ya no necesito mas ayuda
+    - con eso estoy bien
+    - perfecto así está bien
+    - perfecto asi esta bien
+    - no requiero nada más
+    - no requiero nada mas
+    - es suficiente gracias
+    - es suficiente
+    - hasta aquí llegamos
+    - hasta aqui llegamos
+    - eso sería todo
+    - eso seria todo
+    - solo eso gracias
+    - nada más por ahora
+    - nada mas por ahora
+    - está bien así
+    - esta bien asi
+    - ya está bien
+    - ya esta bien
+    - listo así está bien
+    - listo asi esta bien
+    - no me hace falta nada más
+    - no me hace falta nada mas
+    - con eso es suficiente
+    - ya tengo todo
+    - no hace falta más
+    - no hace falta mas
+    - eso me basta
+    - eso nomás
+    - eso nomas
+    - ya con eso
+    - no más gracias
+    - no mas gracias
+    - no necesito mas
+    - en este momento no
+    - ahora no quiero
+    - no en este momento
+    - por ahora no
+    - tal vez luego
+    - en otro momento
+    - no gracias por ahora
+    - eso es todo por hoy
+    - nada gracias
+    - ya gracias
+    - listo gracias
+    - ok eso es todo
+    - ok nada mas
+    - ok nada más
+    - perfecto nada más
+    - perfecto nada mas
+    - con eso
+    - solo con eso
+    - así está bien
+    - asi esta bien
+    - no requiero mas
+    - no quiero nada mas
+    - no quiero nada más
+    - gracias nada mas
+    - gracias nada más
+    - solo eso
+    - nada mas muchas gracias
+    - nada más muchas gracias
+    - esta bien gracias
+    - está bien gracias
+    - perfecto gracias nada mas
+    - ok gracias eso es todo
+    - bien nada mas
+    - bien nada más
+    - todo bien nada mas
+    - si eso es todo
+    - sí eso es todo
+    - eso es todo gracias
+    - nada mas que preguntar
+    - nada más que preguntar
+    - no tengo mas preguntas
+    - no tengo más preguntas
+    - creo que eso es todo
+    - por ahora nada mas
+    - por ahora nada más
+    - hasta ahi nomas
+    - hasta ahí nomás
+    - con eso me basta
+    - ya es suficiente
+    - mas nada
+    - más nada
+    - nada adicional
+    - sin mas
+    - sin más
+
+# ============================================
+# INTENT: affirm (Afirmaciones)
+# ============================================
+- intent: affirm
+  examples: |
+    - sí
+    - si
+    - claro
+    - por supuesto
+    - está bien
+    - ok
+    - okay
+    - dale
+    - perfecto
+    - correcto
+    - afirmativo
+    - exacto
+    - eso es
+    - confirmo
+    - acepto
+    - de acuerdo
+    - vale
+    - simon
+    - si por favor
+    - claro que si
+    - si claro
+    - obvio
+    - seguro
+    - si quiero
+    - si me interesa
+    - si por supuesto
+    - si está bien
+    - esta bien si
+    - adelante
+    - procede
+    - hazlo
+    - continuemos
+    - sigamos
+
+# ============================================
+# INTENT: deny (Negaciones) ✅ MODIFICADO
+# ============================================
+- intent: deny
+  examples: |
+    - no
+    - nope
+    - nunca
+    - no creo
+    - no quiero
+    - no me interesa
+    - mejor no
+    - para nada
+    - negativo
+    - no es eso
+    - otro
+    - diferente
+    - no por ahora
+    - ahora no
+    - despues
+    - prefiero no
+    - no estoy interesado
+    - gracias pero no
+    - no eso no
+    - eso no es
+    - no me sirve eso
+    - busco otra cosa
+    - no es lo que busco
+    - no me convence
+    - no me interesa ese
+    - otro programa
+    - busco otro
+    - no ese
+
+# ============================================
+# INTENT: bot_challenge
+# ============================================
+- intent: bot_challenge
+  examples: |
+    - eres un bot?
+    - eres humano?
+    - estoy hablando con un bot?
+    - eres un robot?
+    - eres real?
+    - quién eres?
+    - qué eres?
+    - eres inteligencia artificial?
+    - eres una persona
+    - quien me está respondiendo
+    - con quien hablo
+    - eres automatico
+    - esto es un chatbot
+    - hablas como robot
+    - eres de verdad
+
+# ============================================
+# INTENT: agradecer
+# ============================================
+- intent: agradecer
+  examples: |
+    - gracias
+    - muchas gracias
+    - te agradezco
+    - perfecto gracias
+    - ok gracias
+    - excelente gracias
+    - muy bien gracias
+    - gracias por la información
+    - gracias por la informacion
+    - gracias por tu ayuda
+    - agradecido
+    - mil gracias
+    - super gracias
+    - chevere gracias
+    - chévere gracias
+    - vale gracias
+    - listo gracias
+    - perfecto muchas gracias
+    - ok muchas gracias
+    - genial gracias
+    - bacano gracias
+    - gracias amigo
+    - gracias por responder
+    - te lo agradezco
+    - agradezco tu ayuda
+
+# ============================================
+# INTENT: listar_postgrados
+# ============================================
+- intent: listar_postgrados
+  examples: |
+    - muéstrame los postgrados disponibles
+    - lista los postgrados
+    - qué postgrados tienen
+    - cuáles son los programas disponibles
+    - muestra todos los programas
+    - lista de postgrados
+    - ver programas
+    - quiero ver los postgrados
+    - que programas ofrecen
+    - cuales programas tienen
+    - programas disponibles
+    - lista completa de postgrados
+    - dame la lista de programas
+    - enséñame los postgrados
+    - mostrar postgrados
+    - ver lista completa
+    - todos los postgrados
+    - que maestrias tienen
+    - que especializaciones ofrecen
+    - programas de posgrado
+    - catálogo de programas
+    - cuales son los postgrados
+    - ver todos los programas
+    - opciones de estudio
+    - programas de maestria
+    - programas de especializacion
+    - quiero conocer los programas
+    - oferta academica
+    - oferta de postgrados
+    - que ofrecen
+    - que tienen disponible
+    - todos los programas disponibles
+    - catalogo completo
+    - ver oferta
+    - programas que tienen
+    - lista completa
+    - todas las opciones
+    - ver opciones
+    - que hay disponible
+
+# ============================================
+# INTENT: seleccionar_postgrado
+# ============================================
+- intent: seleccionar_postgrado
+  examples: |
+    - informacion sobre [Proyectos Informaticos](postgrado_nombre)
+    - quiero saber del posgrado en [proyectos de TI](postgrado_nombre)
+    - me dan detalles de la especializacion en [Proyectos Informaticos](postgrado_nombre)
+    - me interesa la especializacion en [gestion de proyectos](postgrado_nombre)
+    - informacion sobre [Higiene, Seguridad y Salud en el Trabajo](postgrado_nombre)
+    - me dan detalles de la especializacion en [Salud Ocupacional](postgrado_nombre)
+    - quiero saber del posgrado en [HSST](postgrado_nombre)
+    - me interesa [Seguridad y Salud en el Trabajo](postgrado_nombre)
+    - informacion sobre [Ingenieria de Software](postgrado_nombre)
+    - me dan detalles de la especializacion en [Ingenieria de Software](postgrado_nombre)
+    - me interesa la especializacion en [Ingenieria de Software](postgrado_nombre)
+    - quiero saber del posgrado en [desarrollo de software](postgrado_nombre)
+    - informacion sobre [Informatica y Automatica Industrial](postgrado_nombre)
+    - me dan detalles de la especializacion en [informatica industrial](postgrado_nombre)
+    - me interesa la especializacion en [Automatica Industrial](postgrado_nombre)
+    - quiero saber del posgrado en [automatica industrial](postgrado_nombre)
+    - informacion sobre la [Especializacion en Avaluos](postgrado_nombre)
+    - quiero saber del posgrado en [avaluos](postgrado_nombre)
+    - me dan detalles de la especializacion para [avaluadores](postgrado_nombre)
+    - me interesa la [Especializacion en Avaluos](postgrado_nombre)
+    - informacion sobre [SIG](postgrado_nombre)
+    - informacion sobre [Bioingenieria](postgrado_nombre)
+    - me dan detalles de [Bioingenieria](postgrado_nombre)
+    - quiero saber del posgrado en [bioingenieria](postgrado_nombre)
+    - me interesa la especializacion en [Bioingenieria](postgrado_nombre)
+    - informacion sobre la [Maestria en Ingenieria Industrial](postgrado_nombre)
+    - quiero saber del posgrado en [Ingenieria Industrial](postgrado_nombre)
+    - me dan detalles de la maestria en [industrial](postgrado_nombre)
+    - quisiera informacion sobre [avaluos](postgrado_nombre)
+    - necesito info de [bioingeniería](postgrado_nombre)
+    - busco información de [gestión de proyectos](postgrado_nombre)
+    - como es la [especialización en avalúos](postgrado_nombre)
+    - detalles sobre [teleinformática](postgrado_nombre)
+    - [avaluos] por favor
+    - sobre [ingeniería del software](postgrado_nombre)
+    - programa [higiene ocupacional](postgrado_nombre)
+    - especializacion [avaluos](postgrado_nombre)
+    - maestria [bioingeniería](postgrado_nombre)
+    - [proyectos informaticos](postgrado_nombre)
+    - [salud ocupacional](postgrado_nombre)
+    - [HSST](postgrado_nombre)
+    - [software](postgrado_nombre)
+    - [automatica](postgrado_nombre)
+    - [avaluos](postgrado_nombre)
+    - [bioingenieria](postgrado_nombre)
+    - [SIG](postgrado_nombre)
+    - [ingenieria industrial](postgrado_nombre)
+
+# ============================================
+# INTENT: seleccionar_numero 
+# ============================================
+- intent: seleccionar_numero
+  examples: |
+    - el 1
+    - el número 1
+    - opción 1
+    - la primera
+    - el primero
+    - quiero el 1
+    - selecciono el 1
+    - el 2
+    - el número 2
+    - opción 2
+    - la segunda
+    - el segundo
+    - el 3
+    - número 3
+    - la tercera
+    - el 4
+    - el 5
+    - opción 5
+    - el 6
+    - el 7
+    - el 8
+    - el 9
+    - el 10
+    - el 11
+    - el 12
+    - numero uno
+    - numero dos
+    - numero tres
+    - numero cuatro
+    - numero cinco
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - dame el 1
+    - escojo el 2
+    - elijo la 3
+    - me interesa el 1
+    - prefiero el 2
+    - la opcion 1
+
+# ============================================
+# INTENT: consultar_costos
+# ============================================
+- intent: consultar_costos
+  examples: |
+    - cuanto cuesta
+    - cuánto cuesta
+    - cuanto cuesta la especializacion
+    - cuánto cuesta la especialización
+    - cuanto cuesta el programa
+    - cual es el costo
+    - cuál es el costo
+    - cuales son los costos
+    - cuáles son los costos
+    - que valor tiene la matricula
+    - qué valor tiene la matrícula
+    - valor de la matricula
+    - valor de la matrícula
+    - costo de la especializacion
+    - costo de la especialización
+    - precio del programa
+    - precio de la especializacion
+    - precio de la especialización
+    - costos
+    - costo
+    - precios
+    - precio
+    - cuánto vale
+    - cuanto vale
+    - cuanto vale el programa
+    - cuánto vale la especialización
+    - información sobre costos
+    - informacion sobre costos
+    - cuánto tengo que pagar
+    - cuanto tengo que pagar
+    - cuanto debo pagar
+    - cuánto debo pagar
+    - valor del postgrado
+    - valor del programa
+    - costo total
+    - cuánto cuesta el programa
+    - cuanto cuesta el programa
+    - precio de inscripción
+    - precio de inscripcion
+    - tarifas
+    - valor por semestre
+    - cuanto sale
+    - cuánto sale
+    - cuanto es el costo
+    - costo de matricula
+    - costo de matrícula
+    - precio total
+    - que precio tiene
+    - qué precio tiene
+    - cuanto hay que pagar
+    - valor a pagar
+    - inversion
+    - inversión
+    - la inversion
+    - la inversión
+    - cuanto me cuesta
+    - cuánto me cuesta
+    - me puedes decir el costo
+    - dime el precio
+    - dime el costo
+    - necesito saber el costo
+    - quisiera saber el costo
+    - información de precios
+    - informacion de precios
+    - precios y costos
+    - valores
+    - tarifas del programa
+    - cuanto vale estudiar
+    - cuanto vale el programa
+    - costos de estudio
+    - gastos
+    - cuanto se paga
+    - que costo tiene
+    - qué costo tiene
+    - info de costos
+    - info sobre costos
+    - dame info de costos
+    - cuanto esta la matricula
+    - cuánto está la matrícula
+    - costo por semestre
+    - valor matricula
+    - matricula
+    - matrícula
+    - SMMLV
+    - salarios minimos
+    - salarios mínimos
+    - cuanto son los creditos
+    - cuánto son los créditos
+    - valor de credito
+    - valor de crédito
+    - costo por credito
+    - valor creditos
+
+# ============================================
+# INTENT: consultar_becas
+# ============================================
+- intent: consultar_becas
+  examples: |
+    - hay becas disponibles
+    - información sobre becas
+    - informacion sobre becas
+    - cómo puedo obtener una beca
+    - como puedo obtener una beca
+    - tienen becas
+    - ofrecen ayuda financiera
+    - becas y ayudas
+    - apoyo económico
+    - apoyo economico
+    - becas para estudiantes
+    - requisitos para becas
+    - como aplicar a becas
+    - cómo aplicar a becas
+    - que becas tienen
+    - qué becas tienen
+    - descuentos
+    - ayudas economicas
+    - ayudas económicas
+    - subsidios
+    - convocatorias de becas
+    - becas vigentes
+    - opciones de beca
+    - puedo obtener beca
+    - dan becas
+    - brindan becas
+    - hay apoyo economico
+    - tienen descuentos
+    - me pueden ayudar con beca
+    - necesito una beca
+    - descuento por votacion
+    - descuento por votación
+    - 10% de descuento
+    - descuento del 10%
+
+# ============================================
+# INTENT: consultar_financiacion
+# ============================================
+- intent: consultar_financiacion
+  examples: |
+    - opciones de financiación
+    - opciones de financiacion
+    - puedo pagar en cuotas
+    - planes de pago
+    - financiamiento
+    - cómo puedo financiar
+    - como puedo financiar
+    - facilidades de pago
+    - pago diferido
+    - convenios de pago
+    - creditos educativos
+    - créditos educativos
+    - formas de pago
+    - cuotas
+    - pagos mensuales
+    - financiar el programa
+    - financiar mis estudios
+    - opciones de credito
+    - crédito
+    - credito
+    - como puedo pagar
+    - cómo puedo pagar
+    - metodos de pago
+    - métodos de pago
+    - pago en cuotas
+    - puedo financiar
+    - tienen planes de financiacion
+    - convenios financieros
+    - credito estudiantil
+    - financiacion universidad
+    - te gustaria que te comparta informacion sobre financiacion
+
+# ============================================
+# INTENT: consultar_requisitos
+# ============================================
+- intent: consultar_requisitos
+  examples: |
+    - cuáles son los requisitos
+    - cuales son los requisitos
+    - que requisitos piden
+    - qué requisitos piden
+    - requisitos de admisión
+    - requisitos de admision
+    - qué necesito para inscribirme
+    - que necesito para inscribirme
+    - documentos necesarios
+    - que documentos necesito
+    - qué documentos necesito
+    - qué debo presentar
+    - que debo presentar
+    - criterios de admisión
+    - criterios de admision
+    - requisitos para aplicar
+    - qué se necesita
+    - que se necesita
+    - condiciones de ingreso
+    - como aplicar
+    - cómo aplicar
+    - proceso de admision
+    - proceso de admisión
+    - cual es el proceso de admision
+    - cuál es el proceso de admisión
+    - documentación requerida
+    - documentacion requerida
+    - requisitos de inscripcion
+    - requisitos de inscripción
+    - que piden para inscribirse
+    - qué piden para inscribirse
+    - como me inscribo
+    - cómo me inscribo
+    - que necesito
+    - qué necesito
+    - como es el proceso
+    - cómo es el proceso
+    - que debo hacer para inscribirme
+    - pasos para inscripcion
+    - requisitos previos
+    - documentos para inscripcion
+    - titulo profesional
+    - título profesional
+    - hoja de vida
+    - certificado de notas
+    - tarjeta profesional
+    - diploma
+    - acta de grado
+    - formulario de inscripcion
+    - formulario de inscripción
+    - que profesionales pueden hacer
+    - qué profesionales pueden hacer
+    - a quien va dirigida
+    - a quién va dirigida
+    - que perfil necesito
+    - qué perfil necesito
+    - perfil de ingreso
+
+# ============================================
+# INTENT: consultar_fechas
+# ============================================
+- intent: consultar_fechas
+  examples: |
+    - cuándo inician las inscripciones
+    - cuando inician las inscripciones
+    - cuando son las inscripciones
+    - cuándo son las inscripciones
+    - fechas de inscripción
+    - fechas de inscripcion
+    - cuándo empieza el programa
+    - cuando empieza el programa
+    - fecha de inicio
+    - calendario académico
+    - calendario academico
+    - cuándo puedo inscribirme
+    - cuando puedo inscribirme
+    - periodo de inscripciones
+    - fechas importantes
+    - cuando abre inscripciones
+    - cuando abren inscripciones
+    - cuándo abren inscripciones
+    - cuando comienza el programa
+    - fecha de inicio de clases
+    - fechas del programa
+    - cuando puedo empezar
+    - cuándo puedo empezar
+    - periodo academico
+    - periodo académico
+    - cuando arranca
+    - cuándo arranca
+    - fecha de apertura
+    - cuando se abre
+    - cuándo se abre
+    - plazos
+    - deadlines
+    - fecha limite
+    - fecha límite
+    - cuando empiezan las clases
+    - cuando inicia el semestre
+    - proxima fecha
+    - próxima fecha
+    - fechas disponibles
+    - hasta cuando me puedo inscribir
+    - hasta cuándo me puedo inscribir
+    - cuando cierra inscripciones
+    - cuándo cierra inscripciones
+    - plazo maximo
+    - plazo máximo
+    - ultimo dia
+    - último día
+
+# ============================================
+# INTENT: consultar_duracion
+# ============================================
+- intent: consultar_duracion
+  examples: |
+    - cuánto dura el programa
+    - cuanto dura el programa
+    - cuánto dura
+    - cuanto dura
+    - duración
+    - duracion
+    - cuánto tiempo toma
+    - cuanto tiempo toma
+    - cuántos semestres
+    - cuantos semestres
+    - tiempo de estudio
+    - periodo académico
+    - periodo academico
+    - cuantos años dura
+    - cuántos años dura
+    - cuantos meses es
+    - cuántos meses es
+    - duracion del programa
+    - duración del programa
+    - tiempo total
+    - cuanto tiempo lleva
+    - cuánto tiempo lleva
+    - periodo de estudio
+    - extension
+    - extensión
+    - cuanto se demora
+    - cuánto se demora
+    - tiempo que toma
+    - tiempo necesario
+    - cuantos periodos
+    - cuántos periodos
+    - duracion en semestres
+    - duración en semestres
+    - cuantos creditos
+    - cuántos créditos
+    - 2 semestres
+    - 4 semestres
+    - 1 ano
+    - 1 año
+    - 2 anos
+    - 2 años
+
+# ============================================
+# INTENT: consultar_modalidad
+# ============================================
+- intent: consultar_modalidad
+  examples: |
+    - es presencial o virtual
+    - modalidad del programa
+    - cómo son las clases
+    - como son las clases
+    - es online
+    - es a distancia
+    - modalidad de estudio
+    - clases presenciales
+    - clases virtuales
+    - es híbrido
+    - es hibrido
+    - como se dictan las clases
+    - cómo se dictan las clases
+    - formato del curso
+    - donde son las clases
+    - dónde son las clases
+    - presencial
+    - virtual
+    - remoto
+    - en linea
+    - en línea
+    - semipresencial
+    - mixto
+    - formato de clases
+    - tipo de modalidad
+    - es virtual o presencial
+    - como es la modalidad
+    - cómo es la modalidad
+    - se puede estudiar desde casa
+    - requiere asistir
+    - hay que ir presencial
+    - todo virtual
+    - todo presencial
+    - horario
+    - horarios
+    - que horario tiene
+    - qué horario tiene
+    - cuando son las clases
+    - cuándo son las clases
+    - dias de clases
+    - días de clases
+    - sede
+    - donde queda
+    - dónde queda
+    - calle 40
+    - entre semana
+    - fines de semana
+    - sabados
+    - sábados
+
+# ============================================
+# INTENT: consultar_plan_estudios
+# ============================================
+- intent: consultar_plan_estudios
+  examples: |
+    - cual es el plan de estudios
+    - cuál es el plan de estudios
+    - que materias se ven
+    - qué materias se ven
+    - plan de estudios
+    - pensum
+    - pénsum
+    - asignaturas
+    - materias
+    - que se estudia
+    - qué se estudia
+    - contenido del programa
+    - estructura curricular
+    - curriculo
+    - currículo
+    - que voy a aprender
+    - qué voy a aprender
+    - temas del programa
+    - areas de estudio
+    - áreas de estudio
+    - que materias tiene
+    - qué materias tiene
+    - listado de materias
+    - materias por semestre
+    - creditos por materia
+    - créditos por materia
+    - malla curricular
+
+# ============================================
+# INTENT: solicitar_link_inscripcion
+# ============================================
+- intent: solicitar_link_inscripcion
+  examples: |
+    - donde me inscribo
+    - dónde me inscribo
+    - link de inscripcion
+    - link de inscripción
+    - enlace de inscripcion
+    - enlace de inscripción
+    - pasame el link
+    - pásame el link
+    - dame el enlace
+    - como me registro
+    - cómo me registro
+    - portal de inscripciones
+    - pagina de inscripcion
+    - página de inscripción
+    - quiero inscribirme
+    - necesito el enlace para inscribirme
+    - dame el link de inscripcion
+    - dame el link de inscripción
+    - enlace para registro
+    - link para inscribirme
+    - donde es la inscripcion
+    - dónde es la inscripción
+    - pagina para inscribirme
+    - página para inscribirme
+    - necesito el link
+    - necesitas el enlace para inscribirte
+    - quieres que te envie el enlace
+    - necesitas el enlace
+    - dame el link directo
+
+# ============================================
+# INTENT: consultar_dirigido
+# ============================================
+- intent: consultar_dirigido
+  examples: |
+    - a quien va dirigida
+    - a quién va dirigida
+    - que profesionales pueden hacer
+    - qué profesionales pueden hacer
+    - quien puede aplicar
+    - quién puede aplicar
+    - para quienes es
+    - para quiénes es
+    - perfil de ingreso
+    - que perfil necesito
+    - qué perfil necesito
+    - requisitos profesionales
+    - a quien va dirigido el programa
+    - quien puede estudiar esto
+    - que carreras pueden aplicar
+    - puedo aplicar yo
+    - soy ingeniero puedo aplicar
+    - necesito ser de cierta carrera
+    - que titulo necesito
+
+# ============================================
+# INTENT: consultar_proceso_admision
+# ============================================
+- intent: consultar_proceso_admision
+  examples: |
+    - cual es el proceso de admision
+    - cuál es el proceso de admisión
+    - como es el proceso
+    - cómo es el proceso
+    - proceso de inscripcion
+    - proceso de inscripción
+    - pasos para inscribirme
+    - como aplico
+    - cómo aplico
+    - como funciona la admision
+    - que debo hacer
+    - qué debo hacer
+    - proceso de seleccion
+    - proceso de selección
+    - como ingreso
+    - cómo ingreso
+    - procedimiento de admision
+    - pasos a seguir
+    - que tengo que hacer para entrar
+    - como me admiten
+    - proceso para entrar
+
+# ============================================
+# INTENT: solicitar_informacion_general
+# ============================================
+- intent: solicitar_informacion_general
+  examples: |
+    - informacion sobre [Proyectos Informaticos](postgrado_nombre)
+    - me dan detalles de [Avaluos](postgrado_nombre)
+    - quiero saber del posgrado en [HSST](postgrado_nombre)
+    - me interesa [Bioingenieria](postgrado_nombre)
+    - quisiera informacion sobre [avaluos](postgrado_nombre)
+    - necesito info de [bioingeniería](postgrado_nombre)
+    - como es la [especialización en avalúos](postgrado_nombre)
+    - detalles sobre [teleinformática](postgrado_nombre)
+    - sobre [ingeniería del software](postgrado_nombre)
+    - programa [higiene ocupacional](postgrado_nombre)
+    - cuentame sobre [proyectos informaticos](postgrado_nombre)
+    - que me puedes decir de [salud ocupacional](postgrado_nombre)
+    - dame información de [avaluos](postgrado_nombre)
+
+# ============================================
+# INTENT: contactar_asesor
+# ============================================
+- intent: contactar_asesor
+  examples: |
+    - quiero hablar con un asesor
+    - necesito contactar a alguien
+    - hablar con una persona
+    - asesoría personalizada
+    - asesoria personalizada
+    - me pueden llamar
+    - contacto con asesor
+    - quiero más información
+    - quiero mas informacion
+    - necesito ayuda de un humano
+    - hablar con un experto
+    - que me contacten
+    - solicitar asesoría
+    - solicitar asesoria
+    - agendar cita
+    - hablar con alguien
+    - contactame
+    - contáctame
+    - llamenme
+    - llámenme
+    - necesito asesoria
+    - necesito asesoría
+    - contacto directo
+    - asesor humano
+    - hablar con persona real
+    - necesito que me llamen
+    - quiero que me contacten
+    - poner en contacto
+    - comunicarme con asesor
+    - solicitar contacto
+    - mas informacion
+    - más información
+    - quiero asesoría
+    - quiero asesoria
+
+# ============================================
+# INTENT: pedir_ayuda
+# ============================================
+- intent: pedir_ayuda
+  examples: |
+    - ayuda
+    - necesito ayuda
+    - no entiendo
+    - qué puedes hacer
+    - que puedes hacer
+    - en qué me puedes ayudar
+    - en que me puedes ayudar
+    - opciones
+    - qué información tienes
+    - que informacion tienes
+    - que puedes hacer por mi
+    - qué puedes hacer por mi
+    - como me ayudas
+    - cómo me ayudas
+    - que servicios ofreces
+    - qué servicios ofreces
+    - ayudame
+    - ayúdame
+    - necesito ayuda por favor
+    - estoy perdido
+    - no se que hacer
+    - no sé qué hacer
+    - que opciones tengo
+    - qué opciones tengo
+    - como funciona esto
+    - cómo funciona esto
+    - explícame
+    - explicame
+
+# ============================================
+# INTENT: reiniciar
+# ============================================
+- intent: reiniciar
+  examples: |
+    - reiniciar
+    - empezar de nuevo
+    - volver al inicio
+    - comenzar otra vez
+    - reset
+    - restart
+    - empezar desde cero
+    - nueva consulta
+    - volver a empezar
+    - borrar todo
+    - limpiar
+    - clear
+    - otra consulta
+    - quiero empezar de nuevo
+    - volvamos al inicio
+    - borremos todo
+    - nueva búsqueda
+    - nueva busqueda
+    - reiniciar conversacion
+    - reiniciar conversación
+
+# ============================================
+# INTENT: pregunta_general
+# ============================================
+- intent: pregunta_general
+  examples: |
+    - tengo una pregunta
+    - quisiera saber algo
+    - puedo preguntar
+    - tengo una duda
+    - necesito información
+    - necesito informacion
+    - me puedes ayudar
+    - tengo una consulta
+    - quisiera consultar
+    - una pregunta
+    - quiero preguntar algo
+    - me gustaria saber
+    - quisiera informacion
+    - duda
+    - consulta
+    - pregunta
+    - informacion
+    - información
+    - quisiera consultar algo
+    - puedo hacer una pregunta
+    - dejame preguntarte
+    - déjame preguntarte
+
+# ============================================
+# INTENT: mood_great
+# ============================================
+- intent: mood_great
+  examples: |
+    - perfecto
+    - excelente
+    - genial
+    - muy bien
+    - fantástico
+    - fantastico
+    - maravilloso
+    - estupendo
+    - increíble
+    - increible
+    - super
+    - chevere
+    - chévere
+    - bacano
+    - brutal
+    - espectacular
+    - de lujo
+    - magistral
+    - buenísimo
+    - buenisimo
+    - me encanta
+    - ideal
+    - top
+
+# ============================================
+# INTENT: mood_unhappy
+# ============================================
+- intent: mood_unhappy
+  examples: |
+    - no me sirve
+    - no me ayuda
+    - esto no funciona
+    - no entiendo nada
+    - muy mal
+    - terrible
+    - no me gusta
+    - pésimo
+    - pesimo
+    - malo
+    - deficiente
+    - no sirve
+    - no funciona
+    - esto es malo
+    - que mal
+    - qué mal
+    - no me esta ayudando
+    - no me está ayudando
+    - no entiendes
+    - horrible
+    - fatal
+
+# ============================================
+# INTENT: out_of_scope - CRÍTICO
+# ============================================
+- intent: out_of_scope
+  examples: |
+    - cuál es el clima
+    - que hora es
+    - cuéntame un chiste
+    - recomiéndame una película
+    - qué temperatura hace
+    - háblame del fútbol
+    - quiero comprar ropa
+    - receta de torta
+    - cómo está el dólar
+    - precio de bitcoin
+    - noticias del día
+    - horóscopos
+    - cuánto es 2+2
+    - traduce esto al inglés
+    - canciones de moda
+
+# ============================================
+# INTENT: volver_menu (después de reiniciar)
+# ============================================
+- intent: volver_menu
+  examples: |
+    - menu principal
+    - menú principal
+    - volver al inicio
+    - inicio
+    - menu
+    - menú
+    - volver al menú
+    - regresar al inicio
+    - empezar de nuevo
+    - volver a empezar
+    - otra consulta
+    - buscar otro programa
+    - ver otros programas
+
+# ============================================
+# INTENT: pregunta_postgrado (Preguntas libres sobre el programa)
+# ============================================
+- intent: pregunta_postgrado
+  examples: |
+    - tienen becas
+    - hay becas
+    - ofrecen becas especiales
+    - hay ayudas economicas
+    - tienen convenios
+    - hay convenios internacionales
+    - hacen intercambios
+    - ofrecen movilidad
+    - tienen practicas
+    - donde son las practicas
+    - hay laboratorios
+    - que laboratorios tienen
+    - tienen biblioteca
+    - hay biblioteca especializada
+    - ofrecen materiales
+    - dan libros
+    - incluye material de estudio
+    - hay parqueadero
+    - tienen parqueadero
+    - ofrecen alojamiento
+    - hay residencias
+    - tienen convenios con empresas
+    - cuales empresas
+    - donde trabajan los egresados
+    - hay bolsa de empleo
+    - ayudan a conseguir trabajo
+    - ofrecen certificaciones
+    - que certificaciones dan
+    - dan certificados adicionales
+    - tienen doble titulacion
+    - hay doble titulo
+    - puedo obtener dos titulos
+    - hay homologaciones
+    - aceptan transferencias
+    - puedo convalidar materias
+    - reconocen estudios previos
+    - puedo validar creditos
+    - tienen descuentos
+    - hay descuentos especiales
+    - ofrecen promociones
+    - hay promociones
+    - tienen descuento por pronto pago
+    - dan descuento por referido
+    - ofrecen financiacion bancaria
+    - hay creditos educativos
+    - aceptan credito icetex
+    - tienen convenio con bancos
+    - con que bancos tienen convenio
+    - puedo pagar con tarjeta
+    - aceptan pagos en cuotas
+    - cual es la acreditacion
+    - esta acreditado
+    - tiene registro calificado
+    - es reconocido
+    - es reconocido por el ministerio
+    - tiene resolucion ministerial
+    - cual es la metodologia
+    - como es la metodologia
+    - usan metodologia activa
+    - es teorico o practico
+    - hay tutorías
+    - ofrecen asesorías
+    - dan acompanamiento
+    - tienen profesores de planta
+    - quienes son los docentes
+    - quienes dictan clases
+    - cual es el perfil de los profesores
+    - los profesores tienen experiencia
+    - hay investigacion
+    - tienen grupos de investigacion
+    - puedo hacer investigacion
+    - ofrecen seminarios
+    - hay eventos academicos
+    - organizan conferencias
+    - invitan conferencistas
+    - tienen convenios con universidades
+    - con que universidades
+    - hacen alianzas
+    - cual es la infraestructura
+    - que instalaciones tienen
+    - donde son las clases
+    - tienen campus
+    - hay cafeteria
+    - tienen zonas wifi
+    - hay internet
+    - ofrecen seguro estudiantil
+    - hay seguro medico
+    - incluye seguro
+    - como es el acompanamiento
+    - dan seguimiento
+    - hacen seguimiento a egresados
+    - tienen red de egresados
+    - hay asociacion de egresados
+    - puedo hacer networking
+    - organizan eventos de egresados
+    - donde trabajan los graduados
+    - tienen estadisticas de empleo
+    - cual es la tasa de empleabilidad
+    - tienen practicas empresariales
+    - son practicas obligatorias
+    - donde hacen las practicas
+    - con que empresas
+    - puedo hacer practica internacional
+    - ofrecen movilidad academica
+    - puedo estudiar un semestre afuera
+    - tienen intercambios
+    - con que paises
+    - aceptan estudiantes extranjeros
+    - hay cupos para extranjeros
+    - cuantos cupos hay
+    - cual es el numero maximo
+    - hay lista de espera
+    - cuando publican resultados
+    - como es la seleccion
+    - como es el proceso de seleccion
+    - hacen entrevistas
+    - hay examen de admision
+    - aplican prueba
+    - piden prueba de ingles
+    - necesito saber ingles
+    - necesito certificado de ingles
+    - que nivel de ingles necesito
+    - ofrecen cursos de nivelacion
+    - hay cursos de refuerzo
+    - dan cursos complementarios
+    - hay propedeutico
+    - tienen cursos preparatorios
+    - ofrecen curso de induccion
+    - como es la induccion
+    - cuando es la induccion
+    - hay semana de integracion
+    - organizan actividades
+    - tienen grupos estudiantiles
+    - hay clubes
+    - puedo participar en clubes
+    - ofrecen deportes
+    - tienen gimnasio
+    - hay canchas deportivas
+    - organizan torneos
+    - hay actividades culturales
+    - organizan eventos culturales
+    - hacen salidas academicas
+    - organizan visitas
+    - hacen visitas empresariales
+    - visitan empresas
+    - ofrecen conferencias magistrales
+    - invitan speakers
+    - traen conferencistas internacionales
+    - tienen convenio con asociaciones
+    - dan membresias
+    - incluye membresia
+    - ofrecen beneficios adicionales
+    - que otros beneficios hay
+    - incluye algo mas
+
+# ============================================
+# REGEX PATTERNS
+# ============================================
+- regex: numero
+  examples: |
+    - \d+
+    - [0-9]+
+
+- regex: email
+  examples: |
+    - [a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}
+
+- regex: telefono
+  examples: |
+    - \+?[0-9]{7,15}
+    - [0-9]{3}[-\s]?[0-9]{3}[-\s]?[0-9]{4}
+
+- regex: smmlv
+  examples: |
+    - \d+\.?\d*\s*SMMLV
+    - \d+\.?\d*\s*salarios?\s+minimos?
+
+# ============================================
+# LOOKUP TABLES
+# ============================================
+- lookup: postgrados_comunes
+  examples: |
+    - proyectos informaticos
+    - proyectos informáticos
+    - proyectos de TI
+    - gestion de proyectos
+    - gestión de proyectos
+    - higiene seguridad salud trabajo
+    - HSST
+    - salud ocupacional
+    - seguridad trabajo
+    - ingenieria software
+    - ingeniería software
+    - desarrollo software
+    - informatica automatica industrial
+    - informática automática industrial
+    - automatica industrial
+    - automática industrial
+    - informatica industrial
+    - informática industrial
+    - avaluos
+    - avalúos
+    - avaluadores
+    - sistemas informacion geografica
+    - sistemas información geográfica
+    - SIG
+    - geomatica
+    - geomática
+    - bioingenieria
+    - bioingeniería
+    - ingenieria industrial
+    - ingeniería industrial
+    - maestria industrial
+    - maestría industrial
+
+- lookup: palabras_costo
+  examples: |
+    - costo
+    - costos
+    - precio
+    - precios
+    - valor
+    - valores
+    - tarifa
+    - tarifas
+    - pagar
+    - pago
+    - matricula
+    - matrícula
+    - inversión
+    - inversion
+    - SMMLV
+    - salarios minimos
+    - salarios mínimos
+    - credito
+    - crédito
+    - creditos
+    - créditos
+    - semestre
+    - financiacion
+    - financiación
+
+- lookup: palabras_fechas
+  examples: |
+    - inscripciones
+    - inscripcion
+    - inscripción
+    - fechas
+    - cuando
+    - cuándo
+    - inicia
+    - inician
+    - abre
+    - abren
+    - cierra
+    - cierran
+    - plazo
+    - deadline
+    - octubre
+    - noviembre
+    - diciembre
+    - calendario
+
+- lookup: palabras_requisitos
+  examples: |
+    - requisitos
+    - documentos
+    - necesito
+    - piden
+    - solicitan
+    - admision
+    - admisión
+    - titulo
+    - título
+    - diploma
+    - hoja vida
+    - certificado
+    - notas
+    - tarjeta profesional
+    - formulario
+
+- lookup: palabras_modalidad
+  examples: |
+    - modalidad
+    - presencial
+    - virtual
+    - online
+    - distancia
+    - horario
+    - horarios
+    - clases
+    - sede
+    - donde
+    - dónde
+    - dias
+    - días
+    - viernes
+    - sabado
+    - sábado
+    - miercoles
+    - miércoles
+
+# ============================================
+# SYNONYMS
+# ============================================
+- synonym: "si"
+  examples: |
+    - sí
+    - si
+    - simon
+    - see
+    - sip
+
+- synonym: "informacion"
+  examples: |
+    - información
+    - informacion
+    - info
+    - data
+    - datos
+    - detalles
+
+- synonym: "costos"
+  examples: |
+    - costo
+    - costos
+    - precio
+    - precios
+    - valor
+    - valores
+    - tarifa
+    - tarifas
+    - matricula
+    - matrícula
+
+- synonym: "especializacion"
+  examples: |
+    - especialización
+    - especializacion
+    - especializaciones
+    - posgrado
+    - postgrado
+    - programa
+
+- synonym: "maestria"
+  examples: |
+    - maestría
+    - maestria
+    - maestrias
+    - maestrías
+    - master
+    - magister
+    - magíster
+
+- synonym: "requisitos"
+  examples: |
+    - requisitos
+    - requisito
+    - requerimientos
+    - documentos
+    - papeles
+
+- synonym: "inscripcion"
+  examples: |
+    - inscripción
+    - inscripcion
+    - inscripciones
+    - registro
+    - matricula
+    - matrícula
+
+- synonym: "fechas"
+  examples: |
+    - fechas
+    - fecha
+    - calendario
+    - cuando
+    - cuándo
+    - plazos
+
+- synonym: "modalidad"
+  examples: |
+    - modalidad
+    - formato
+    - tipo
+    - presencial
+    - virtual
+
+- synonym: "proyectos informaticos"
+  examples: |
+    - proyectos informaticos
+    - proyectos informáticos
+    - proyectos de TI
+    - gestion proyectos
+    - gestión proyectos
+
+- synonym: "salud ocupacional"
+  examples: |
+    - salud ocupacional
+    - HSST
+    - higiene seguridad salud trabajo
+    - seguridad trabajo
+
+- synonym: "ingenieria software"
+  examples: |
+    - ingenieria software
+    - ingeniería software
+    - desarrollo software
+    - software
+
+- synonym: "automatica industrial"
+  examples: |
+    - automatica industrial
+    - automática industrial
+    - informatica automatica
+    - informática automática
+    - informatica industrial
+
+- synonym: "avaluos"
+  examples: |
+    - avaluos
+    - avalúos
+    - avaluadores
+
+- synonym: "SIG"
+  examples: |
+    - SIG
+    - sistemas informacion geografica
+    - sistemas información geográfica
+    - geomatica
+    - geomática
+
+- synonym: "bioingenieria"
+  examples: |
+    - bioingenieria
+    - bioingeniería
+    - bio ingenieria
+
+- synonym: "ingenieria industrial"
+  examples: |
+    - ingenieria industrial
+    - ingeniería industrial
+    - maestria industrial
+    - maestría industrial
+    - industrial

@@ -1,0 +1,255 @@
+version: "3.1"
+
+# ============================================
+# INTENTS
+# ============================================
+intents:
+  - greet
+  - goodbye
+  - affirm
+  - deny
+  - negate_and_end  # ✅ NUEVO INTENT
+  - bot_challenge
+  - mood_great
+  - mood_unhappy
+  - agradecer
+  - listar_postgrados
+  - seleccionar_postgrado
+  - seleccionar_numero
+  - consultar_costos
+  - consultar_requisitos
+  - consultar_fechas
+  - consultar_duracion
+  - consultar_modalidad
+  - consultar_plan_estudios
+  - solicitar_link_inscripcion
+  - consultar_dirigido
+  - consultar_proceso_admision
+  - solicitar_informacion_general
+  - consultar_becas
+  - consultar_financiacion
+  - contactar_asesor
+  - pedir_ayuda
+  - reiniciar
+  - out_of_scope
+  - nlu_fallback
+  - pregunta_general
+  - volver_menu
+  - pregunta_postgrado
+
+# ============================================
+# ENTITIES
+# ============================================
+entities:
+  - postgrado_nombre
+  - tipo_consulta
+  - numero_opcion
+
+# ============================================
+# SLOTS
+# ============================================
+slots:
+  postgrado_id:
+    type: text
+    influence_conversation: true
+    mappings:
+      - type: custom
+
+  postgrado_nombre:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  tipo_consulta:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: tipo_consulta
+
+  numero_opcion:
+    type: float
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: numero_opcion
+
+  ultima_lista_postgrados:
+    type: any
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  ultima_respuesta:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  contador_fallback:
+    type: float
+    initial_value: 0
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  nombre_completo:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_text
+        conditions:
+          - active_loop: datos_contacto_form
+            requested_slot: nombre_completo
+
+  email:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_text
+        conditions:
+          - active_loop: datos_contacto_form
+            requested_slot: email
+
+  telefono:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_text
+        conditions:
+          - active_loop: datos_contacto_form
+            requested_slot: telefono
+
+# ============================================
+# RESPONSES - ✅ ACTUALIZADAS
+# ============================================
+responses:
+  utter_de_nada:
+    - text: "¡De nada! 😊 ¿Hay algo más en lo que pueda ayudarte?"
+    - text: "¡Con gusto! ¿Necesitas información adicional?"
+    - text: "¡Para eso estoy! ¿Algo más que quieras saber?"
+
+  utter_iamabot:
+    - text: "Soy un asistente virtual creado para ayudarte con información sobre programas de postgrado. 🤖 Puedo resolver tus dudas sobre costos, requisitos, fechas y mucho más."
+
+  utter_opciones_ayuda:
+    - text: |
+        🆘 *¿Cómo puedo ayudarte?*
+        
+        Puedo:
+        📚 Mostrarte todos los programas disponibles
+        🔍 Buscar un programa específico
+        💰 Informarte sobre costos y financiación
+        📋 Explicarte requisitos de admisión
+        📅 Darte fechas de inscripción
+        ⏱️ Informarte sobre duración y modalidad
+        📞 Conectarte con un asesor
+        
+        Escribe lo que necesites o 'ver programas' para comenzar.
+
+  utter_out_of_scope:
+    - text: |
+        Lo siento, esa pregunta está fuera de mi alcance. 😅
+        
+        Estoy especializado en información sobre programas de postgrado.
+        ¿Puedo ayudarte con algo relacionado? Escribe 'ayuda' para ver qué puedo hacer.
+
+  utter_ask_rephrase:
+    - text: |
+        🤔 Perdón, no entendí tu mensaje.
+        
+        💡 Intenta preguntar:
+        • ¿Cuánto cuesta?
+        • ¿Qué requisitos necesito?
+        • ¿Cuándo son las inscripciones?
+        
+        O escribe "menú principal" para volver al inicio.
+    - text: |
+        😅 Disculpa, no comprendí bien.
+        
+        Puedes escribir:
+        • "ver programas" - Para ver todos los postgrados
+        • "costos" - Para preguntar sobre precios
+        • "ayuda" - Para ver qué puedo hacer
+
+  utter_ask_cual_programa:
+    - text: |
+        Para darte esa información, primero necesito saber qué programa te interesa. 🤔
+        
+        Puedes:
+        • Escribir el nombre del programa
+        • Escribir 'ver programas' para la lista completa
+
+  utter_cheer_up:
+    - text: "¡Ánimo! Estoy aquí para ayudarte con cualquier duda sobre nuestros postgrados. 😊"
+    - text: "Entiendo tu frustración. Déjame intentar ayudarte mejor. ¿Qué necesitas saber?"
+
+  utter_did_that_help:
+    - text: "¿Te fue útil esta información?"
+    - text: "¿Hay algo más en lo que pueda ayudarte?"
+
+  utter_happy:
+    - text: "¡Me alegra poder ayudarte! 😊"
+    - text: "¡Genial! Si necesitas algo más, aquí estoy."
+
+  utter_seleccione_numero_valido:
+    - text: "Por favor, indica un número válido de la lista mostrada. Ej: 1, 2, 3..."
+
+  utter_greet:
+    - text: "¡Hola! 👋 ¿En qué puedo ayudarte hoy?"
+
+  utter_selecciona_postgrado_primero:
+    - text: |
+        Primero necesito saber sobre qué programa quieres información. 📚
+        
+        Escribe el nombre del programa o 'ver programas' para conocer todas las opciones.
+
+  # ============================================
+  # RESPUESTAS PARA EL FORMULARIO
+  # ============================================
+  utter_ask_nombre_completo:
+    - text: "Por favor, ingresa tu nombre y apellido."
+
+  utter_ask_email:
+    - text: "📧 ¿Cuál es tu correo electrónico?\n\nEjemplo: tucorreo@gmail.com"
+
+  utter_ask_telefono:
+    - text: "📱 Para que un asesor te contacte, necesito tu número de teléfono.\n\nEjemplo: +573001234567 o 3001234567"
+
+# ============================================
+# ACTIONS
+# ============================================
+actions:
+  - action_saludo_mejorado
+  - action_listar_postgrados
+  - action_seleccionar_postgrado
+  - action_seleccionar_numero
+  - action_buscar_faq
+  - action_guardar_historial
+  - action_contactar_asesor
+  - action_default_fallback
+  - action_reiniciar_conversacion
+  - action_despedida
+  - action_enviar_datos_contacto
+  - action_obtener_info_especifica
+  - action_manejar_pregunta_general
+  - validate_datos_contacto_form
+  - action_buscar_faq_libre
+
+# ============================================
+# FORMS
+# ============================================
+forms:
+  datos_contacto_form:
+    required_slots:
+      - nombre_completo
+      - email
+      - telefono
+
+# ============================================
+# SESSION CONFIG
+# ============================================
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

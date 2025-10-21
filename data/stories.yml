@@ -1,0 +1,641 @@
+version: "3.1"
+
+stories:
+  # ==================== FLUJO 1: Saludo y listar programas ====================
+  - story: saludo inicial y ver programas
+    steps:
+      - intent: greet
+      - action: action_saludo_mejorado  
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+
+  # ==================== FLUJO 2: Consulta completa de un postgrado ====================
+  - story: consulta completa maestria ingenieria
+    steps:
+      - intent: greet
+      - action: action_saludo_mejorado
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "maestría en ingeniería de software"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "1"
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: consultar_requisitos
+      - action: action_buscar_faq
+      - intent: consultar_fechas
+      - action: action_buscar_faq
+      - intent: agradecer
+      - action: utter_de_nada
+      - intent: goodbye
+      - action: action_despedida
+
+  # ==================== FLUJO 3: Selección por número ====================
+  - story: listar y seleccionar por numero
+    steps:
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+      - slot_was_set:
+          - ultima_lista_postgrados
+      - intent: seleccionar_numero
+      - action: action_seleccionar_numero
+      - slot_was_set:
+          - postgrado_id: "1"
+      - intent: consultar_costos
+      - action: action_buscar_faq
+
+  # ==================== FLUJO 4: Búsqueda ambigua y selección por número ====================
+  - story: busqueda ambigua luego numero
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "especialización"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - ultima_lista_postgrados
+      - intent: seleccionar_numero
+      - action: action_seleccionar_numero
+      - slot_was_set:
+          - postgrado_id: "1"
+
+  # ==================== FLUJO 5: Usuario busca y selecciona programa ====================
+  - story: buscar y seleccionar programa
+    steps:
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "avaluos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "2"
+      - intent: consultar_costos
+      - action: action_buscar_faq
+
+  # ==================== FLUJO 6: Pregunta con postgrado ya seleccionado ====================
+  - story: pregunta con contexto
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "ciencia de datos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "3"
+      - intent: consultar_costos
+      - action: action_buscar_faq
+
+  # ==================== FLUJO 7: Usuario solicita contacto inmediatamente ====================
+  - story: solicitar asesor directo
+    steps:
+      - intent: greet
+      - action: action_saludo_mejorado
+      - intent: contactar_asesor
+      - action: action_contactar_asesor
+
+  # ==================== FLUJO 8: Consulta múltiple y luego contacto ====================
+  - story: consultas multiples luego contacto
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "especialización en proyectos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "4"
+      - intent: consultar_duracion
+      - action: action_buscar_faq
+      - intent: consultar_modalidad
+      - action: action_buscar_faq
+      - intent: consultar_becas
+      - action: action_buscar_faq
+      - intent: contactar_asesor
+      - action: action_contactar_asesor
+
+  # ==================== FLUJO 9: No encuentra información ====================
+  - story: info no encontrada solicita asesor
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "doctorado en educación"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "5"
+      - intent: pregunta_general
+      - action: action_manejar_pregunta_general
+      - intent: deny
+      - action: utter_ask_rephrase
+      - intent: contactar_asesor
+      - action: action_contactar_asesor
+
+  # ==================== FLUJO 10: Usuario pide ayuda ====================
+  - story: usuario pide ayuda
+    steps:
+      - intent: pedir_ayuda
+      - action: utter_opciones_ayuda
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+
+  # ==================== FLUJO 11: Consulta de becas y financiación ====================
+  - story: consultar becas y financiacion
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "maestría"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "6"
+      - intent: consultar_becas
+      - action: action_buscar_faq
+      - intent: consultar_financiacion
+      - action: action_buscar_faq
+
+  # ==================== FLUJO 12: Cambio de postgrado ====================
+  - story: cambiar postgrado
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "avaluos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "2"
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "bioingeniería"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "1"
+      - intent: consultar_costos
+      - action: action_buscar_faq
+
+  # ==================== FLUJO 13: Conversación larga ====================
+  - story: conversacion larga completa
+    steps:
+      - intent: greet
+      - action: action_saludo_mejorado
+      - intent: pedir_ayuda
+      - action: utter_opciones_ayuda
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "ciencias de la información"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "3"
+      - intent: consultar_requisitos
+      - action: action_buscar_faq
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: consultar_fechas
+      - action: action_buscar_faq
+      - intent: consultar_duracion
+      - action: action_buscar_faq
+      - intent: consultar_modalidad
+      - action: action_buscar_faq
+      - intent: contactar_asesor
+      - action: action_contactar_asesor
+      - intent: agradecer
+      - action: utter_de_nada
+      - intent: goodbye
+      - action: action_despedida
+
+  # ==================== FLUJO 14: Usuario fuera de alcance ====================
+  - story: pregunta fuera de alcance
+    steps:
+      - intent: out_of_scope
+      - action: utter_out_of_scope
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+
+  # ==================== FLUJO 15: Bot challenge ====================
+  - story: usuario pregunta si es bot
+    steps:
+      - intent: bot_challenge
+      - action: utter_iamabot
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+
+  # ==================== FLUJO 16: Negación y redirección ====================
+  - story: usuario niega y busca otra cosa
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "MBA"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "7"
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: deny
+      - action: utter_ask_rephrase
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+
+  # ==================== FLUJO 17: Fallback recovery ====================
+  - story: recuperacion de fallback
+    steps:
+      - intent: nlu_fallback
+      - action: action_default_fallback
+      - intent: pedir_ayuda
+      - action: utter_opciones_ayuda
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+
+  # ==================== FLUJO 18: Selección incorrecta ====================
+  - story: numero invalido y correccion
+    steps:
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+      - slot_was_set:
+          - ultima_lista_postgrados
+      - intent: seleccionar_numero
+      - action: action_seleccionar_numero
+      - intent: seleccionar_numero
+      - action: action_seleccionar_numero
+      - slot_was_set:
+          - postgrado_id: "1"
+
+  # ==================== FLUJO 19: Búsqueda con errores ortográficos ====================
+  - story: busqueda con error ortografico
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "especialización en avalúos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "1"
+      - intent: consultar_requisitos
+      - action: action_buscar_faq
+
+  # ==================== FLUJO 20: Solicitud directa de link ====================
+  - story: solicitar link directo
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "avaluos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "1"
+      - intent: solicitar_link_inscripcion
+      - action: action_buscar_faq
+
+  # ==================== FLUJO 21: Información general ====================
+  - story: info general luego especificos
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "bioingenieria"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "2"
+      - intent: solicitar_informacion_general
+      - action: action_manejar_pregunta_general
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: solicitar_link_inscripcion
+      - action: action_buscar_faq
+
+  # ==================== FLUJO 22: Consultar perfil dirigido ====================
+  - story: consultar perfil dirigido
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "HSST"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "3"
+      - intent: consultar_dirigido
+      - action: action_buscar_faq
+      - intent: consultar_requisitos
+      - action: action_buscar_faq
+
+  # ==================== FLUJO 23: Proceso de admisión ====================
+  - story: proceso admision completo
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "proyectos informaticos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "4"
+      - intent: consultar_proceso_admision
+      - action: action_buscar_faq
+      - intent: consultar_requisitos
+      - action: action_buscar_faq
+      - intent: consultar_fechas
+      - action: action_buscar_faq
+      - intent: solicitar_link_inscripcion
+      - action: action_buscar_faq
+
+  # ==================== FLUJO 24: Costo directo ====================
+  - story: pregunta costo directo con programa
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "avaluos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "1"
+      - intent: consultar_costos
+      - action: action_buscar_faq
+
+  # ==================== FLUJO 25: Link sin contexto ====================
+  - story: pedir link sin seleccionar programa
+    steps:
+      - intent: solicitar_link_inscripcion
+      - action: utter_ask_cual_programa
+      - action: action_listar_postgrados
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "bioingenieria"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "2"
+      - intent: solicitar_link_inscripcion
+      - action: action_buscar_faq
+
+  # ==================== FLUJO 26: Consultas rápidas ====================
+  - story: consultas rapidas multiples
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "salud ocupacional"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "3"
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: consultar_fechas
+      - action: action_buscar_faq
+      - intent: consultar_modalidad
+      - action: action_buscar_faq
+      - intent: solicitar_link_inscripcion
+      - action: action_buscar_faq
+      - intent: agradecer
+      - action: utter_de_nada
+
+  # ==================== FLUJO 27: Plan de estudios ====================
+  - story: consulta academica detallada
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "ingenieria de software"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "5"
+      - intent: consultar_plan_estudios
+      - action: action_buscar_faq
+      - intent: consultar_duracion
+      - action: action_buscar_faq
+      - intent: consultar_modalidad
+      - action: action_buscar_faq
+
+  # ==================== FLUJO 28: Explorar programas ====================
+  - story: explorar varios programas
+    steps:
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+      - slot_was_set:
+          - ultima_lista_postgrados
+      - intent: seleccionar_numero
+      - action: action_seleccionar_numero
+      - slot_was_set:
+          - postgrado_id: "1"
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "maestría en ciencia de datos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "2"
+      - intent: consultar_costos
+      - action: action_buscar_faq
+
+  # ==================== FLUJO 29: Info general vaga ====================
+  - story: pedir info general vaga
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "bioingenieria"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "2"
+      - intent: solicitar_informacion_general
+      - action: action_manejar_pregunta_general
+      - intent: consultar_requisitos
+      - action: action_buscar_faq
+
+  # ==================== FLUJO 30: Intents ambiguos ====================
+  - story: intents ambiguos resolucion
+    steps:
+      - intent: pregunta_general
+      - action: action_manejar_pregunta_general
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "proyectos informaticos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "4"
+      - intent: solicitar_informacion_general
+      - action: action_manejar_pregunta_general
+      - intent: consultar_fechas
+      - action: action_buscar_faq
+
+  # ==================== FLUJO 31: Solo saludo ====================
+  - story: solo saludo
+    steps:
+      - intent: greet
+      - action: action_saludo_mejorado
+
+  # ==================== FLUJO 32: Solo despedida ====================
+  - story: solo despedida
+    steps:
+      - intent: goodbye
+      - action: action_despedida
+
+  # ==================== FLUJO 33: Agradecer y despedir ====================
+  - story: agradecer y despedir
+    steps:
+      - intent: agradecer
+      - action: utter_de_nada
+      - intent: goodbye
+      - action: action_despedida
+
+  # ==================== FLUJO 34: Despedida directa ====================
+  - story: despedida directa
+    steps:
+      - intent: goodbye
+      - action: action_despedida
+
+  # ==================== FLUJO 35: Niega y luego se despide ====================
+  - story: usuario niega y luego se despide
+    steps:
+      - intent: deny
+      - action: utter_ask_rephrase
+      - intent: goodbye
+      - action: action_despedida
+
+  # ==================== FLUJO 36: No nada mas ====================
+  - story: usuario dice no nada mas
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "avaluos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "1"
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: negate_and_end
+      - action: action_despedida
+
+  # ==================== FLUJO 37: Doble negacion ====================
+  - story: doble negacion despedida
+    steps:
+      - intent: pedir_ayuda
+      - action: utter_opciones_ayuda
+      - intent: deny
+      - action: utter_ask_rephrase
+      - intent: deny
+      - action: action_despedida
+
+  # ==================== FLUJO 38: Consulta completa termina ====================
+  - story: consulta completa termina con no nada mas
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "bioingenieria"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "2"
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: consultar_fechas
+      - action: action_buscar_faq
+      - intent: agradecer
+      - action: utter_de_nada
+      - intent: negate_and_end
+      - action: action_despedida
+
+  # ==================== FLUJO 39: Agradece eso es todo ====================
+  - story: agradece y termina eso es todo
+    steps:
+      - intent: consultar_requisitos
+      - action: utter_ask_cual_programa
+      - action: action_listar_postgrados
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "HSST"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "3"
+      - intent: consultar_requisitos
+      - action: action_buscar_faq
+      - intent: agradecer
+      - action: utter_de_nada
+      - intent: negate_and_end
+      - action: action_despedida
+
+  # ==================== FLUJO 40: Multiples consultas nada mas ====================
+  - story: multiples consultas nada mas
+    steps:
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+      - intent: seleccionar_numero
+      - action: action_seleccionar_numero
+      - slot_was_set:
+          - postgrado_id: "1"
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: consultar_fechas
+      - action: action_buscar_faq
+      - intent: consultar_modalidad
+      - action: action_buscar_faq
+      - intent: negate_and_end
+      - action: action_despedida
+
+  # ==================== FLUJO 41: Info general no gracias ====================
+  - story: info general termina no gracias
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "proyectos informaticos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "4"
+      - intent: solicitar_informacion_general
+      - action: action_manejar_pregunta_general
+      - intent: negate_and_end
+      - action: action_despedida
+
+  # ==================== FLUJO 42: Busca asesor niega termina ====================
+  - story: busca asesor niega termina
+    steps:
+      - intent: contactar_asesor
+      - action: action_contactar_asesor
+      - intent: deny
+      - action: utter_ask_rephrase
+      - intent: negate_and_end
+      - action: action_despedida
+
+  # ==================== FLUJO 43: Volver al menu ====================
+  - story: volver al menu
+    steps:
+      - intent: volver_menu
+      - action: action_saludo_mejorado
+      - action: action_listar_postgrados
+
+  # ==================== FLUJO 44: Preguntas libres después de seleccionar ====================
+
+  - story: pregunta libre sobre becas
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "avaluos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "1"
+      - intent: pregunta_postgrado
+      - action: action_buscar_faq_libre
+
+  - story: multiples preguntas libres
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "bioingenieria"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "2"
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: pregunta_postgrado
+      - action: action_buscar_faq_libre
+      - intent: pregunta_postgrado
+      - action: action_buscar_faq_libre
+
+  - story: pregunta libre con convenios
+    steps:
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+      - intent: seleccionar_numero
+      - action: action_seleccionar_numero
+      - slot_was_set:
+          - postgrado_id: "3"
+      - intent: pregunta_postgrado
+      - action: action_buscar_faq_libre
+
+  - story: pregunta libre luego asesor
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "proyectos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "4"
+      - intent: pregunta_postgrado
+      - action: action_buscar_faq_libre
+      - intent: contactar_asesor
+      - action: action_contactar_asesor

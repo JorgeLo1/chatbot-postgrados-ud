@@ -1,0 +1,19 @@
+# Rasa Core
+rasa==3.6.20
+rasa-sdk==3.6.2
+
+# NLP en Español
+spacy==3.7.2
+https://github.com/explosion/spacy-models/releases/download/es_core_news_md-3.7.0/es_core_news_md-3.7.0-py3-none-any.whl
+
+# API & Conexiones
+requests==2.31.0
+urllib3==2.0.7
+python-dotenv==1.0.0
+
+# Base de datos (opcional)
+psycopg2-binary==2.9.9
+
+# Utilidades
+python-dateutil==2.8.2
+pytz==2023.3
