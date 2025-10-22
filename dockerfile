@@ -3,7 +3,6 @@ FROM python:3.10-slim
 # Variables de entorno para optimizar memoria
 ENV PYTHONUNBUFFERED=1 \
     RASA_HOME=/app \
-    PORT=5005 \
     PYTHONOPTIMIZE=1 \
     TF_CPP_MIN_LOG_LEVEL=3 \
     OMP_NUM_THREADS=1 \
@@ -40,41 +39,47 @@ RUN echo "📚 Entrenando modelo..." && \
 COPY . .
 
 # Exponer puerto
-EXPOSE $PORT
+EXPOSE 10000
 
-# Script optimizado para usar menos memoria
-RUN echo '#!/bin/bash\n\
-set -e\n\
-\n\
-echo "🚀 Iniciando servicios (modo optimizado)..."\n\
-echo "📍 Puerto Rasa Server: ${PORT}"\n\
-echo "📍 Puerto Action Server: 5055"\n\
-\n\
-# Verificar modelo\n\
-if [ ! -f "models/model.tar.gz" ]; then\n\
-    echo "❌ Modelo no encontrado. Entrenando..."\n\
-    rasa train --fixed-model-name model\n\
-fi\n\
-\n\
-# Iniciar Action Server en background\n\
-echo "🔧 Iniciando Action Server..."\n\
-rasa run actions --port 5055 &\n\
-ACTION_PID=$!\n\
-\n\
-# Esperar Action Server\n\
-echo "⏳ Esperando Action Server..."\n\
-for i in {1..20}; do\n\
-    if nc -z localhost 5055 2>/dev/null; then\n\
-        echo "✅ Action Server listo"\n\
-        break\n\
-    fi\n\
-    [ $i -eq 20 ] && echo "❌ Timeout Action Server" && exit 1\n\
-    sleep 1\n\
-done\n\
-\n\
-# Iniciar Rasa Server\n\
-echo "🤖 Iniciando Rasa Server en puerto ${PORT}..."\n\
-exec rasa run --enable-api --cors "*" --port "${PORT}" --credentials credentials.yml --log-level WARNING\n' > /app/start.sh
+# Crear script de inicio
+COPY <<'EOF' /app/start.sh
+#!/bin/bash
+set -e
+
+# Render asigna el puerto automáticamente, usa 10000 por defecto
+RASA_PORT=${PORT:-10000}
+ACTION_PORT=${ACTION_SERVER_PORT:-5055}
+
+echo "🚀 Iniciando servicios (modo optimizado)..."
+echo "📍 Puerto Rasa Server: ${RASA_PORT}"
+echo "📍 Puerto Action Server: ${ACTION_PORT}"
+
+# Verificar modelo
+if [ ! -f "models/model.tar.gz" ]; then
+    echo "❌ Modelo no encontrado. Entrenando..."
+    rasa train --fixed-model-name model
+fi
+
+# Iniciar Action Server en background
+echo "🔧 Iniciando Action Server..."
+rasa run actions --port ${ACTION_PORT} &
+ACTION_PID=$!
+
+# Esperar Action Server
+echo "⏳ Esperando Action Server..."
+for i in {1..20}; do
+    if nc -z localhost ${ACTION_PORT} 2>/dev/null; then
+        echo "✅ Action Server listo"
+        break
+    fi
+    [ $i -eq 20 ] && echo "❌ Timeout Action Server" && exit 1
+    sleep 1
+done
+
+# Iniciar Rasa Server
+echo "🤖 Iniciando Rasa Server en puerto ${RASA_PORT}..."
+exec rasa run --enable-api --cors "*" --port "${RASA_PORT}" --credentials credentials.yml --log-level warning
+EOF
 
 RUN chmod +x /app/start.sh
 
