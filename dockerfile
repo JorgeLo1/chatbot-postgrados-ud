@@ -72,14 +72,9 @@ for i in {1..20}; do\n\
     sleep 1\n\
 done\n\
 \n\
-# Iniciar Rasa Server (sin debug para ahorrar memoria)\n\
+# Iniciar Rasa Server\n\
 echo "🤖 Iniciando Rasa Server en puerto ${PORT}..."\n\
-exec rasa run \\\n\
-    --enable-api \\\n\
-    --cors "*" \\\n\
-    --port "${PORT}" \\\n\
-    --credentials credentials.yml \\\n\
-    --log-level WARNING\n' > /app/start.sh
+exec rasa run --enable-api --cors "*" --port "${PORT}" --credentials credentials.yml --log-level WARNING\n' > /app/start.sh
 
 RUN chmod +x /app/start.sh
 
