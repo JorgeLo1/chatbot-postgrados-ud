@@ -16,8 +16,21 @@ rules:
   - intent: goodbye
   - action: action_despedida
 
-- rule: Despedirse cuando dice "nada más"
+- rule: Despedirse cuando dice nada mas
   steps:
+  - intent: negate_and_end
+  - action: action_despedida
+
+- rule: Agradecer y luego despedirse
+  steps:
+  - intent: agradecer
+  - action: utter_de_nada
+  wait_for_user_input: true
+
+- rule: Despedida post-agradecimiento
+  steps:
+  - intent: agradecer
+  - action: utter_de_nada
   - intent: negate_and_end
   - action: action_despedida
 
@@ -183,20 +196,10 @@ rules:
 # SECCIÓN 7: MANEJO DE ERRORES Y FALLBACKS
 # ============================================
 
-- rule: Fallback cuando no se entiende
-  steps:
-  - intent: nlu_fallback
-  - action: action_default_fallback
-
 - rule: Responder preguntas fuera de alcance
   steps:
   - intent: out_of_scope
   - action: utter_out_of_scope
-
-- rule: Manejo de negación ambigua
-  steps:
-  - intent: deny
-  - action: utter_ask_rephrase
 
 - rule: Manejo de afirmación
   steps:

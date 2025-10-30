@@ -3,11 +3,7 @@ assistant_id: 20251015-optimizado-postgrados
 
 language: es
 
-# ============================================
-# PIPELINE NLU - OPTIMIZADO PARA ESPAÑOL
-# ============================================
 pipeline:
-  # ✅ SPACY NATIVO ESPAÑOL (CRÍTICO)
   - name: SpacyNLP
     model: "es_core_news_md"
   
@@ -16,44 +12,38 @@ pipeline:
   - name: SpacyFeaturizer
     pooling: "mean"
   
-  # ✅ Extrae patrones (emails, teléfonos, números)
   - name: RegexFeaturizer
   
-  # ✅ Características léxico-sintácticas
   - name: LexicalSyntacticFeaturizer
   
-  # ✅ Vectorización por caracteres (errores ortográficos)
   - name: CountVectorsFeaturizer
     analyzer: "char_wb"
-    min_ngram: 2  # Optimizado: 2-4 en lugar de 1-4
+    min_ngram: 2
     max_ngram: 4
-    OOV_token: "_oov_"  # ✅ Maneja palabras desconocidas
+    OOV_token: "_oov_"
   
-  # ✅ Vectorización por palabras
   - name: CountVectorsFeaturizer
     analyzer: "word"
     min_ngram: 1
-    max_ngram: 2  # Optimizado: 1-2 en lugar de 1-3 (más rápido)
+    max_ngram: 2
     OOV_token: "_oov_"
   
-  # ✅ DIET MEJORADO
   - name: DIETClassifier
-    epochs: 300  # ✅ Aumentado de 250 a 300
+    epochs: 300
     constrain_similarities: true
     entity_recognition: true
     use_masked_language_model: true
-    BILOU_flag: true  # ✅ CRÍTICO: Cambiado a true
+    BILOU_flag: true
     ranking_length: 10
     transformer_config:
       number_of_transformer_layers: 2
       hidden_size: 256
       attention_heads: 4
-      dropout_rate: 0.1  # ✅ NUEVO: Previene overfitting
+      dropout_rate: 0.1
     weight_sparsity: 0.8
-    batch_size: [64, 256]  # ✅ NUEVO: Batch dinámico
-    # ✅ NUEVO: Configuración de learning rate
+    batch_size: [64, 256]
     learning_rate: 0.001
-    connection_density: 0.2  # ✅ NUEVO: Reduce conexiones innecesarias
+    connection_density: 0.2
     
   - name: CRFEntityExtractor
     BILOU_flag: true
@@ -61,55 +51,44 @@ pipeline:
     L1_c: 0.1
     L2_c: 0.1
   
-  # ✅ Mapea sinónimos
   - name: EntitySynonymMapper
   
-  # ✅ Selector de respuestas (para FAQs)
   - name: ResponseSelector
     epochs: 100
     constrain_similarities: true
-    retrieval_intent: "faq"  # ✅ NUEVO: Intent específico
+    retrieval_intent: "faq"
   
-  # ✅ FALLBACK CALIBRADO
+  # ✅ FALLBACK CALIBRADO (MEJORADO)
   - name: FallbackClassifier
-    threshold: 0.55  # Si confianza < 55%, trigger fallback
-    ambiguity_threshold: 0.15  # Si top 2 intents muy cercanos, trigger fallback
+    threshold: 0.45  # ✅ Bajado de 0.55 a 0.45 (menos fallbacks)
+    ambiguity_threshold: 0.10  # ✅ Bajado de 0.15 a 0.10 (más tolerante)
 
-# ============================================
-# POLICIES - GESTIÓN DEL DIÁLOGO
-# ============================================
 policies:
-  # ✅ REGLAS EXPLÍCITAS
   - name: RulePolicy
     core_fallback_threshold: 0.3
     core_fallback_action_name: "action_default_fallback"
     enable_fallback_prediction: true
-    restrict_rules: false  # ✅ Flexibilidad en reglas
+    restrict_rules: false
   
-  # ✅ MEMORIZACIÓN EXTENDIDA
   - name: MemoizationPolicy
-    max_history: 8  # ✅ Aumentado de 5 a 8 (contexto largo)
+    max_history: 8
   
-  # ✅ TED MEJORADO (Predicción ML)
   - name: TEDPolicy
-    max_history: 8  # ✅ Aumentado de 5 a 8
-    epochs: 150  # ✅ Aumentado de 120 a 150
+    max_history: 8
+    epochs: 150
     constrain_similarities: true
     transformer_config:
       number_of_transformer_layers: 2
       hidden_size: 256
       attention_heads: 4
-      dropout_rate: 0.1  # ✅ NUEVO
+      dropout_rate: 0.1
     weight_sparsity: 0.8
-    batch_size: [32, 128]  # ✅ NUEVO: Batch dinámico
-    # ✅ NUEVO: Configuración de predicción
+    batch_size: [32, 128]
     model_confidence: "softmax"
-    loss_type: "cross_entropy"  # ✅ NUEVO
-    ranking_length: 10  # ✅ NUEVO: Considera top 10 acciones
+    loss_type: "cross_entropy"
+    ranking_length: 10
   
-  # ✅ Maneja intenciones inesperadas
   - name: UnexpecTEDIntentPolicy
     max_history: 5
     epochs: 50
-    # ✅ NUEVO: Tolerancia a intents raros
     tolerance: 0.0

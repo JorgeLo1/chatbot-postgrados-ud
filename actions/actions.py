@@ -1032,7 +1032,7 @@ class ActionContactarAsesor(Action):
 # ============================================
 
 class ActionDefaultFallback(Action):
-    """Acción por defecto cuando no se entiende la intención"""
+    """Acción por defecto cuando no se entiende la intención - MEJORADA"""
 
     def name(self) -> Text:
         return "action_default_fallback"
@@ -1048,40 +1048,75 @@ class ActionDefaultFallback(Action):
         
         postgrado_id = tracker.get_slot("postgrado_id")
         contador = tracker.get_slot("contador_fallback") or 0
-        contador += 1
+        mensaje_usuario = tracker.latest_message.get("text", "").lower()
         
-        if contador >= 3:
-            mensaje = "😕 Parece que no puedo ayudarte de manera satisfactoria.\n\n"
-            mensaje += "¿Te gustaría que un asesor te contacte?"
-            dispatcher.utter_message(text=mensaje)
-            # ✅ CRÍTICO: Resetear contador y revertir utterance
+        # ✅ NUEVO: Detectar despedidas implícitas
+        despedidas_implicitas = [
+            "nada mas", "nada más", "eso es todo", "solo eso", 
+            "suficiente", "ya está", "ya esta", "listo", "perfecto",
+            "no necesito mas", "no necesito más", "con eso"
+        ]
+        
+        if any(despedida in mensaje_usuario for despedida in despedidas_implicitas):
+            logger.info("✅ Despedida implícita detectada en fallback")
+            dispatcher.utter_message(
+                text="¡Perfecto! Si necesitas algo más, aquí estaré. ¡Hasta pronto! 👋"
+            )
             return [
                 SlotSet("contador_fallback", 0),
-                UserUtteranceReverted()  # 🔥 ESTO FALTABA
+                FollowupAction("action_despedida")
             ]
-        else:
-            mensaje = "🤔 No estoy seguro de haber entendido.\n\n"
+        
+        # Incrementar contador
+        contador += 1
+        logger.info(f"Contador fallback: {contador}/3")
+        
+        # ✅ ESCALAMIENTO GRADUAL
+        if contador == 1:
+            # Primer fallback: sugerencia amigable
+            mensaje = "🤔 No estoy seguro de entender.\n\n"
             
             if not postgrado_id:
-                mensaje += "Puedo:\n"
-                mensaje += "📚 Mostrarte los programas disponibles\n"
-                mensaje += "🔍 Buscar un programa específico\n"
-                mensaje += "💬 Responder sobre costos, fechas, requisitos, etc.\n\n"
-                mensaje += "¿Qué te gustaría hacer?"
+                mensaje += "¿Quieres que te muestre los programas disponibles?\n\n"
+                mensaje += "Escribe:\n• 'ver programas'\n• 'ayuda'\n• O el nombre de un programa"
             else:
-                mensaje += "Puedes preguntarme sobre:\n"
-                mensaje += "💰 Costos y formas de pago\n"
-                mensaje += "📋 Requisitos de admisión\n"
-                mensaje += "📅 Fechas de inscripción\n"
-                mensaje += "💳 Opciones de financiación\n"
-                mensaje += "📞 Contacto con un asesor\n"
-                mensaje += "🏠 Retornar al menú principal\n"
+                mensaje += "Puedes preguntarme:\n"
+                mensaje += "💰 ¿Cuánto cuesta?\n"
+                mensaje += "📋 ¿Qué requisitos necesito?\n"
+                mensaje += "📅 ¿Cuándo son las inscripciones?\n"
+                mensaje += "📞 Contactar asesor"
             
             dispatcher.utter_message(text=mensaje)
-            # ✅ CRÍTICO: Siempre revertir la utterance para evitar bucles
+            return [SlotSet("contador_fallback", contador)]
+        
+        elif contador == 2:
+            # Segundo fallback: opciones más explícitas
+            mensaje = "😅 Parece que no nos estamos entendiendo bien.\n\n"
+            mensaje += "Te sugiero:\n\n"
+            
+            if postgrado_id:
+                mensaje += "1️⃣ Hacer una pregunta específica (ej: 'costos', 'fechas')\n"
+                mensaje += "2️⃣ Cambiar de programa (escribe 'menú principal')\n"
+                mensaje += "3️⃣ Hablar con un asesor (escribe 'asesor')"
+            else:
+                mensaje += "1️⃣ Ver todos los programas → 'ver programas'\n"
+                mensaje += "2️⃣ Buscar un programa específico → escribe su nombre\n"
+                mensaje += "3️⃣ Pedir ayuda → 'ayuda'"
+            
+            dispatcher.utter_message(text=mensaje)
+            return [SlotSet("contador_fallback", contador)]
+        
+        else:
+            # Tercer fallback: escalar a humano
+            mensaje = "😔 Lamento no poder ayudarte de manera satisfactoria.\n\n"
+            mensaje += "🤝 ¿Te gustaría hablar con un asesor humano?\n\n"
+            mensaje += "Un especialista puede resolver tus dudas personalizadamente.\n\n"
+            mensaje += "Escribe 'sí' o 'contactar asesor' para que te llamemos."
+            
+            dispatcher.utter_message(text=mensaje)
             return [
-                SlotSet("contador_fallback", contador),
-                UserUtteranceReverted()  
+                SlotSet("contador_fallback", 0),  # Resetear para próxima vez
+                FollowupAction("action_escalar_a_humano")
             ]
 
 
@@ -1119,7 +1154,7 @@ class ActionReiniciarConversacion(Action):
 # ============================================
 
 class ActionDespedida(Action):
-    """Maneja la despedida del usuario y cierra la conversación"""
+    """Maneja la despedida del usuario y cierra la conversación - MEJORADA"""
 
     def name(self) -> Text:
         return "action_despedida"
@@ -1134,31 +1169,52 @@ class ActionDespedida(Action):
         logger.info("👋 Ejecutando action_despedida")
         
         postgrado_nombre = tracker.get_slot("postgrado_nombre")
+        intent = tracker.latest_message.get("intent", {}).get("name", "")
         
-        mensaje = "👋 ¡Hasta pronto!\n\n"
-        
+        # ✅ NUEVO: Mensajes personalizados según contexto
         if postgrado_nombre:
+            mensaje = f"👋 ¡Hasta pronto!\n\n"
             mensaje += f"Espero haber resuelto tus dudas sobre *{postgrado_nombre}*.\n\n"
+            mensaje += "¡Mucho éxito en tu formación académica! 🎓"
+        elif intent == "negate_and_end":
+            # Usuario dijo "nada más" o similar
+            mensaje = "✅ ¡Perfecto!\n\n"
+            mensaje += "Si tienes más preguntas en el futuro, no dudes en volver.\n\n"
+            mensaje += "¡Éxitos! 🎓"
+        else:
+            # Despedida genérica
+            mensaje = "👋 ¡Hasta luego!\n\n"
+            mensaje += "Recuerda que puedes volver cuando necesites información.\n\n"
+            mensaje += "¡Que tengas un excelente día! 😊"
         
-        mensaje += "¡Mucho éxito en tu formación académica! 🎓\n\n"
-        mensaje += "Si necesitas más información, no dudes en volver a consultarnos."
+        # ✅ Enviar mensaje sin metadata (más simple)
+        dispatcher.utter_message(text=mensaje)
         
-        # ✅ Enviar mensaje con metadata para cerrar el chat desde frontend
-        dispatcher.utter_message(
-            text=mensaje,
-            metadata={
-                "conversationPaused": True,
-                "closeChat": True,
-                "autoClose": 4  # Cerrar después de 4 segundos
+        # ✅ NUEVO: Solo guardar historial si hubo conversación significativa
+        eventos_usuario = [e for e in tracker.events if e.get("event") == "user"]
+        
+        if len(eventos_usuario) > 2:  # Si hubo más de 2 mensajes del usuario
+            logger.info("💾 Guardando historial antes de despedirse")
+            # Guardar historial
+            usuario_telefono = tracker.sender_id
+            postgrado_id = tracker.get_slot("postgrado_id")
+            
+            data = {
+                "usuario": usuario_telefono,
+                "mensaje": "Conversación finalizada",
+                "respuesta": mensaje,
+                "id_postgrado": int(postgrado_id) if postgrado_id else None
             }
-        )
+            
+            try:
+                make_api_request("POST", "historial", data=data)
+            except Exception as e:
+                logger.error(f"Error guardando historial: {e}")
         
-        # ✅ Eventos para finalizar la conversación
+        # ✅ Eventos para finalizar limpiamente
         return [
-            FollowupAction("action_guardar_historial"),  # Guardar antes de cerrar
             AllSlotsReset(),      # Limpia todos los slots
-            Restarted(),          # Reinicia la conversación
-            ConversationPaused()  # Pausa la conversación
+            Restarted()           # Reinicia la conversación
         ]
 
 

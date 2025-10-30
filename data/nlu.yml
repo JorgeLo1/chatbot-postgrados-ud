@@ -40,29 +40,77 @@ nlu:
 - intent: goodbye
   examples: |
     - adiós
+    - adios
     - hasta luego
     - nos vemos
     - chao
+    - chau
     - bye
     - hasta pronto
     - me voy
     - tengo que irme
     - gracias, eso es todo
     - ya no necesito más ayuda
-    - perfecto, gracias
+    - ya no necesito mas ayuda
+    - perfecto gracias
     - ok gracias adiós
+    - ok gracias adios
     - hasta la proxima
+    - hasta la próxima
     - nos vemos luego
     - eso es todo gracias
     - nada mas gracias
+    - nada más gracias
     - ya termine
+    - ya terminé
     - listo gracias
     - ok perfecto chao
     - bueno gracias nos vemos
     - ya esta bien gracias
-
+    - ya está bien gracias
+    - me retiro
+    - hasta otra
+    - cierro
+    - termino
+    - finalizo
+    - salir
+    - cerrar chat
+    - cerrar conversación
+    - cerrar conversacion
+    - terminar conversación
+    - terminar conversacion
+    - ya no necesito nada
+    - con eso me despido
+    - muchas gracias adiós
+    - muchas gracias adios
+    - gracias y hasta luego
+    - perfecto hasta luego
+    - ok nos vemos
+    - listo nos vemos
+    - me voy gracias
+    - chao gracias
+    - bye gracias
+    - hasta pronto gracias
+    - gracias bye
+    - gracias chao
+    - ok bye
+    - ok chao
+    - perfecto bye
+    - listo bye
+    - ya me voy
+    - debo irme
+    - tengo que salir
+    - voy saliendo
+    - me despido
+    - hasta aquí
+    - hasta ahi
+    - hasta ahí
+    - ya fue
+    - eso fue todo
+    - terminamos
+    
 # ============================================
-# INTENT: negate_and_end (Negación con intención de terminar) ✅ MEJORADO
+# INTENT: negate_and_end 
 # ============================================
 - intent: negate_and_end
   examples: |
@@ -83,89 +131,49 @@ nlu:
     - no, nada más gracias
     - no necesito nada mas
     - no necesito nada más
-    - no gracias
-    - ya no necesito más ayuda
-    - ya no necesito mas ayuda
     - con eso estoy bien
     - perfecto así está bien
-    - perfecto asi esta bien
-    - no requiero nada más
-    - no requiero nada mas
     - es suficiente gracias
-    - es suficiente
     - hasta aquí llegamos
-    - hasta aqui llegamos
     - eso sería todo
-    - eso seria todo
     - solo eso gracias
     - nada más por ahora
-    - nada mas por ahora
     - está bien así
-    - esta bien asi
     - ya está bien
-    - ya esta bien
     - listo así está bien
-    - listo asi esta bien
     - no me hace falta nada más
-    - no me hace falta nada mas
     - con eso es suficiente
     - ya tengo todo
     - no hace falta más
-    - no hace falta mas
     - eso me basta
     - eso nomás
-    - eso nomas
     - ya con eso
     - no más gracias
-    - no mas gracias
-    - no necesito mas
-    - en este momento no
-    - ahora no quiero
-    - no en este momento
-    - por ahora no
-    - tal vez luego
-    - en otro momento
-    - no gracias por ahora
     - eso es todo por hoy
     - nada gracias
     - ya gracias
     - listo gracias
     - ok eso es todo
     - ok nada mas
-    - ok nada más
     - perfecto nada más
-    - perfecto nada mas
     - con eso
     - solo con eso
     - así está bien
-    - asi esta bien
-    - no requiero mas
-    - no quiero nada mas
-    - no quiero nada más
     - gracias nada mas
-    - gracias nada más
     - solo eso
-    - nada mas muchas gracias
-    - nada más muchas gracias
     - esta bien gracias
-    - está bien gracias
     - perfecto gracias nada mas
     - ok gracias eso es todo
     - bien nada mas
-    - bien nada más
     - todo bien nada mas
     - si eso es todo
     - sí eso es todo
     - eso es todo gracias
     - nada mas que preguntar
-    - nada más que preguntar
     - no tengo mas preguntas
-    - no tengo más preguntas
     - creo que eso es todo
     - por ahora nada mas
-    - por ahora nada más
     - hasta ahi nomas
-    - hasta ahí nomás
     - con eso me basta
     - ya es suficiente
     - mas nada
@@ -173,6 +181,14 @@ nlu:
     - nada adicional
     - sin mas
     - sin más
+    - todo claro gracias
+    - entendido gracias
+    - perfecto ya esta
+    - listo con eso
+    - no necesito mas ayuda
+    - no necesito más ayuda
+    - ya no quiero saber mas
+    - ya tengo lo que necesitaba
 
 # ============================================
 # INTENT: affirm (Afirmaciones)
@@ -219,32 +235,26 @@ nlu:
   examples: |
     - no
     - nope
-    - nunca
-    - no creo
-    - no quiero
     - no me interesa
-    - mejor no
-    - para nada
-    - negativo
-    - no es eso
-    - otro
-    - diferente
-    - no por ahora
-    - ahora no
-    - despues
-    - prefiero no
-    - no estoy interesado
-    - gracias pero no
-    - no eso no
+    - no ese no
     - eso no es
     - no me sirve eso
     - busco otra cosa
-    - no es lo que busco
-    - no me convence
-    - no me interesa ese
     - otro programa
-    - busco otro
-    - no ese
+    - prefiero otro
+    - no ese programa
+    - no me convence
+    - mejor no ese
+    - ese no me gusta
+    - quiero ver otro
+    - no esa opción
+    - no esa opcion
+    - diferente
+    - otro distinto
+    - no quiero ese
+    - ese no
+    - negativo
+    - no es lo que busco
 
 # ============================================
 # INTENT: bot_challenge

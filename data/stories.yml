@@ -467,8 +467,11 @@ stories:
       - action: action_despedida
 
   # ==================== FLUJO 34: Despedida directa ====================
-  - story: despedida directa
+
+  - story: despedida directa simple
     steps:
+      - intent: greet
+      - action: action_saludo_mejorado
       - intent: goodbye
       - action: action_despedida
 
@@ -481,8 +484,10 @@ stories:
       - action: action_despedida
 
   # ==================== FLUJO 36: No nada mas ====================
-  - story: usuario dice no nada mas
+  - story: despedida con nada mas
     steps:
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
       - intent: seleccionar_postgrado
         entities:
           - postgrado_nombre: "avaluos"
@@ -491,7 +496,7 @@ stories:
           - postgrado_id: "1"
       - intent: consultar_costos
       - action: action_buscar_faq
-      - intent: negate_and_end
+      - intent: negate_and_end  
       - action: action_despedida
 
   # ==================== FLUJO 37: Doble negacion ====================
@@ -523,26 +528,23 @@ stories:
       - action: action_despedida
 
   # ==================== FLUJO 39: Agradece eso es todo ====================
-  - story: agradece y termina eso es todo
+  - story: agradecer y despedir
     steps:
-      - intent: consultar_requisitos
-      - action: utter_ask_cual_programa
-      - action: action_listar_postgrados
       - intent: seleccionar_postgrado
         entities:
-          - postgrado_nombre: "HSST"
+          - postgrado_nombre: "bioingenieria"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "3"
-      - intent: consultar_requisitos
+          - postgrado_id: "2"
+      - intent: consultar_fechas
       - action: action_buscar_faq
       - intent: agradecer
       - action: utter_de_nada
-      - intent: negate_and_end
+      - intent: negate_and_end  # "nada más gracias"
       - action: action_despedida
 
   # ==================== FLUJO 40: Multiples consultas nada mas ====================
-  - story: multiples consultas nada mas
+  - story: consultas multiples luego despedida
     steps:
       - intent: listar_postgrados
       - action: action_listar_postgrados
@@ -554,9 +556,11 @@ stories:
       - action: action_buscar_faq
       - intent: consultar_fechas
       - action: action_buscar_faq
-      - intent: consultar_modalidad
+      - intent: consultar_requisitos
       - action: action_buscar_faq
-      - intent: negate_and_end
+      - intent: agradecer
+      - action: utter_de_nada
+      - intent: goodbye
       - action: action_despedida
 
   # ==================== FLUJO 41: Info general no gracias ====================
@@ -647,3 +651,54 @@ stories:
       - intent: contactar_asesor
       - action: datos_contacto_form  # ✅ CAMBIADO
       - active_loop: datos_contacto_form
+
+# ==================== FLUJO 45: Despedida despues de fallback ====================
+
+  - story: fallback recovery con despedida
+    steps:
+      - intent: nlu_fallback
+      - action: action_default_fallback
+      - intent: negate_and_end  # Usuario desiste
+      - action: action_despedida
+
+# ==================== FLUJO 46: Solo consulta costos y termina ====================
+ 
+  - story: consulta rapida y despedida
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "HSST"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: "3"
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: negate_and_end
+      - action: action_despedida
+
+# ==================== FLUJO 47: Negación no es despedida (rechaza programa) ====================
+
+  - story: negacion cambia programa no despide
+    steps:
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+      - intent: seleccionar_numero
+      - action: action_seleccionar_numero
+      - slot_was_set:
+          - postgrado_id: "1"
+      - intent: deny  # "no ese no"
+      - action: action_manejar_negacion
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "otro programa"
+      - action: action_seleccionar_postgrado
+
+# ==================== FLUJO 48: Despedida implícita en fallback ====================
+
+  - story: despedida implicita fallback
+    steps:
+      - intent: pregunta_postgrado
+      - action: action_buscar_faq_libre
+      - intent: nlu_fallback  # Usuario confuso
+      - action: action_default_fallback  # Detecta "listo"
+      - action: action_despedida  # Auto-despedida
