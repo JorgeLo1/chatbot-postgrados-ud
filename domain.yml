@@ -145,11 +145,13 @@ slots:
 responses:
   utter_de_nada:
     - text: "¡De nada! 😊 ¿Hay algo más en lo que pueda ayudarte?"
-    - text: "¡Con gusto! ¿Necesitas información adicional?"
-    - text: "¡Para eso estoy! ¿Algo más que quieras saber?"
 
   utter_iamabot:
-    - text: "Soy un asistente virtual creado para ayudarte con información sobre programas de postgrado. 🤖 Puedo resolver tus dudas sobre costos, requisitos, fechas y mucho más."
+    - text: |
+        Soy un asistente virtual creado para ayudarte con información sobre programas de postgrado. 🤖
+        
+        Puedo resolver tus dudas sobre costos, requisitos, fechas y mucho más.
+        Escribe 'ver programas' para comenzar.
 
   utter_opciones_ayuda:
     - text: |
@@ -171,7 +173,8 @@ responses:
         Lo siento, esa pregunta está fuera de mi alcance. 😅
         
         Estoy especializado en información sobre programas de postgrado.
-        ¿Puedo ayudarte con algo relacionado? Escribe 'ayuda' para ver qué puedo hacer.
+        Escribe 'ayuda' para ver qué puedo hacer o 'ver programas' para explorar opciones.
+
 
   utter_ask_rephrase:
     - text: |
@@ -183,13 +186,6 @@ responses:
         • ¿Cuándo son las inscripciones?
         
         O escribe "menú principal" para volver al inicio.
-    - text: |
-        😅 Disculpa, no comprendí bien.
-        
-        Puedes escribir:
-        • "ver programas" - Para ver todos los postgrados
-        • "costos" - Para preguntar sobre precios
-        • "ayuda" - Para ver qué puedo hacer
 
   utter_ask_cual_programa:
     - text: |
@@ -200,16 +196,17 @@ responses:
         • Escribir 'ver programas' para la lista completa
 
   utter_cheer_up:
-    - text: "¡Ánimo! Estoy aquí para ayudarte con cualquier duda sobre nuestros postgrados. 😊"
-    - text: "Entiendo tu frustración. Déjame intentar ayudarte mejor. ¿Qué necesitas saber?"
+    - text: |
+        Entiendo tu frustración. Déjame intentar ayudarte mejor. 😊
+        
+        Escribe 'ayuda' para ver qué puedo hacer o 'ver programas' para explorar opciones.
 
   utter_did_that_help:
     - text: "¿Te fue útil esta información?"
     - text: "¿Hay algo más en lo que pueda ayudarte?"
 
   utter_happy:
-    - text: "¡Me alegra poder ayudarte! 😊"
-    - text: "¡Genial! Si necesitas algo más, aquí estoy."
+    - text: "¡Me alegra poder ayudarte! 😊 ¿Necesitas algo más?"
 
   utter_seleccione_numero_valido:
     - text: "Por favor, indica un número válido de la lista mostrada. Ej: 1, 2, 3..."
@@ -245,10 +242,16 @@ responses:
     - text: "La Universidad Distrital ofrece diversos programas de postgrado. ¿Cuál te interesa?"
   
   utter_formulario_cancelado:
-    - text: "Proceso cancelado. ¿En qué más puedo ayudarte?"
+    - text: |
+        Proceso cancelado. ✅
+        
+        ¿En qué más puedo ayudarte?
+        • Ver programas
+        • Consultar costos
+        • Pedir ayuda
   
   utter_ayuda_durante_formulario:
-    - text: "Estoy recopilando tus datos. Di 'cancelar' para detener."
+    - text: "Estoy recopilando tus datos para contactarte. Di 'cancelar' si prefieres detenerte."
   
   utter_capacidades_bot:
     - text: "Puedo informarte sobre programas, costos, requisitos, fechas y más. ¿Qué necesitas?"
@@ -283,6 +286,7 @@ actions:
   - action_escalar_a_humano
   - action_limpiar_slots_antiguos
   - action_log_unknown_intent
+  - action_solicitar_programa
 
 # ============================================
 # FORMS

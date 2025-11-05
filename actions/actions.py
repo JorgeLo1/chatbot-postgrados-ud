@@ -537,7 +537,7 @@ class ActionSeleccionarNumero(Action):
 
 
 # ============================================
-# ACTION: Buscar FAQ 
+# ACTION: Buscar FAQ - ✅ OPTIMIZADA (UN SOLO MENSAJE)
 # ============================================
 
 class ActionBuscarFAQ(Action):
@@ -661,8 +661,10 @@ class ActionBuscarFAQ(Action):
             
             if cached_response:
                 logger.info(f"💾 Cache hit con pregunta: {pregunta}")
-                dispatcher.utter_message(text=cached_response)
-                self._mostrar_opciones_adicionales(dispatcher, intent)
+                mensaje_completo = self._formatear_respuesta_completa(
+                    cached_response, intent, postgrado_nombre
+                )
+                dispatcher.utter_message(text=mensaje_completo)
                 return [SlotSet("ultima_respuesta", cached_response)]
             
             # Llamar a la API
@@ -679,15 +681,16 @@ class ActionBuscarFAQ(Action):
                     logger.info(f"✅ Respuesta encontrada con pregunta: '{pregunta}'")
                     set_in_cache(cache_key, respuesta)
                     
-                    mensaje_formateado = self._formatear_respuesta(respuesta, intent, postgrado_nombre)
+                    # ✅ UN SOLO MENSAJE: respuesta + opciones
+                    mensaje_completo = self._formatear_respuesta_completa(
+                        respuesta, intent, postgrado_nombre
+                    )
 
-                    if not mensaje_formateado:
+                    if not mensaje_completo:
                         logger.info(f"⚠️ Respuesta formateada inválida")
                         continue  # Intentar con la siguiente pregunta
 
-                    dispatcher.utter_message(text=mensaje_formateado)
-                    self._mostrar_opciones_adicionales(dispatcher, intent)
-                    
+                    dispatcher.utter_message(text=mensaje_completo)
                     return [SlotSet("ultima_respuesta", respuesta)]
                 else:
                     logger.info(f"⚠️ Respuesta no válida con pregunta: '{pregunta}'")
@@ -695,16 +698,8 @@ class ActionBuscarFAQ(Action):
         # Si no se encontró respuesta después de todos los intentos
         logger.warning(f"❌ No se encontró respuesta después de {len(preguntas_a_probar)} intentos")
         
-        mensaje = f"🤔 No tengo información específica sobre eso para *{postgrado_nombre}*.\n\n"
-        if intent == "consultar_costos":
-            mensaje += "📞 Para conocer los costos exactos, te recomiendo contactar a un asesor.\n"
-            mensaje += "¿Quieres que registre tu solicitud de contacto?"
-        elif intent == "consultar_fechas":
-            mensaje += "📅 Las fechas pueden variar. ¿Quieres que un asesor te informe?\n"
-            mensaje += "Escribe 'contactar asesor' para que te llamemos."
-        else:
-            mensaje += self._sugerir_alternativas(intent)
-        
+        # ✅ UN SOLO MENSAJE: error + sugerencias
+        mensaje = self._mensaje_no_encontrado(intent, postgrado_nombre)
         dispatcher.utter_message(text=mensaje)
         return []
     
@@ -739,11 +734,13 @@ class ActionBuscarFAQ(Action):
         respuesta_lower = respuesta.lower()
         return any(error in respuesta_lower for error in errores)
     
-    def _formatear_respuesta(self, respuesta: str, intent: str, postgrado_nombre: str) -> str:
-        """Formatea la respuesta con emojis según el intent"""
-
+    def _formatear_respuesta_completa(
+        self, respuesta: str, intent: str, postgrado_nombre: str
+    ) -> str:
+        """✅ NUEVO: Formatea respuesta + opciones en UN SOLO MENSAJE"""
+        
         if not respuesta or len(respuesta.strip()) < 10:
-            return None  # Indicar que no hay respuesta válida
+            return None
         
         emoji_map = {
             "consultar_costos": "💰",
@@ -763,28 +760,57 @@ class ActionBuscarFAQ(Action):
         
         # No agregar header si la respuesta ya tiene emoji
         if respuesta.strip().startswith(tuple(emoji_map.values())):
-            return respuesta
+            mensaje = respuesta
+        else:
+            mensaje = f"{emoji} *{postgrado_nombre}*\n\n{respuesta}"
         
-        return f"{emoji} *{postgrado_nombre}*\n\n{respuesta}"
+        # ✅ AGREGAR SUGERENCIAS CONTEXTUALES (en el mismo mensaje)
+        mensaje += "\n\n"
+        
+        if intent == "consultar_costos":
+            mensaje += "También puedes preguntar sobre:\n"
+            mensaje += "📋 Requisitos • 📅 Fechas • 💳 Financiación"
+        elif intent == "consultar_requisitos":
+            mensaje += "También puedes preguntar sobre:\n"
+            mensaje += "💰 Costos • 📅 Fechas • 🔗 Link de inscripción"
+        elif intent == "consultar_fechas":
+            mensaje += "También puedes preguntar sobre:\n"
+            mensaje += "💰 Costos • 📋 Requisitos • 🔗 Link de inscripción"
+        elif intent == "solicitar_link_inscripcion":
+            mensaje += "También puedes preguntar sobre:\n"
+            mensaje += "💰 Costos • 📋 Requisitos • 📅 Fechas"
+        elif intent == "consultar_financiacion":
+            mensaje += "También puedes preguntar sobre:\n"
+            mensaje += "💰 Costos • 📋 Requisitos • 🎓 Becas"
+        elif intent == "consultar_plan_estudios":
+            mensaje += "También puedes preguntar sobre:\n"
+            mensaje += "⏱️ Duración • 💻 Modalidad • 💰 Costos"
+        else:
+            mensaje += "También puedes preguntar sobre:\n"
+            mensaje += "💰 Costos • 📋 Requisitos • 📅 Fechas • 📞 Asesor"
+        
+        mensaje += "\n\n🏠 Escribe 'menú principal' para ver otros programas."
+        
+        return mensaje
     
-    def _mostrar_opciones_adicionales(self, dispatcher: CollectingDispatcher, intent: str):
-        """Muestra opciones adicionales basadas en el intent actual"""
+    def _mensaje_no_encontrado(self, intent: str, postgrado_nombre: str) -> str:
+        """✅ NUEVO: Mensaje de error + sugerencias en uno solo"""
         
-        opciones_map = {
-            "consultar_costos": "También puedes preguntar sobre:\n📋 Requisitos • 📅 Fechas • 💳 Financiación • \n🏠 O retornar al menú principal",
-            "consultar_requisitos": "También puedes preguntar sobre:\n💰 Costos • 📅 Fechas • 🔗 Link de inscripción • \n🏠 O retornar al menú principal",
-            "consultar_fechas": "También puedes preguntar sobre:\n💰 Costos • 📋 Requisitos • 🔗 Link de inscripción • \n🏠 O retornar al menú principal",
-            "solicitar_link_inscripcion": "También puedes preguntar sobre:\n💰 Costos • 📋 Requisitos • 📅 Fechas • \n🏠 O retornar al menú principal",
-            "consultar_financiacion": "También puedes preguntar sobre:\n💰 Costos • 📋 Requisitos • 🎓 Becas • \n🏠 O retornar al menú principal",
-            "consultar_plan_estudios": "También puedes preguntar sobre:\n⏱️ Duración • 💻 Modalidad • 💰 Costos • \n🏠 O retornar al menú principal"
-        }
+        mensaje = f"🤔 No tengo información específica sobre eso para *{postgrado_nombre}*.\n\n"
         
-        if intent in opciones_map:
-            dispatcher.utter_message(text=f"\n{opciones_map[intent]}")
-    
-    def _sugerir_alternativas(self, intent: str) -> str:
-        """Sugiere preguntas alternativas basadas en el intent"""
-        return "Puedo ayudarte con:\n💰 Costos\n📋 Requisitos\n📅 Fechas\n🔗 Link de inscripción\n💳 Financiación\n🎓 Becas\n📞 O contactar a un asesor"
+        if intent == "consultar_costos":
+            mensaje += "📞 Para conocer los costos exactos, te recomiendo contactar a un asesor.\n"
+            mensaje += "Escribe 'contactar asesor' para que te llamemos.\n\n"
+        elif intent == "consultar_fechas":
+            mensaje += "📅 Las fechas pueden variar. Escribe 'contactar asesor' para que te informen.\n\n"
+        else:
+            mensaje += "💡 Puedo ayudarte con:\n"
+            mensaje += "💰 Costos • 📋 Requisitos • 📅 Fechas • 🔗 Link inscripción\n"
+            mensaje += "💳 Financiación • 🎓 Becas • 📞 Contactar asesor\n\n"
+        
+        mensaje += "O escribe 'menú principal' para explorar otros programas."
+        
+        return mensaje
 
 
 # ============================================
@@ -828,21 +854,22 @@ class ActionManejarPreguntaGeneral(Action):
             respuesta = data.get("RESPUESTA", data.get("respuesta", ""))
             
             if respuesta:
-                dispatcher.utter_message(text=respuesta)
+                # ✅ UN SOLO MENSAJE con respuesta + opciones
+                mensaje = f"ℹ️ *{postgrado_nombre}*\n\n{respuesta}\n\n"
+                mensaje += "📋 *¿Qué más te gustaría saber?*\n\n"
+                mensaje += "💰 Costos y formas de pago\n"
+                mensaje += "📋 Requisitos de admisión\n"
+                mensaje += "📅 Fechas de inscripción\n"
+                mensaje += "⏱️ Duración del programa\n"
+                mensaje += "💻 Modalidad y horarios\n"
+                mensaje += "📚 Plan de estudios\n"
+                mensaje += "🔗 Link de inscripción\n"
+                mensaje += "📞 Contactar un asesor"
                 
-                mensaje_opciones = "\n📋 *¿Qué más te gustaría saber?*\n\n"
-                mensaje_opciones += "💰 Costos y formas de pago\n"
-                mensaje_opciones += "📋 Requisitos de admisión\n"
-                mensaje_opciones += "📅 Fechas de inscripción\n"
-                mensaje_opciones += "⏱️ Duración del programa\n"
-                mensaje_opciones += "💻 Modalidad y horarios\n"
-                mensaje_opciones += "📚 Plan de estudios\n"
-                mensaje_opciones += "🔗 Link de inscripción\n"
-                mensaje_opciones += "📞 Contactar un asesor"
-                
-                dispatcher.utter_message(text=mensaje_opciones)
+                dispatcher.utter_message(text=mensaje)
                 return []
         
+        # Si no hay información general, mostrar opciones
         mensaje = f"ℹ️ *Información sobre {postgrado_nombre}*\n\n"
         mensaje += "¿Qué aspecto específico te interesa?\n\n"
         mensaje += "💰 Costos\n"
@@ -952,7 +979,7 @@ class ActionContactarAsesor(Action):
         import re
         telefono_limpio = re.sub(r'[^\d+]', '', telefono_usuario)
         
-        if not re.match(r'^\+?[0-9]{10,15}$', telefono_limpio):
+        if not re.match(r'^\+?[0-9]{10,15}', telefono_limpio):
             dispatcher.utter_message(
                 text=f"❌ El teléfono '{telefono_usuario}' no tiene un formato válido.\n\n"
                      "Debe contener entre 10 y 15 dígitos.\n"
@@ -1071,7 +1098,7 @@ class ActionDefaultFallback(Action):
         contador += 1
         logger.info(f"Contador fallback: {contador}/3")
         
-        # ✅ ESCALAMIENTO GRADUAL
+        # ✅ ESCALAMIENTO GRADUAL - UN SOLO MENSAJE POR NIVEL
         if contador == 1:
             # Primer fallback: sugerencia amigable
             mensaje = "🤔 No estoy seguro de entender.\n\n"
@@ -1171,7 +1198,7 @@ class ActionDespedida(Action):
         postgrado_nombre = tracker.get_slot("postgrado_nombre")
         intent = tracker.latest_message.get("intent", {}).get("name", "")
         
-        # ✅ NUEVO: Mensajes personalizados según contexto
+        # ✅ Mensajes personalizados según contexto (UN SOLO MENSAJE)
         if postgrado_nombre:
             mensaje = f"👋 ¡Hasta pronto!\n\n"
             mensaje += f"Espero haber resuelto tus dudas sobre *{postgrado_nombre}*.\n\n"
@@ -1190,7 +1217,7 @@ class ActionDespedida(Action):
         # ✅ Enviar mensaje sin metadata (más simple)
         dispatcher.utter_message(text=mensaje)
         
-        # ✅ NUEVO: Solo guardar historial si hubo conversación significativa
+        # ✅ Solo guardar historial si hubo conversación significativa
         eventos_usuario = [e for e in tracker.events if e.get("event") == "user"]
         
         if len(eventos_usuario) > 2:  # Si hubo más de 2 mensajes del usuario
@@ -1334,12 +1361,13 @@ class ActionEnviarDatosContacto(Action):
             "mensaje": mensaje
         }
         
-        logger.info(f"🌐 API Request: POST https://oracleapex.com/ords/udchatbot/chatbot/contacto")
+        logger.info(f"🌐 API Request: POST {APEX_API_BASE_URL}/contacto")
         logger.info(f"📋 Data: {data}")
         
         response = make_api_request("POST", "contacto", data=data)
         
         if response and response.get("status") == "success":
+            # ✅ UN SOLO MENSAJE con todos los detalles
             mensaje_respuesta = f"✅ *¡Perfecto {nombre}!* Tus datos han sido registrados.\n\n"
             mensaje_respuesta += f"📧 Te enviaremos información a: {email}\n"
             mensaje_respuesta += f"📱 Y te contactaremos al: {telefono}\n\n"
@@ -1354,6 +1382,7 @@ class ActionEnviarDatosContacto(Action):
             )
         
         return []
+
 
 # ============================================
 # ACTION: Obtener Información Específica
@@ -1407,7 +1436,7 @@ class ActionObtenerInfoEspecifica(Action):
         fechas = info.get('FECHAS', info.get('fechas', ''))
         correo = info.get('CORREO_ELECTRONICO', info.get('correo_electronico', ''))
         
-        # Formatear respuesta según el intent
+        # ✅ UN SOLO MENSAJE según el intent
         if intent == "preguntar_costo" and costo:
             mensaje = f"💰 *Información de Costos - {nombre}*\n\n{costo}"
         elif intent == "preguntar_fechas" and fechas:
@@ -1419,7 +1448,7 @@ class ActionObtenerInfoEspecifica(Action):
         elif intent == "preguntar_modalidad" and modalidad:
             mensaje = f"💻 *Modalidad - {nombre}*\n\n{modalidad}"
         else:
-            # Información general
+            # Información general en un solo mensaje
             mensaje = f"📚 *{nombre}*\n\n"
             mensaje += f"🏛️ Facultad: {facultad}\n\n"
             if descripcion:
@@ -1427,18 +1456,15 @@ class ActionObtenerInfoEspecifica(Action):
             if correo:
                 mensaje += f"📧 Contacto: {correo}\n\n"
             mensaje += "¿Qué información específica necesitas?\n"
-            mensaje += "💰 Costos\n"
-            mensaje += "📅 Fechas\n"
-            mensaje += "📋 Requisitos\n"
-            mensaje += "⏱️ Duración\n"
-            mensaje += "💻 Modalidad"
+            mensaje += "💰 Costos • 📅 Fechas • 📋 Requisitos • ⏱️ Duración • 💻 Modalidad"
         
         dispatcher.utter_message(text=mensaje)
         
         return []
 
+
 # ============================================
-# ACTION: Buscar preguntas distintas 
+# ACTION: Buscar FAQ Libre
 # ============================================
 
 class ActionBuscarFaqLibre(Action):
@@ -1484,14 +1510,14 @@ class ActionBuscarFaqLibre(Action):
         
         try:
             # Construir URL de la API
-            api_url = f"https://oracleapex.com/ords/udchatbot/chatbot/faq/buscar/{postgrado_id}"
+            api_url = f"{APEX_API_BASE_URL}/faq/buscar/{postgrado_id}"
             params = {"pregunta": user_message}
             
             logger.info(f"🌐 API Request: GET {api_url}")
             logger.info(f"📋 Params: {params}")
             
             # Llamar a la API
-            response = requests.get(api_url, params=params, timeout=10)
+            response = requests.get(api_url, params=params, timeout=10, verify=False)
             
             logger.info(f"📥 Response Status: {response.status_code}")
             logger.info(f"📦 Content-Type: {response.headers.get('Content-Type')}")
@@ -1518,7 +1544,7 @@ class ActionBuscarFaqLibre(Action):
                 logger.info(f"   ID FAQ: {data.get('id_faq', 'N/A')}")
                 logger.info(f"   Prioridad: {data.get('prioridad', 'N/A')}")
                 
-                # Formatear y enviar respuesta
+                # ✅ UN SOLO MENSAJE: Formatear y enviar respuesta
                 mensaje = self._formatear_respuesta(respuesta, postgrado_nombre)
                 dispatcher.utter_message(text=mensaje)
                 
@@ -1565,11 +1591,10 @@ class ActionBuscarFaqLibre(Action):
         return any(palabra in respuesta_lower for palabra in palabras_clave)
     
     def _formatear_respuesta(self, respuesta: str, postgrado_nombre: str) -> str:
-        """Formatea la respuesta de APEX para mostrarla al usuario."""
-        mensaje = f"💡 *{postgrado_nombre}*\n\n{respuesta}"
+        """✅ Formatea la respuesta de APEX - UN SOLO MENSAJE"""
+        mensaje = f"💡 *{postgrado_nombre}*\n\n{respuesta}\n\n"
         
-        # Agregar sugerencias de seguimiento
-        mensaje += "\n\n"
+        # ✅ Agregar sugerencias de seguimiento (en el mismo mensaje)
         mensaje += "También puedes preguntar sobre:\n"
         mensaje += "💰 Costos • 📋 Requisitos • 📅 Fechas • 💳 Financiación\n"
         mensaje += "📞 O solicitar contacto con un asesor"
@@ -1577,7 +1602,7 @@ class ActionBuscarFaqLibre(Action):
         return mensaje
     
     def _enviar_sugerencias(self, dispatcher: CollectingDispatcher, postgrado_nombre: str):
-        """Envía mensaje cuando APEX no encuentra información."""
+        """✅ UN SOLO MENSAJE cuando APEX no encuentra información."""
         mensaje = (
             f"🤔 No encontré información específica sobre eso en *{postgrado_nombre}*.\n\n"
             "Puedes preguntarme sobre:\n"
@@ -1592,22 +1617,19 @@ class ActionBuscarFaqLibre(Action):
         dispatcher.utter_message(text=mensaje)
     
     def _enviar_mensaje_error_api(self, dispatcher: CollectingDispatcher):
-        """Envía mensaje de error genérico de API."""
+        """✅ UN SOLO MENSAJE de error genérico de API."""
         dispatcher.utter_message(text=(
             "Hubo un problema al consultar esa información. 😔\n\n"
             "Por favor, intenta con otra pregunta o contacta a un asesor."
         ))
     
     def _enviar_mensaje_error_estructura(self, dispatcher: CollectingDispatcher, postgrado_nombre: str):
-        """Envía mensaje cuando la respuesta de API tiene estructura incorrecta."""
+        """✅ UN SOLO MENSAJE cuando la respuesta de API tiene estructura incorrecta."""
         dispatcher.utter_message(text=(
             f"Hubo un problema al procesar la información de *{postgrado_nombre}*. 😕\n\n"
             "Por favor, intenta con otra pregunta o contacta a un asesor."
         ))
 
-# ============================================
-# AGREGAR AL FINAL DE TU actions.py (después de ActionBuscarFaqLibre)
-# ============================================
 
 # ============================================
 # ACTION: Reiniciar Slots
@@ -1732,21 +1754,19 @@ class ActionManejarNegacion(Action):
         postgrado_id = tracker.get_slot("postgrado_id")
         ultima_lista = tracker.get_slot("ultima_lista_postgrados")
         
-        # Si hay lista activa, el usuario rechaza la lista
+        # ✅ UN SOLO MENSAJE según contexto
         if ultima_lista:
             mensaje = "Entendido. ¿Quieres buscar otro programa o necesitas ayuda?\n\n"
             mensaje += "Escribe el nombre del programa o 'ver programas' para la lista completa."
             dispatcher.utter_message(text=mensaje)
             return [SlotSet("ultima_lista_postgrados", None)]
         
-        # Si hay postgrado seleccionado, ofrecer cambiar
         elif postgrado_id:
             mensaje = "¿Prefieres ver otro programa?\n\n"
             mensaje += "Escribe 'ver programas' o el nombre del programa que te interesa."
             dispatcher.utter_message(text=mensaje)
             return []
         
-        # Sin contexto claro
         else:
             mensaje = "Está bien. ¿En qué puedo ayudarte?\n\n"
             mensaje += "Puedo mostrarte los programas disponibles o responder tus preguntas."
@@ -1782,21 +1802,19 @@ class ActionManejarAfirmacion(Action):
                 ultimo_bot_message = evento.get("text", "").lower()
                 break
         
-        # Contexto: Oferta de contacto con asesor
+        # ✅ UN SOLO MENSAJE según contexto
         if ultimo_bot_message and ("asesor" in ultimo_bot_message or "contactar" in ultimo_bot_message):
             dispatcher.utter_message(
                 text="Perfecto, voy a registrar tu solicitud de contacto. 📞"
             )
             return [FollowupAction("datos_contacto_form")]
         
-        # Contexto: Pregunta si ayudó la información
         elif ultimo_bot_message and ("ayud" in ultimo_bot_message or "útil" in ultimo_bot_message):
             dispatcher.utter_message(
                 text="¡Me alegra haberte ayudado! 😊\n\n¿Hay algo más que quieras saber?"
             )
             return []
         
-        # Sin contexto específico
         else:
             dispatcher.utter_message(
                 text="Perfecto. ¿En qué más puedo ayudarte?"
@@ -1888,7 +1906,65 @@ class ActionLogUnknownIntent(Action):
         logger.warning(f"   Intent: {intent}")
         logger.warning(f"   Confidence: {confidence:.2f}")
         
-        # Aquí podrías enviar a una API de logging si tienes una
-        # Por ahora solo logueamos localmente
-        
         return []
+
+
+# ============================================
+# ACTION: Solicitar Programa (NUEVA - ✅ CONSOLIDADA)
+# ============================================
+
+class ActionSolicitarPrograma(Action):
+    """
+    ✅ NUEVA: Reemplaza utter_ask_cual_programa + action_listar_postgrados
+    Combina solicitud + lista en UN SOLO MENSAJE
+    """
+
+    def name(self) -> Text:
+        return "action_solicitar_programa"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        logger.info("📋 Ejecutando action_solicitar_programa")
+        
+        # Obtener lista de postgrados
+        cache_key = "postgrados_list"
+        postgrados = get_from_cache(cache_key)
+        
+        if not postgrados:
+            response = make_api_request("GET", "postgrados")
+            if response and response.get("status") == "success":
+                postgrados = response.get("data", [])
+                set_in_cache(cache_key, postgrados)
+        
+        if not postgrados:
+            dispatcher.utter_message(
+                text="Lo siento, no pude obtener la lista de programas en este momento. Por favor, intenta más tarde."
+            )
+            return []
+        
+        # ✅ CONSTRUIR MENSAJE CONSOLIDADO (solicitud + lista)
+        MAX_PROGRAMAS = 20
+        
+        mensaje = "📚 Para darte esa información, primero necesito saber qué programa te interesa.\n\n"
+        mensaje += "*Programas Disponibles:*\n\n"
+        
+        for i, pg in enumerate(postgrados[:MAX_PROGRAMAS], 1):
+            nombre = pg.get('NOMBRE', pg.get('nombre', 'Sin nombre'))
+            facultad = pg.get('FACULTAD', pg.get('facultad', 'No especificada'))
+            
+            mensaje += f"{i}. *{nombre}*\n"
+            mensaje += f"   🏛️ Facultad: {facultad}\n\n"
+        
+        if len(postgrados) > MAX_PROGRAMAS:
+            mensaje += f"... y {len(postgrados) - MAX_PROGRAMAS} programas más.\n\n"
+        
+        mensaje += "💡 *Escribe el número* o el *nombre del programa* que te interesa."
+        
+        dispatcher.utter_message(text=mensaje)
+        
+        return [SlotSet("ultima_lista_postgrados", postgrados)]

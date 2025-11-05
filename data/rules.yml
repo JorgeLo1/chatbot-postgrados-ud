@@ -50,10 +50,11 @@ rules:
 
 - rule: Volver al menú principal
   steps:
-  - intent: volver_menu
-  - action: action_reiniciar_slots
-  - action: action_saludo_mejorado
-  - action: action_listar_postgrados
+    - intent: volver_menu
+    - action: action_reiniciar_slots
+    - action: action_saludo_mejorado     
+    - action: action_listar_postgrados
+
 
 - rule: Mostrar opciones de ayuda
   steps:
@@ -122,7 +123,7 @@ rules:
 # SECCIÓN 5: CONSULTAS SIN POSTGRADO SELECCIONADO
 # ============================================
 
-- rule: Consulta sin contexto - solicitar selección
+- rule: Consulta sin contexto
   condition:
   - slot_was_set:
     - postgrado_id: null
@@ -131,17 +132,7 @@ rules:
     - intent: consultar_costos
     - intent: consultar_requisitos
     - intent: consultar_fechas
-    - intent: consultar_duracion
-    - intent: consultar_modalidad
-    - intent: consultar_becas
-    - intent: consultar_financiacion
-    - intent: consultar_plan_estudios
-    - intent: solicitar_link_inscripcion
-    - intent: consultar_dirigido
-    - intent: consultar_proceso_admision
-  - action: utter_ask_cual_programa
-  - action: action_listar_postgrados
-  wait_for_user_input: true
+  - action: action_solicitar_programa
 
 - rule: Información general sin contexto
   condition:
@@ -172,7 +163,7 @@ rules:
     - requested_slot: null
   - action: action_enviar_datos_contacto
 
-- rule: Cancelar formulario explícitamente
+- rule: Cancelar formulario
   condition:
   - active_loop: datos_contacto_form
   steps:
@@ -182,7 +173,7 @@ rules:
   - action: action_deactivate_loop
   - active_loop: null
   - action: utter_formulario_cancelado
-  - action: utter_opciones_ayuda
+  - action: utter_opciones_ayuda  # 👈 añadido para que coincida con la story
 
 - rule: Responder preguntas durante formulario
   condition:
@@ -218,8 +209,7 @@ rules:
 - rule: Responder a emoción negativa
   steps:
   - intent: mood_unhappy
-  - action: utter_cheer_up
-  - action: utter_opciones_ayuda
+  - action: utter_cheer_up  
 
 # ============================================
 # SECCIÓN 9: METAPREGUNTAS Y BOT CHALLENGE
