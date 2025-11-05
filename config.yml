@@ -29,7 +29,7 @@ pipeline:
     OOV_token: "_oov_"
   
   - name: DIETClassifier
-    epochs: 300
+    epochs: 400
     constrain_similarities: true
     entity_recognition: true
     use_masked_language_model: true

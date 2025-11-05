@@ -229,7 +229,7 @@ nlu:
     - sigamos
 
 # ============================================
-# INTENT: deny (Negaciones) ✅ MODIFICADO
+# INTENT: deny (Negaciones) 
 # ============================================
 - intent: deny
   examples: |
@@ -972,6 +972,26 @@ nlu:
     - que tengo que hacer para entrar
     - como me admiten
     - proceso para entrar
+    - como puedo inscribirme
+    - cómo puedo inscribirme
+    - como me inscribo
+    - cómo me inscribo
+    - quiero inscribirme
+    - necesito inscribirme
+    - como hago para inscribirme
+    - cómo hago para inscribirme
+    - cuales son los pasos
+    - cuáles son los pasos
+    - como es el procedimiento
+    - cómo es el procedimiento
+    - que pasos debo seguir
+    - qué pasos debo seguir
+    - como registro
+    - cómo me registro
+    - pasos de inscripcion
+    - pasos de inscripción
+    - como es la inscripcion
+    - cómo es la inscripción
 
 # ============================================
 # INTENT: solicitar_informacion_general
@@ -1591,6 +1611,9 @@ nlu:
     - registro
     - matricula
     - matrícula
+    - inscribirme
+    - inscribirse
+    - inscribo
 
 - synonym: "fechas"
   examples: |
