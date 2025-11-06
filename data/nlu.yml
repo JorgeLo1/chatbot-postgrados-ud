@@ -597,6 +597,9 @@ nlu:
     - descuento por votación
     - 10% de descuento
     - descuento del 10%
+    - tienen becas
+    -hay becas disponibles
+    - ofrecen ayuda financiera
 
 # ============================================
 # INTENT: consultar_financiacion
@@ -1241,160 +1244,81 @@ nlu:
 # ============================================
 - intent: pregunta_postgrado
   examples: |
-    - tienen becas
-    - hay becas
-    - ofrecen becas especiales
-    - hay ayudas economicas
-    - tienen convenios
-    - hay convenios internacionales
-    - hacen intercambios
-    - ofrecen movilidad
-    - tienen practicas
-    - donde son las practicas
-    - hay laboratorios
-    - que laboratorios tienen
+    # ========== INFRAESTRUCTURA Y SERVICIOS (20 ejemplos) ==========
+    # Estos NO tienen intent específico pero SÍ hay info en FAQ
+    
+    - tienen parqueadero
+    - hay parqueadero para estudiantes
+    - donde puedo parquear
+    - ofrecen estacionamiento
     - tienen biblioteca
     - hay biblioteca especializada
-    - ofrecen materiales
-    - dan libros
-    - incluye material de estudio
-    - hay parqueadero
-    - tienen parqueadero
-    - ofrecen alojamiento
-    - hay residencias
-    - tienen convenios con empresas
-    - cuales empresas
-    - donde trabajan los egresados
-    - hay bolsa de empleo
-    - ayudan a conseguir trabajo
-    - ofrecen certificaciones
-    - que certificaciones dan
-    - dan certificados adicionales
-    - tienen doble titulacion
-    - hay doble titulo
-    - puedo obtener dos titulos
-    - hay homologaciones
-    - aceptan transferencias
-    - puedo convalidar materias
-    - reconocen estudios previos
-    - puedo validar creditos
-    - tienen descuentos
-    - hay descuentos especiales
-    - ofrecen promociones
-    - hay promociones
-    - tienen descuento por pronto pago
-    - dan descuento por referido
-    - ofrecen financiacion bancaria
-    - hay creditos educativos
-    - aceptan credito icetex
-    - tienen convenio con bancos
-    - con que bancos tienen convenio
-    - puedo pagar con tarjeta
-    - aceptan pagos en cuotas
-    - cual es la acreditacion
-    - esta acreditado
-    - tiene registro calificado
-    - es reconocido
-    - es reconocido por el ministerio
-    - tiene resolucion ministerial
-    - cual es la metodologia
-    - como es la metodologia
-    - usan metodologia activa
-    - es teorico o practico
-    - hay tutorías
-    - ofrecen asesorías
-    - dan acompanamiento
-    - tienen profesores de planta
-    - quienes son los docentes
-    - quienes dictan clases
-    - cual es el perfil de los profesores
-    - los profesores tienen experiencia
-    - hay investigacion
-    - tienen grupos de investigacion
-    - puedo hacer investigacion
-    - ofrecen seminarios
-    - hay eventos academicos
-    - organizan conferencias
-    - invitan conferencistas
-    - tienen convenios con universidades
-    - con que universidades
-    - hacen alianzas
-    - cual es la infraestructura
-    - que instalaciones tienen
-    - donde son las clases
-    - tienen campus
+    - que recursos tienen
+    - tienen laboratorios
+    - hay laboratorios especializados
+    - que laboratorios tienen
     - hay cafeteria
     - tienen zonas wifi
-    - hay internet
-    - ofrecen seguro estudiantil
-    - hay seguro medico
-    - incluye seguro
-    - como es el acompanamiento
-    - dan seguimiento
-    - hacen seguimiento a egresados
-    - tienen red de egresados
-    - hay asociacion de egresados
-    - puedo hacer networking
-    - organizan eventos de egresados
-    - donde trabajan los graduados
-    - tienen estadisticas de empleo
-    - cual es la tasa de empleabilidad
-    - tienen practicas empresariales
-    - son practicas obligatorias
-    - donde hacen las practicas
-    - con que empresas
-    - puedo hacer practica internacional
+    - hay internet en el campus
+    - donde son las clases
+    - cual es la sede
+    - tienen auditorio
+    - hay salas de estudio
+    - ofrecen espacios para trabajo
+    - tienen zona de descanso
+    - instalaciones disponibles
+    
+    # ========== CONVENIOS Y ALIANZAS (15 ejemplos) ==========
+    
+    - tienen convenios
+    - hay convenios internacionales
+    - con que universidades tienen convenio
+    - hacen intercambios
     - ofrecen movilidad academica
     - puedo estudiar un semestre afuera
-    - tienen intercambios
-    - con que paises
-    - aceptan estudiantes extranjeros
-    - hay cupos para extranjeros
-    - cuantos cupos hay
-    - cual es el numero maximo
-    - hay lista de espera
-    - cuando publican resultados
-    - como es la seleccion
-    - como es el proceso de seleccion
-    - hacen entrevistas
-    - hay examen de admision
-    - aplican prueba
-    - piden prueba de ingles
-    - necesito saber ingles
-    - necesito certificado de ingles
-    - que nivel de ingles necesito
-    - ofrecen cursos de nivelacion
-    - hay cursos de refuerzo
-    - dan cursos complementarios
-    - hay propedeutico
-    - tienen cursos preparatorios
-    - ofrecen curso de induccion
-    - como es la induccion
-    - cuando es la induccion
-    - hay semana de integracion
-    - organizan actividades
-    - tienen grupos estudiantiles
-    - hay clubes
-    - puedo participar en clubes
-    - ofrecen deportes
-    - tienen gimnasio
-    - hay canchas deportivas
-    - organizan torneos
-    - hay actividades culturales
-    - organizan eventos culturales
-    - hacen salidas academicas
-    - organizan visitas
-    - hacen visitas empresariales
-    - visitan empresas
-    - ofrecen conferencias magistrales
-    - invitan speakers
-    - traen conferencistas internacionales
-    - tienen convenio con asociaciones
-    - dan membresias
-    - incluye membresia
-    - ofrecen beneficios adicionales
-    - que otros beneficios hay
-    - incluye algo mas
+    - tienen convenio con empresas
+    - con que empresas tienen convenio
+    - hay alianzas estrategicas
+    - tienen red de contactos
+    - ofrecen networking
+    - organizan eventos empresariales
+    - invitan empresas
+    - hay ruedas de negocios
+    - conectan con empresas
+    
+    # ========== PRÁCTICAS Y EXPERIENCIA (10 ejemplos) ==========
+    
+    - tienen practicas empresariales
+    - hay practicas obligatorias
+    - donde hacen las practicas
+    - ofrecen practicas profesionales
+    - como son las practicas
+    - cuantas horas de practica
+    - las practicas son remuneradas
+    - puedo hacer practica en otra ciudad
+    - ayudan a conseguir practica
+    - validan experiencia laboral
+    
+    # ========== INVESTIGACIÓN Y GRUPOS (8 ejemplos) ==========
+    
+    - hay grupos de investigacion
+    - tienen semilleros
+    - puedo hacer investigacion
+    - como participo en investigacion
+    - que lineas de investigacion tienen
+    - hay proyectos de investigacion
+    - apoyan la investigacion
+    - tienen revista cientifica
+    
+    # ========== EGRESADOS Y EMPLEABILIDAD (7 ejemplos) ==========
+    
+    - tienen red de egresados
+    - hay asociacion de egresados
+    - donde trabajan los egresados
+    - cual es la empleabilidad
+    - tienen estadisticas de empleo
+    - ayudan a conseguir empleo
+    - hay bolsa de empleo
 
 # ============================================
 # REGEX PATTERNS

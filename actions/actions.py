@@ -1573,6 +1573,23 @@ class ActionObtenerInfoEspecifica(Action):
 # ============================================
 
 class ActionBuscarFaqLibre(Action):
+    """
+    ✅ VERSIÓN OPTIMIZADA CON ESTRATEGIA DE HINTS
+    
+    🎯 PROPÓSITO:
+    Manejar preguntas que:
+    1. NO tienen intent específico en Rasa
+    2. PERO SÍ tienen respuesta en FAQ de APEX
+    
+    🧠 ESTRATEGIA:
+    Como intent=pregunta_postgrado tiene baja confianza (0.3-0.5),
+    NO usamos hints predefinidos. Dejamos que APEX haga TODO el scoring.
+    
+    📊 VENTAJAS:
+    - APEX tiene 5 niveles de scoring (exacto → semántico → débil)
+    - No necesitamos adivinar qué busca el usuario
+    - Evitamos falsos positivos
+    """
 
     def name(self) -> Text:
         return "action_buscar_faq_libre"
@@ -1584,11 +1601,15 @@ class ActionBuscarFaqLibre(Action):
         postgrado_id = tracker.get_slot("postgrado_id")
         postgrado_nombre = tracker.get_slot("postgrado_nombre") or "este programa"
         user_message = tracker.latest_message.get('text', '').strip()
+        intent = tracker.latest_message.get("intent", {}).get("name")
+        confidence = tracker.latest_message.get("intent", {}).get("confidence", 0)
         
-        logger.info(f"🔍 Búsqueda libre FAQ")
+        logger.info(f"🔍 Búsqueda libre FAQ (COMODÍN)")
         logger.info(f"   Postgrado: {postgrado_nombre} (ID: {postgrado_id})")
         logger.info(f"   Pregunta: '{user_message}'")
+        logger.info(f"   Intent: {intent} (conf: {confidence:.2f})")
         
+        # ==================== VALIDACIONES PREVIAS ====================
         if not postgrado_id:
             logger.warning("⚠️ No hay postgrado seleccionado")
             dispatcher.utter_message(text=(
@@ -1603,21 +1624,41 @@ class ActionBuscarFaqLibre(Action):
             ))
             return []
         
-        # ✅ BÚSQUEDA DIRECTA - Dejar que APEX haga el trabajo
+        # ==================== ESTRATEGIA: CONFIAR EN APEX ====================
+        # A diferencia de ActionBuscarFAQ (que tiene intent específico con alta confianza),
+        # aquí tenemos intent genérico con BAJA confianza (0.3-0.5).
+        # 
+        # Por tanto:
+        # ✅ SI: Enviar pregunta ORIGINAL directamente a APEX
+        # ❌ NO: Intentar múltiples variantes (causaría más ruido)
+        #
+        # APEX hará el trabajo pesado con sus 5 niveles de scoring.
+        
+        logger.info("💡 Estrategia: Búsqueda directa (confianza en scoring de APEX)")
+        
+        # ==================== CACHE ====================
         try:
-            # 1. Verificar cache
-            cache_key = f"faq_libre_{postgrado_id}_{normalizar_texto(user_message[:30])}"
+            import hashlib
+            pregunta_hash = hashlib.sha256(
+                f"{postgrado_id}_{user_message.lower()}".encode()
+            ).hexdigest()[:16]
+            
+            cache_key = f"faq_libre_{pregunta_hash}"
             cached_response = get_from_cache(cache_key)
             
             if cached_response:
                 logger.info("💾 Cache hit")
-                mensaje = self._formatear_respuesta(cached_response, postgrado_nombre)
+                mensaje = self._formatear_respuesta(cached_response, postgrado_nombre, user_message)
                 dispatcher.utter_message(text=mensaje)
                 return [SlotSet("ultima_respuesta", cached_response)]
-            
-            # 2. Llamar a APEX con la pregunta original
+        except Exception as e:
+            logger.warning(f"⚠️ Error en cache: {e}")
+            cache_key = None
+        
+        # ==================== LLAMADA ÚNICA A API ====================
+        try:
             api_url = f"{APEX_API_BASE_URL}/faq/buscar/{postgrado_id}"
-            params = {"pregunta": user_message}
+            params = {"pregunta": user_message}  # ✅ Pregunta ORIGINAL
             
             logger.info(f"🌐 API Request: GET {api_url}")
             logger.info(f"📋 Params: {params}")
@@ -1631,78 +1672,207 @@ class ActionBuscarFaqLibre(Action):
             
             logger.info(f"📥 Response Status: {response.status_code}")
             
-            if response.status_code == 200:
-                data = response.json()
-                
-                if not data or 'respuesta' not in data:
-                    logger.error(f"❌ Respuesta sin campo 'respuesta'")
-                    self._enviar_sugerencias(dispatcher, postgrado_nombre, user_message)
-                    return []
-                
-                respuesta = data.get('respuesta', '').strip()
-                
-                # ✅ VALIDAR que no sea mensaje de error de APEX
-                if self._es_mensaje_error_apex(respuesta):
-                    logger.warning(f"⚠️ APEX no encontró respuesta")
-                    self._enviar_sugerencias(dispatcher, postgrado_nombre, user_message)
-                    return []
-                
-                # ✅ Respuesta válida encontrada
-                logger.info(f"✅ Respuesta encontrada")
-                set_in_cache(cache_key, respuesta)
-                
-                mensaje = self._formatear_respuesta(respuesta, postgrado_nombre)
-                dispatcher.utter_message(text=mensaje)
-                return [SlotSet("ultima_respuesta", respuesta)]
-            
-            else:
+            if response.status_code != 200:
                 logger.error(f"❌ Error HTTP {response.status_code}")
                 self._enviar_mensaje_error_api(dispatcher)
+                return []
+            
+            # ==================== EXTRAER RESPUESTA ====================
+            respuesta = self._extraer_respuesta_apex(response)
+            
+            if not respuesta:
+                logger.error(f"❌ No se pudo extraer respuesta")
+                self._enviar_sugerencias(dispatcher, postgrado_nombre, user_message)
+                return []
+            
+            logger.info(f"📄 Respuesta: {respuesta[:100]}...")
+            
+            # ==================== VALIDAR TIPO DE RESPUESTA ====================
+            tipo_error = self._detectar_tipo_error_apex(respuesta)
+            
+            if tipo_error:
+                logger.warning(f"⚠️ APEX devolvió error tipo: {tipo_error}")
+                
+                if tipo_error == "NO_DATA":
+                    # No encontró → Sugerencias contextuales
+                    self._enviar_sugerencias(dispatcher, postgrado_nombre, user_message)
+                elif tipo_error == "VALIDACION":
+                    # Error de validación → Devolver mensaje de APEX
+                    dispatcher.utter_message(text=respuesta)
+                else:
+                    # Error técnico
+                    self._enviar_mensaje_error_api(dispatcher)
+                
+                return []
+            
+            # ==================== RESPUESTA VÁLIDA ====================
+            logger.info(f"✅ Respuesta válida encontrada")
+            
+            if cache_key:
+                set_in_cache(cache_key, respuesta)
+            
+            mensaje = self._formatear_respuesta(respuesta, postgrado_nombre, user_message)
+            dispatcher.utter_message(text=mensaje)
+            return [SlotSet("ultima_respuesta", respuesta)]
         
         except requests.exceptions.Timeout:
-            logger.error("⏱️ Timeout en consulta a API")
+            logger.error("⏱️ Timeout")
             dispatcher.utter_message(text=(
                 "La consulta está tardando más de lo normal. ⏱️\n\n"
                 "Por favor, intenta nuevamente."
             ))
         
+        except requests.exceptions.ConnectionError:
+            logger.error("🔌 Error de conexión")
+            dispatcher.utter_message(text=(
+                "No pude conectar con el servidor. 🔌\n\n"
+                "Por favor, intenta nuevamente."
+            ))
+        
         except Exception as e:
             logger.error(f"❌ Error inesperado: {type(e).__name__}: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
             self._enviar_mensaje_error_api(dispatcher)
         
         return []
     
-    def _es_mensaje_error_apex(self, respuesta: str) -> bool:
-        """Detecta si la respuesta es un mensaje de error de APEX."""
-        if not respuesta or len(respuesta.strip()) < 15:
-            return True
+    # ==================== MÉTODOS AUXILIARES ====================
+    
+    def _extraer_respuesta_apex(self, response) -> Optional[str]:
+        """
+        ✅ Extrae respuesta de APEX (maneja ambos formatos)
         
-        respuesta_lower = respuesta.lower()
-        errores = [
-            'error:',
-            'error al procesar',
+        Formatos soportados:
+        1. String directo: "La respuesta es..."
+        2. JSON: {"respuesta": "La respuesta es..."}
+        3. JSON anidado: {"status": "success", "data": {"respuesta": "..."}}
+        """
+        try:
+            content_type = response.headers.get('Content-Type', '').lower()
+            
+            if 'application/json' in content_type:
+                # Intenta parsear como JSON
+                try:
+                    data = response.json()
+                    
+                    # Caso: {"status": "success", "data": {...}}
+                    if isinstance(data, dict) and 'data' in data:
+                        data = data['data']
+                    
+                    # Caso: {"respuesta": "..."}
+                    if isinstance(data, dict) and 'respuesta' in data:
+                        return str(data['respuesta']).strip()
+                    
+                    # Caso: string directo en JSON
+                    if isinstance(data, str):
+                        return data.strip()
+                    
+                    # Fallback: convertir a string
+                    return str(data).strip() if data else None
+                    
+                except ValueError:
+                    # Si falla JSON, intentar como texto
+                    pass
+            
+            # Caso: texto plano (tu función PL/SQL hace RETURN directo)
+            return response.text.strip()
+            
+        except Exception as e:
+            logger.error(f"Error extrayendo respuesta: {e}")
+            return None
+    
+    def _detectar_tipo_error_apex(self, respuesta: str) -> Optional[str]:
+        """
+        ✅ Detecta si la respuesta es un mensaje de error de APEX
+        
+        Returns:
+            - None: Respuesta válida
+            - "VALIDACION": Error de validación (input del usuario)
+            - "NO_DATA": No se encontró respuesta en la BD
+            - "TECNICO": Error técnico del servidor
+        """
+        if not respuesta or len(respuesta.strip()) < 15:
+            return "NO_DATA"
+        
+        resp_lower = respuesta.lower()
+        
+        # ========== VALIDACIÓN (input incorrecto) ==========
+        if any(x in resp_lower for x in [
+            'error: id de postgrado',
+            'error: por favor escribe',
+            'tu pregunta es muy corta',
+            '¿podrías ser más específico?'
+        ]):
+            return "VALIDACION"
+        
+        # ========== NO_DATA (esperado, no es error técnico) ==========
+        if any(x in resp_lower for x in [
             'no encontré una respuesta exacta',
             'intenta reformular',
-            'código:',
-            'por favor, intenta nuevamente'
-        ]
+            'no hay preguntas frecuentes disponibles'
+        ]):
+            return "NO_DATA"
         
-        return any(error in respuesta_lower for error in errores)
+        # ========== TÉCNICO (error del servidor) ==========
+        if any(x in resp_lower for x in [
+            'error interno',
+            'la respuesta está vacía',
+            'error al procesar',
+            'código:',
+            '(código:',
+            'sqlcode'
+        ]):
+            return "TECNICO"
+        
+        # ========== GENÉRICO ==========
+        if resp_lower.startswith('error:'):
+            # Determinar subtipo
+            if 'postgrado' in resp_lower or 'pregunta' in resp_lower:
+                return "VALIDACION"
+            return "TECNICO"
+        
+        # Respuesta válida
+        return None
     
-    def _formatear_respuesta(self, respuesta: str, postgrado_nombre: str) -> str:
-        """✅ Formatea respuesta con sugerencias."""
+    def _formatear_respuesta(self, respuesta: str, postgrado_nombre: str, 
+                            pregunta_original: str) -> str:
+        """
+        ✅ Formatea respuesta con sugerencias inteligentes
+        
+        Analiza:
+        1. El contenido de la respuesta de APEX
+        2. La pregunta original del usuario
+        3. Sugiere temas relacionados
+        """
         mensaje = f"💡 *{postgrado_nombre}*\n\n{respuesta}\n\n"
         
-        # Sugerencias dinámicas basadas en la respuesta
-        if 'costo' in respuesta.lower() or 'precio' in respuesta.lower():
-            mensaje += "También puedes preguntar sobre:\n"
-            mensaje += "📋 Requisitos • 📅 Fechas • 💳 Financiación"
-        elif 'requisito' in respuesta.lower() or 'documento' in respuesta.lower():
-            mensaje += "También puedes preguntar sobre:\n"
-            mensaje += "💰 Costos • 📅 Fechas • 🔗 Link inscripción"
+        # ========== ANÁLISIS SEMÁNTICO ==========
+        resp_lower = respuesta.lower()
+        preg_lower = pregunta_original.lower()
+        
+        # Detectar tema principal
+        if any(w in resp_lower for w in ['costo', 'precio', 'pago', 'valor']):
+            mensaje += "También puedes preguntar:\n📋 Requisitos • 📅 Fechas • 💳 Financiación"
+        
+        elif any(w in resp_lower for w in ['convenio', 'empresa', 'alianza']):
+            mensaje += "También puedes preguntar:\n💼 Prácticas • 🎓 Perfil egresados • 📞 Asesor"
+        
+        elif any(w in resp_lower for w in ['parqueadero', 'biblioteca', 'laboratorio']):
+            mensaje += "También puedes preguntar:\n🏢 Otras instalaciones • 💻 Modalidad • 📞 Visitar campus"
+        
+        elif any(w in resp_lower for w in ['práctica', 'pasantía']):
+            mensaje += "También puedes preguntar:\n💼 Convenios • 🏢 Empresas aliadas • 📞 Asesor"
+        
+        elif any(w in resp_lower for w in ['egresado', 'graduado', 'empleo']):
+            mensaje += "También puedes preguntar:\n💼 Empleabilidad • 🎓 Red egresados • 📊 Estadísticas"
+        
+        elif any(w in resp_lower for w in ['investigación', 'grupo', 'semillero']):
+            mensaje += "También puedes preguntar:\n🔬 Líneas investigación • 📚 Publicaciones • 📞 Asesor"
+        
         else:
-            mensaje += "También puedes preguntar sobre:\n"
-            mensaje += "💰 Costos • 📋 Requisitos • 📅 Fechas • 📞 Asesor"
+            # Sugerencias generales
+            mensaje += "También puedes preguntar:\n💰 Costos • 📋 Requisitos • 📅 Fechas • 📞 Asesor"
         
         mensaje += "\n\n🏠 Escribe 'menú principal' para ver otros programas."
         
@@ -1710,40 +1880,84 @@ class ActionBuscarFaqLibre(Action):
     
     def _enviar_sugerencias(self, dispatcher: CollectingDispatcher, 
                            postgrado_nombre: str, pregunta: str):
-        """✅ Sugerencias contextuales cuando no se encuentra respuesta."""
+        """
+        ✅ Sugerencias contextuales cuando APEX no encuentra respuesta
         
-        mensaje = f"🤔 No encontré información sobre:\n*\"{pregunta}\"*\n\n"
+        Estrategia:
+        1. Analizar la pregunta del usuario
+        2. Identificar la categoría
+        3. Sugerir preguntas alternativas o asesor
+        """
+        mensaje = f"🤔 No encontré información específica sobre:\n"
+        mensaje += f"*\"{pregunta}\"*\n\n"
         mensaje += f"para *{postgrado_nombre}*.\n\n"
         
-        # Analizar tipo de pregunta
-        pregunta_lower = pregunta.lower()
+        preg_lower = pregunta.lower()
         
-        if any(word in pregunta_lower for word in ['practica', 'convenio', 'empresa', 'pasantia']):
-            mensaje += "💼 Información sobre prácticas y convenios:\n"
+        # ========== CATEGORIZACIÓN INTELIGENTE ==========
+        
+        # 1. Instalaciones y servicios
+        if any(w in preg_lower for w in ['parquea', 'parking', 'estaciona', 'cafeteria', 
+                                          'wifi', 'internet', 'auditorio', 'sala']):
+            mensaje += "🏢 *Instalaciones y servicios*\n"
+            mensaje += "Esta información puede variar según la sede.\n"
             mensaje += "Escribe 'contactar asesor' para detalles específicos.\n\n"
-        elif any(word in pregunta_lower for word in ['titulo', 'certificado', 'diploma', 'grado']):
-            mensaje += "🎓 Información sobre titulación:\n"
-            mensaje += "Escribe 'contactar asesor' para más información.\n\n"
-        elif any(word in pregunta_lower for word in ['profesor', 'docente', 'maestro', 'instructor']):
-            mensaje += "👨‍🏫 Información sobre el cuerpo docente:\n"
-            mensaje += "Escribe 'contactar asesor' para conocer el equipo.\n\n"
-        elif any(word in pregunta_lower for word in ['beca', 'descuento', 'ayuda', 'financiacion']):
-            mensaje += "💰 Información sobre becas y financiación:\n"
-            mensaje += "Puedes preguntar: 'becas' o 'financiación'\n\n"
-        else:
-            mensaje += "💡 Puedo ayudarte con:\n"
-            mensaje += "💰 Costos • 📋 Requisitos • 📅 Fechas • 🔗 Link inscripción\n"
-            mensaje += "💳 Financiación • 🎓 Becas • 📝 Proceso admisión • 📞 Asesor\n\n"
         
-        mensaje += "O escribe 'menú principal' para explorar otros programas."
+        # 2. Convenios y movilidad
+        elif any(w in preg_lower for w in ['convenio', 'intercambio', 'movilidad', 
+                                            'internacional', 'exterior']):
+            mensaje += "🌍 *Convenios y movilidad académica*\n"
+            mensaje += "Para información actualizada sobre convenios:\n"
+            mensaje += "Escribe 'contactar asesor'\n\n"
+        
+        # 3. Prácticas profesionales
+        elif any(w in preg_lower for w in ['practica', 'pasantia', 'empresa', 
+                                            'donde hacen', 'obligatoria']):
+            mensaje += "💼 *Prácticas profesionales*\n"
+            mensaje += "Esta información requiere asesoría personalizada.\n"
+            mensaje += "Escribe 'contactar asesor'\n\n"
+        
+        # 4. Investigación
+        elif any(w in preg_lower for w in ['investigacion', 'grupo', 'semillero', 
+                                            'proyecto', 'linea']):
+            mensaje += "🔬 *Investigación y grupos*\n"
+            mensaje += "Para conocer grupos y líneas de investigación:\n"
+            mensaje += "Escribe 'contactar asesor'\n\n"
+        
+        # 5. Egresados y empleabilidad
+        elif any(w in preg_lower for w in ['egresado', 'graduado', 'empleo', 
+                                            'trabajan', 'empleabilidad']):
+            mensaje += "🎓 *Egresados y empleabilidad*\n"
+            mensaje += "Para estadísticas y red de egresados:\n"
+            mensaje += "Escribe 'contactar asesor'\n\n"
+        
+        # 6. Docentes y académico
+        elif any(w in preg_lower for w in ['profesor', 'docente', 'maestro', 
+                                            'quien dicta', 'enseña']):
+            mensaje += "👨‍🏫 *Cuerpo docente*\n"
+            mensaje += "Para conocer el equipo académico:\n"
+            mensaje += "Escribe 'contactar asesor'\n\n"
+        
+        # 7. Otras consultas
+        else:
+            mensaje += "💡 *Temas disponibles*:\n"
+            mensaje += "💰 Costos • 📋 Requisitos • 📅 Fechas\n"
+            mensaje += "⏱️ Duración • 💻 Modalidad • 📚 Plan de estudios\n"
+            mensaje += "🔗 Link inscripción • 🎓 Becas • 💳 Financiación\n\n"
+        
+        mensaje += "O escribe 'contactar asesor' para ayuda personalizada.\n"
+        mensaje += "🏠 'menú principal' para explorar otros programas."
         
         dispatcher.utter_message(text=mensaje)
     
     def _enviar_mensaje_error_api(self, dispatcher: CollectingDispatcher):
-        """Mensaje de error genérico de API."""
+        """Mensaje de error técnico de API"""
         dispatcher.utter_message(text=(
-            "Hubo un problema al consultar esa información. 😔\n\n"
-            "Por favor, intenta con otra pregunta o contacta a un asesor."
+            "Hubo un problema técnico al consultar esa información. 😔\n\n"
+            "Por favor:\n"
+            "• Intenta con otra pregunta\n"
+            "• Escribe 'contactar asesor' para ayuda personalizada\n"
+            "• O escribe 'menú principal' para volver al inicio"
         ))
 
 # ============================================
