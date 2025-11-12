@@ -706,147 +706,187 @@ nlu:
 # ============================================
 - intent: consultar_fechas
   examples: |
-    - cuándo inician las inscripciones
+    # INSCRIPCIONES ESPECÍFICAS
     - cuando inician las inscripciones
+    - cuándo inician las inscripciones
     - cuando son las inscripciones
     - cuándo son las inscripciones
     - fechas de inscripción
     - fechas de inscripcion
-    - cuándo empieza el programa
-    - cuando empieza el programa
-    - fecha de inicio
-    - calendario académico
-    - calendario academico
-    - cuándo puedo inscribirme
     - cuando puedo inscribirme
-    - periodo de inscripciones
-    - fechas importantes
+    - cuándo puedo inscribirme
     - cuando abre inscripciones
     - cuando abren inscripciones
     - cuándo abren inscripciones
-    - cuando comienza el programa
+    - cuando se abre inscripcion
+    - cuándo se abre inscripción
+    - cuando cierra inscripciones
+    - cuándo cierra inscripciones
+    - hasta cuando me puedo inscribir
+    - hasta cuándo me puedo inscribir
+    # FECHAS GENERALES
+    - fecha de inicio
+    - fechas importantes
+    - calendario académico
+    - calendario academico
+    - cuando empieza el programa
+    - cuándo empieza el programa
     - fecha de inicio de clases
-    - fechas del programa
-    - cuando puedo empezar
-    - cuándo puedo empezar
-    - periodo academico
-    - periodo académico
+    - cuando comienza el programa
+    - cuando empiezan las clases
+    - cuando inicia el semestre
     - cuando arranca
     - cuándo arranca
-    - fecha de apertura
-    - cuando se abre
-    - cuándo se abre
+    # PLAZOS
+    - periodo de inscripciones
+    - plazo de inscripcion
+    - plazo de inscripción
     - plazos
     - deadlines
     - fecha limite
     - fecha límite
-    - cuando empiezan las clases
-    - cuando inicia el semestre
+    - ultimo dia
+    - último día
+    - plazo maximo
+    - plazo máximo
+    # DISPONIBILIDAD
     - proxima fecha
     - próxima fecha
     - fechas disponibles
-    - hasta cuando me puedo inscribir
-    - hasta cuándo me puedo inscribir
-    - cuando cierra inscripciones
-    - cuándo cierra inscripciones
-    - plazo maximo
-    - plazo máximo
-    - ultimo dia
-    - último día
+    - cuando puedo empezar
+    - cuándo puedo empezar
+    - fecha de apertura
 
 # ============================================
 # INTENT: consultar_duracion
 # ============================================
 - intent: consultar_duracion
   examples: |
-    - cuánto dura el programa
-    - cuanto dura el programa
-    - cuánto dura
-    - cuanto dura
+   # PALABRAS CLAVE DIRECTAS
     - duración
     - duracion
-    - cuánto tiempo toma
+    - cuanto dura
+    - cuánto dura
+    - cuanto dura el programa
+    - cuánto dura el programa
+    - duracion del programa
+    - duración del programa
+    - cuanto tiempo dura
+    - cuánto tiempo dura
+    # PREGUNTAS SOBRE TIEMPO
     - cuanto tiempo toma
-    - cuántos semestres
-    - cuantos semestres
+    - cuánto tiempo toma
+    - cuanto se demora
+    - cuánto se demora
+    - cuanto tiempo lleva
+    - cuánto tiempo lleva
     - tiempo de estudio
-    - periodo académico
-    - periodo academico
+    - tiempo total
+    - tiempo necesario
+    - periodo de estudio
+    # SEMESTRES Y PERIODOS
+    - cuantos semestres
+    - cuántos semestres
+    - cuantos semestres son
+    - cuántos semestres son
+    - cuantos periodos
+    - cuántos periodos
+    - semestres
+    - duracion en semestres
+    - duración en semestres
+    # AÑOS Y MESES
     - cuantos años dura
     - cuántos años dura
     - cuantos meses es
     - cuántos meses es
-    - duracion del programa
-    - duración del programa
-    - tiempo total
-    - cuanto tiempo lleva
-    - cuánto tiempo lleva
-    - periodo de estudio
-    - extension
-    - extensión
-    - cuanto se demora
-    - cuánto se demora
-    - tiempo que toma
-    - tiempo necesario
-    - cuantos periodos
-    - cuántos periodos
-    - duracion en semestres
-    - duración en semestres
+    - cuantos años son
+    - cuántos años son
+    - 1 año
+    - 2 años
+    - un año
+    - dos años
+    # CRÉDITOS
     - cuantos creditos
     - cuántos créditos
-    - 2 semestres
-    - 4 semestres
-    - 1 ano
-    - 1 año
-    - 2 anos
-    - 2 años
+    - cuantos creditos tiene
+    - creditos del programa
+    - créditos del programa
+    - numero de creditos
+    - número de créditos
+    # COMBINACIONES
+    - me pueden decir la duracion
+    - quisiera saber la duración
+    - necesito saber cuanto dura
+    - info sobre duracion
+    - tiempo que dura el programa
+    - el programa cuanto dura
+    - programa de cuanto tiempo
+    - cuanto tiempo es el programa
+    - extension del programa
+    - extensión del programa
+    - periodo academico
+    - periodo académico
 
 # ============================================
 # INTENT: consultar_modalidad
 # ============================================
 - intent: consultar_modalidad
   examples: |
-    - es presencial o virtual
+    # PALABRAS CLAVE DIRECTAS
+    - modalidad
+    - que modalidad
+    - cual es la modalidad
     - modalidad del programa
-    - cómo son las clases
-    - como son las clases
-    - es online
-    - es a distancia
-    - modalidad de estudio
-    - clases presenciales
-    - clases virtuales
-    - es híbrido
-    - es hibrido
-    - como se dictan las clases
-    - cómo se dictan las clases
-    - formato del curso
-    - donde son las clases
-    - dónde son las clases
-    - presencial
     - virtual
-    - remoto
-    - en linea
-    - en línea
-    - semipresencial
-    - mixto
-    - formato de clases
-    - tipo de modalidad
+    - presencial
+    - es virtual
+    - es presencial
+    - virtual o presencial
+    - presencial o virtual
     - es virtual o presencial
-    - como es la modalidad
-    - cómo es la modalidad
-    - se puede estudiar desde casa
-    - requiere asistir
+    - es presencial o virtual
+    - de que modalidad es
+    # VARIACIONES NATURALES
+    - como son las clases
+    - cómo son las clases
+    - las clases son virtuales
+    - las clases son presenciales
+    - se puede estudiar virtual
+    - se puede estudiar presencial
+    - hay modalidad virtual
+    - hay modalidad presencial
+    - ofrecen modalidad virtual
+    - ofrecen modalidad presencial
+    - puedo estudiar virtual
+    - puedo estudiar presencial
+    - es online
+    - es en linea
+    - es a distancia
+    - es remoto
     - hay que ir presencial
+    - tengo que ir presencial
+    - debo ir presencial
+    - requiere asistir
     - todo virtual
     - todo presencial
+    - híbrido
+    - hibrido
+    - semipresencial
+    - mixto
+    # FORMATO Y HORARIO
     - horario
     - horarios
     - que horario tiene
-    - qué horario tiene
+    - cuales son los horarios
     - cuando son las clases
-    - cuándo son las clases
     - dias de clases
-    - días de clases
+    - que dias son las clases
+    - formato del curso
+    - formato de clases
+    - tipo de modalidad
+    # UBICACIÓN
+    - donde son las clases
+    - dónde son las clases
     - sede
     - donde queda
     - dónde queda
@@ -855,7 +895,22 @@ nlu:
     - fines de semana
     - sabados
     - sábados
-
+    - viernes
+    - miercoles
+    - miércoles
+    # COMBINACIONES COMUNES
+    - me pueden decir la modalidad
+    - quisiera saber la modalidad
+    - necesito saber la modalidad
+    - como es la modalidad
+    - info sobre modalidad
+    - informacion de modalidad
+    - modalidad y horario
+    - horario y modalidad
+    - es virtual el programa
+    - el programa es virtual
+    - el programa es presencial
+    
 # ============================================
 # INTENT: consultar_plan_estudios
 # ============================================
@@ -894,35 +949,47 @@ nlu:
 # ============================================
 - intent: solicitar_link_inscripcion
   examples: |
-    - donde me inscribo
-    - dónde me inscribo
+    # LINK DIRECTO
     - link de inscripcion
     - link de inscripción
     - enlace de inscripcion
     - enlace de inscripción
+    - link para inscripcion
+    - enlace para inscripcion
+    - link para inscribirme
+    - enlace para inscribirme
     - pasame el link
     - pásame el link
+    - dame el link
     - dame el enlace
-    - como me registro
-    - cómo me registro
+    - necesito el link
+    - necesito el enlace
+    - link directo
+    # UBICACIÓN
+    - donde me inscribo
+    - dónde me inscribo
+    - donde es la inscripcion
+    - dónde es la inscripción
     - portal de inscripciones
     - pagina de inscripcion
     - página de inscripción
-    - quiero inscribirme
-    - necesito el enlace para inscribirme
-    - dame el link de inscripcion
-    - dame el link de inscripción
-    - enlace para registro
-    - link para inscribirme
-    - donde es la inscripcion
-    - dónde es la inscripción
     - pagina para inscribirme
     - página para inscribirme
-    - necesito el link
-    - necesitas el enlace para inscribirte
-    - quieres que te envie el enlace
-    - necesitas el enlace
-    - dame el link directo
+    # REGISTRO
+    - como me registro
+    - cómo me registro
+    - enlace para registro
+    - link de registro
+    - donde registro
+    - dónde registro
+    # COMBINACIONES
+    - necesito el enlace para inscribirme
+    - dame el link de inscripcion
+    - quiero el enlace
+    - envíame el link
+    - enviame el link
+    - comparteme el link
+    - compárteme el enlace
 
 # ============================================
 # INTENT: consultar_dirigido
@@ -954,47 +1021,66 @@ nlu:
 # ============================================
 - intent: consultar_proceso_admision
   examples: |
-    - cual es el proceso de admision
-    - cuál es el proceso de admisión
-    - como es el proceso
-    - cómo es el proceso
-    - proceso de inscripcion
-    - proceso de inscripción
-    - pasos para inscribirme
-    - como aplico
-    - cómo aplico
-    - como funciona la admision
-    - que debo hacer
-    - qué debo hacer
-    - proceso de seleccion
-    - proceso de selección
-    - como ingreso
-    - cómo ingreso
-    - procedimiento de admision
-    - pasos a seguir
-    - que tengo que hacer para entrar
-    - como me admiten
-    - proceso para entrar
-    - como puedo inscribirme
-    - cómo puedo inscribirme
+    # PALABRAS CLAVE DIRECTAS
+    - inscripcion
+    - inscripción
+    - inscripciones
+    - como inscribirme
+    - cómo inscribirme
     - como me inscribo
     - cómo me inscribo
     - quiero inscribirme
     - necesito inscribirme
-    - como hago para inscribirme
-    - cómo hago para inscribirme
-    - cuales son los pasos
-    - cuáles son los pasos
-    - como es el procedimiento
-    - cómo es el procedimiento
-    - que pasos debo seguir
-    - qué pasos debo seguir
-    - como registro
-    - cómo me registro
+    # PROCESO
+    - proceso de inscripcion
+    - proceso de inscripción
+    - pasos para inscribirme
     - pasos de inscripcion
     - pasos de inscripción
     - como es la inscripcion
     - cómo es la inscripción
+    - como hago para inscribirme
+    - cómo hago para inscribirme
+    - que debo hacer para inscribirme
+    - qué debo hacer para inscribirme
+    # ADMISIÓN
+    - proceso de admision
+    - proceso de admisión
+    - como es el proceso de admision
+    - cual es el proceso de admision
+    - cuál es el proceso de admisión
+    - como aplico
+    - cómo aplico
+    - como funciona la admision
+    - pasos para admision
+    - pasos para admisión
+    - procedimiento de admision
+    - procedimiento de admisión
+    # REGISTRO
+    - como registro
+    - cómo me registro
+    - como me registro
+    - como es el registro
+    - proceso de registro
+    - pasos de registro
+    # SELECCIÓN
+    - proceso de seleccion
+    - proceso de selección
+    - como ingreso
+    - cómo ingreso
+    - como entro
+    - que tengo que hacer para entrar
+    # COMBINACIONES
+    - me explicas el proceso de inscripcion
+    - quisiera saber como inscribirme
+    - necesito info de inscripcion
+    - pasos a seguir para inscripcion
+    - que pasos debo seguir
+    - cuales son los pasos
+    - como me admiten
+    - proceso para entrar
+    - como puedo inscribirme
+    - donde me inscribo
 
 # ============================================
 # INTENT: solicitar_informacion_general
@@ -1342,6 +1428,18 @@ nlu:
     - \d+\.?\d*\s*SMMLV
     - \d+\.?\d*\s*salarios?\s+minimos?
 
+- regex: modalidad_palabras
+  examples: |
+    - \b(modalidad|virtual|presencial|online|distancia|hibrido|híbrido)\b
+
+- regex: duracion_palabras
+  examples: |
+    - \b(duracion|duración|dura|tiempo|semestre|año|mes|credito|crédito)\b
+
+- regex: inscripcion_palabras
+  examples: |
+    - \b(inscripcion|inscripción|inscrib|registro|admision|admisión)\b
+
 # ============================================
 # LOOKUP TABLES
 # ============================================
@@ -1409,63 +1507,175 @@ nlu:
 
 - lookup: palabras_fechas
   examples: |
-    - inscripciones
-    - inscripcion
-    - inscripción
+    - fecha
     - fechas
     - cuando
     - cuándo
     - inicia
     - inician
+    - empieza
+    - empiezan
+    - comienza
+    - comienzan
     - abre
     - abren
     - cierra
     - cierran
     - plazo
+    - plazos
     - deadline
-    - octubre
-    - noviembre
-    - diciembre
+    - limite
+    - límite
     - calendario
+    - cronograma
+    - convocatoria
+    - periodo
+    - período
 
 - lookup: palabras_requisitos
   examples: |
+    - requisito
     - requisitos
+    - documento
     - documentos
     - necesito
+    - necesita
+    - necesitan
     - piden
     - solicitan
+    - requieren
     - admision
     - admisión
     - titulo
     - título
     - diploma
-    - hoja vida
+    - hoja
+    - vida
     - certificado
     - notas
-    - tarjeta profesional
+    - tarjeta
+    - profesional
     - formulario
+    - acta
+    - grado
+    - perfil
 
 - lookup: palabras_modalidad
   examples: |
     - modalidad
-    - presencial
     - virtual
+    - presencial
     - online
+    - en linea
+    - en línea
     - distancia
+    - remoto
+    - remota
+    - hibrido
+    - híbrido
+    - semipresencial
+    - mixto
+    - mixta
     - horario
     - horarios
-    - clases
+    - formato
     - sede
-    - donde
-    - dónde
-    - dias
-    - días
-    - viernes
-    - sabado
-    - sábado
-    - miercoles
-    - miércoles
+    - ubicacion
+    - ubicación
+    - clases
+    - asistir
+    - asistencia
+
+- lookup: palabras_duracion
+  examples: |
+    - duracion
+    - duración
+    - dura
+    - tiempo
+    - semestre
+    - semestres
+    - periodo
+    - periodos
+    - período
+    - períodos
+    - año
+    - años
+    - ano
+    - anos
+    - mes
+    - meses
+    - credito
+    - crédito
+    - creditos
+    - créditos
+    - extension
+    - extensión
+    - largo
+    - larga
+    - demora
+    - toma
+    - lleva
+
+- lookup: palabras_inscripcion
+  examples: |
+    - inscripcion
+    - inscripción
+    - inscripciones
+    - inscribir
+    - inscribirme
+    - inscribirse
+    - inscribo
+    - registro
+    - registrar
+    - registrarme
+    - registrarse
+    - registros
+    - admision
+    - admisión
+    - admisiones
+    - aplicar
+    - aplico
+    - aplicacion
+    - aplicación
+    - proceso
+    - pasos
+    - procedimiento
+    - como
+    - cómo
+
+- lookup: palabras_costo
+  examples: |
+    - costo
+    - costos
+    - precio
+    - precios
+    - valor
+    - valores
+    - tarifa
+    - tarifas
+    - pagar
+    - pago
+    - pagos
+    - matricula
+    - matrícula
+    - inversion
+    - inversión
+    - SMMLV
+    - salario
+    - salarios
+    - minimo
+    - mínimo
+    - minimos
+    - mínimos
+    - credito
+    - crédito
+    - creditos
+    - créditos
+    - financiacion
+    - financiación
+    - cuota
+    - cuotas
+  
 
 # ============================================
 # SYNONYMS
@@ -1613,3 +1823,23 @@ nlu:
     - maestria industrial
     - maestría industrial
     - industrial
+
+- synonym: "virtual"
+  examples: |
+    - virtual
+    - online
+    - en linea
+    - en línea
+    - remoto
+    - remota
+    - distancia
+    - a distancia
+
+- synonym: "presencial"
+  examples: |
+    - presencial
+    - en sede
+    - en campus
+    - físico
+    - fisica
+    - asistiendo

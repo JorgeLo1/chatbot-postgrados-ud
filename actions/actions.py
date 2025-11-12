@@ -203,9 +203,9 @@ class ActionSaludoMejorado(Action):
         
         logger.info("👋 Ejecutando action_saludo_mejorado")
         
-        mensaje = ( "¡Bienvenido! 🎓\n\n"
-                     "Soy tu asistente virtual de Postgrados de la Facultad de Ingeniería.\n\n" )
-        mensaje += ("📚 *¿Qué programa te interesa?*\n\n"
+        mensaje = ( "¡Bienvenido! 🎓\n"
+                     "Soy tu asistente virtual de Postgrados de la Facultad de Ingeniería.\n" )
+        mensaje += ("📚 *¿Qué programa te interesa?*\n"
                      "Puedes:\n"
                      "• Escribir el nombre del programa (ej: 'avalúos', 'bioingeniería')\n"
                      "• Ver todos los programas escribiendo 'ver programas'\n" )
@@ -547,19 +547,52 @@ class ActionBuscarFAQ(Action):
     def name(self) -> Text:
         return "action_buscar_faq"
     
-    # ✅ MAPEO OPTIMIZADO - Palabras clave que APEX reconoce bien
-    INTENT_HINTS = {
-        "consultar_costos": ["costo", "cuanto cuesta", "valor matricula"],
-        "consultar_requisitos": ["requisitos", "documentos necesarios", "que necesito"],
-        "consultar_fechas": ["fechas inscripcion", "cuando inscripciones", "plazo"],
-        "consultar_duracion": ["duracion", "cuanto dura", "semestres"],
-        "consultar_modalidad": ["modalidad", "horario", "presencial virtual"],
-        "consultar_plan_estudios": ["plan estudios", "materias", "pensum"],
-        "solicitar_link_inscripcion": ["link inscripcion", "donde inscribo", "enlace"],
-        "consultar_dirigido": ["quien puede", "perfil ingreso", "dirigido"],
-        "consultar_proceso_admision": ["como inscribirme", "pasos inscripcion", "proceso inscripcion"],
-        "consultar_becas": ["becas", "descuentos", "ayuda economica"],
-        "consultar_financiacion": ["financiacion", "cuotas", "opciones pago"]
+    # ✅ MAPEO MEJORADO - Incluye palabras clave que el usuario usa
+    INTENT_KEYWORDS = {
+        "consultar_costos": {
+            "keywords": ["costo", "precio", "valor", "cuanto cuesta", "matricula", "pagar", "inversion", "SMMLV", "salario"],
+            "queries": ["costo", "cuanto cuesta", "valor matricula", "precio"]
+        },
+        "consultar_requisitos": {
+            "keywords": ["requisito", "documento", "necesito", "piden", "admision", "titulo", "hoja vida", "certificado"],
+            "queries": ["requisitos", "documentos necesarios", "que necesito"]
+        },
+        "consultar_fechas": {
+            "keywords": ["fecha", "cuando", "inscripciones", "inicia", "abre", "cierra", "plazo", "calendario"],
+            "queries": ["fechas inscripcion", "cuando inscripciones", "plazo"]
+        },
+        "consultar_duracion": {
+            "keywords": ["duracion", "dura", "tiempo", "semestre", "año", "mes", "credito", "cuanto dura"],
+            "queries": ["duracion", "cuanto dura", "semestres", "tiempo"]
+        },
+        "consultar_modalidad": {
+            "keywords": ["modalidad", "virtual", "presencial", "horario", "online", "distancia", "sede", "hibrido"],
+            "queries": ["modalidad", "virtual presencial", "horario"]
+        },
+        "consultar_plan_estudios": {
+            "keywords": ["plan estudios", "materias", "pensum", "asignaturas", "contenido", "que se estudia"],
+            "queries": ["plan estudios", "materias", "pensum"]
+        },
+        "solicitar_link_inscripcion": {
+            "keywords": ["link", "enlace", "inscripcion", "donde inscribo", "portal", "pagina"],
+            "queries": ["link inscripcion", "donde inscribo", "enlace"]
+        },
+        "consultar_dirigido": {
+            "keywords": ["dirigido", "quien puede", "perfil", "profesionales", "carreras"],
+            "queries": ["quien puede", "perfil ingreso", "dirigido"]
+        },
+        "consultar_proceso_admision": {
+            "keywords": ["proceso", "como inscribirme", "pasos", "admision", "inscripcion"],
+            "queries": ["como inscribirme", "pasos inscripcion", "proceso"]
+        },
+        "consultar_becas": {
+            "keywords": ["beca", "descuento", "ayuda", "apoyo economico", "subsidio"],
+            "queries": ["becas", "descuentos", "ayuda economica"]
+        },
+        "consultar_financiacion": {
+            "keywords": ["financiacion", "cuotas", "credito", "pago", "facilidades"],
+            "queries": ["financiacion", "cuotas", "opciones pago"]
+        }
     }
 
     def run(
@@ -569,14 +602,14 @@ class ActionBuscarFAQ(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("❓ Ejecutando action_buscar_faq (OPTIMIZADA PARA APEX)")
+        logger.info("❓ Ejecutando action_buscar_faq (MEJORADA)")
         
         postgrado_id = tracker.get_slot("postgrado_id")
         postgrado_nombre = tracker.get_slot("postgrado_nombre") or "el programa"
         
         if not postgrado_id:
             dispatcher.utter_message(
-                text="Por favor, primero dime sobre qué programa necesitas información. Escribe 'ver programas' para conocer las opciones."
+                text="Por favor, primero dime sobre qué programa necesitas información."
             )
             return [FollowupAction("action_listar_postgrados")]
         
@@ -586,50 +619,63 @@ class ActionBuscarFAQ(Action):
         confidence = tracker.latest_message.get("intent", {}).get("confidence", 0)
         
         logger.info(f"Intent: {intent} (conf: {confidence:.2f})")
-        logger.info(f"Mensaje original: '{user_message}'")
-        logger.info(f"Postgrado ID: {postgrado_id} | Nombre: {postgrado_nombre}")
+        logger.info(f"Mensaje: '{user_message}'")
         
-        # ✅ ESTRATEGIA OPTIMIZADA: Máximo 4 intentos
+        # ✅ NUEVA ESTRATEGIA: Detección de palabras clave
         preguntas_a_probar = []
         
-        # 1. SIEMPRE mensaje original PRIMERO (más importante)
+        # 1. Siempre incluir mensaje original primero
         if user_message:
             preguntas_a_probar.append(user_message)
         
-        # 2. Si intent conocido con buena confianza (>0.6), agregar hints
-        if intent in self.INTENT_HINTS and confidence > 0.6:
-            # Agregar TODAS las variantes del hint (max 3)
-            hints = self.INTENT_HINTS[intent][:3]
-            for hint in hints:
-                if hint not in preguntas_a_probar:
-                    preguntas_a_probar.append(hint)
-            logger.info(f"✅ Usando {len(hints)} hints para intent: {intent}")
+        # 2. Si tenemos intent conocido, agregar sus queries
+        if intent in self.INTENT_KEYWORDS:
+            config = self.INTENT_KEYWORDS[intent]
+            
+            # Agregar queries predefinidas
+            for query in config["queries"]:
+                if query not in preguntas_a_probar:
+                    preguntas_a_probar.append(query)
+            
+            logger.info(f"✅ Queries para {intent}: {config['queries']}")
         
-        # 3. Si confianza media (0.4-0.6), agregar versión limpia
-        if 0.4 < confidence < 0.6:
-            pregunta_limpia = self._limpiar_pregunta(user_message)
-            if pregunta_limpia and pregunta_limpia not in preguntas_a_probar:
-                preguntas_a_probar.append(pregunta_limpia)
+        # 3. Detectar palabras clave en el mensaje del usuario
+        user_lower = user_message.lower()
+        detected_intents = []
         
+        for intent_name, config in self.INTENT_KEYWORDS.items():
+            for keyword in config["keywords"]:
+                if keyword in user_lower:
+                    detected_intents.append(intent_name)
+                    break
+        
+        # Si detectamos intent por palabra clave, agregar sus queries
+        if detected_intents and detected_intents[0] != intent:
+            logger.info(f"🔍 Palabras clave detectadas: {detected_intents}")
+            for detected_intent in detected_intents[:1]:  # Solo el primero
+                for query in self.INTENT_KEYWORDS[detected_intent]["queries"][:2]:
+                    if query not in preguntas_a_probar:
+                        preguntas_a_probar.append(query)
+        
+        # 4. Limitar a máximo 4 intentos
+        preguntas_a_probar = preguntas_a_probar[:4]
         logger.info(f"🔍 Probando {len(preguntas_a_probar)} variantes")
         
-        # ✅ BÚSQUEDA SECUENCIAL (máximo 3 intentos)
+        # ✅ BÚSQUEDA SECUENCIAL
         for idx, pregunta in enumerate(preguntas_a_probar, 1):
             logger.info(f"Intento {idx}/{len(preguntas_a_probar)}: '{pregunta}'")
             
-            # Verificar cache
+            # Cache
             cache_key = f"faq_{postgrado_id}_{self._normalizar_cache_key(pregunta)}"
-            cached_response = get_from_cache(cache_key)
+            cached = get_from_cache(cache_key)
             
-            if cached_response:
+            if cached:
                 logger.info(f"💾 Cache hit")
-                mensaje_completo = self._formatear_respuesta_completa(
-                    cached_response, intent, postgrado_nombre
-                )
-                dispatcher.utter_message(text=mensaje_completo)
-                return [SlotSet("ultima_respuesta", cached_response)]
+                mensaje = self._formatear_respuesta_completa(cached, intent, postgrado_nombre)
+                dispatcher.utter_message(text=mensaje)
+                return [SlotSet("ultima_respuesta", cached)]
             
-            # Llamar a APEX (que hará el scoring inteligente)
+            # Llamar API
             response = make_api_request(
                 "GET",
                 f"faq/buscar/{postgrado_id}",
@@ -639,99 +685,27 @@ class ActionBuscarFAQ(Action):
             if response:
                 respuesta = self._extraer_respuesta(response)
                 
-                # ✅ VALIDAR RESPUESTA (detecta todos los errores de APEX)
                 if respuesta and self._es_respuesta_valida(respuesta):
                     logger.info(f"✅ Respuesta válida encontrada")
                     set_in_cache(cache_key, respuesta)
                     
-                    mensaje_completo = self._formatear_respuesta_completa(
-                        respuesta, intent, postgrado_nombre
-                    )
-                    dispatcher.utter_message(text=mensaje_completo)
-                    return [SlotSet("ultima_respuesta", respuesta)]
-                else:
-                    logger.info(f"⚠️ Respuesta no válida o mensaje de error de APEX")
-        
-        # ❌ No se encontró respuesta después de todos los intentos
-        logger.warning(f"❌ No se encontró respuesta después de {len(preguntas_a_probar)} intentos")
-        
-        # ✅ FALLBACK FINAL: Intentar con palabras clave extraídas
-        palabras_clave = self._extraer_palabras_clave(user_message)
-        if palabras_clave:
-            logger.info(f"🔄 Fallback: Intentando con palabras clave: {palabras_clave}")
-            response = make_api_request(
-                "GET",
-                f"faq/buscar/{postgrado_id}",
-                params={"pregunta": palabras_clave}
-            )
-            
-            if response:
-                respuesta = self._extraer_respuesta(response)
-                if respuesta and self._es_respuesta_valida(respuesta):
-                    logger.info(f"✅ Respuesta encontrada con fallback")
-                    mensaje_completo = self._formatear_respuesta_completa(
-                        respuesta, intent, postgrado_nombre
-                    )
-                    dispatcher.utter_message(text=mensaje_completo)
+                    mensaje = self._formatear_respuesta_completa(respuesta, intent, postgrado_nombre)
+                    dispatcher.utter_message(text=mensaje)
                     return [SlotSet("ultima_respuesta", respuesta)]
         
-        # ❌ Definitivamente no hay respuesta
+        # ❌ No encontrado
+        logger.warning(f"❌ No se encontró respuesta")
         mensaje = self._mensaje_no_encontrado(intent, postgrado_nombre, user_message)
         dispatcher.utter_message(text=mensaje)
         return []
     
-    def _extraer_palabras_clave(self, texto: str) -> str:
-        """
-        Extrae palabras clave significativas del texto.
-        Útil como último recurso de búsqueda.
-        """
-        # Palabras que SÍ queremos buscar
-        keywords_importantes = [
-            'costo', 'precio', 'valor', 'matricula', 'pago',
-            'requisito', 'documento', 'necesit', 'papeles',
-            'inscripcion', 'inscrib', 'registro', 'link', 'enlace',
-            'fecha', 'cuando', 'plazo', 'hasta',
-            'duracion', 'tiempo', 'semestre',
-            'modalidad', 'horario', 'presencial', 'virtual',
-            'materia', 'plan', 'estudios', 'pensum',
-            'beca', 'descuento', 'ayuda', 'financiacion',
-            'proceso', 'admision', 'pasos'
-        ]
-        
-        palabras = texto.lower().split()
-        encontradas = []
-        
-        for palabra in palabras:
-            # Buscar coincidencias parciales
-            for kw in keywords_importantes:
-                if kw in palabra or palabra in kw:
-                    encontradas.append(kw)
-                    break
-        
-        # Eliminar duplicados y devolver
-        return ' '.join(list(dict.fromkeys(encontradas)))  # Mantiene orden
-    
-    def _limpiar_pregunta(self, pregunta: str) -> str:
-        
-        # Eliminar SOLO palabras de cortesía (no afectan búsqueda)
-        stopwords = ['por favor', 'favor', 'gracias', 'hola', 'buenas']
-        
-        pregunta_limpia = pregunta.lower()
-        for word in stopwords:
-            pregunta_limpia = pregunta_limpia.replace(word, ' ')
-        
-        # Limpiar espacios extras
-        pregunta_limpia = ' '.join(pregunta_limpia.split())
-        
-        return pregunta_limpia.strip() if len(pregunta_limpia.strip()) > 3 else pregunta
-    
     def _normalizar_cache_key(self, texto: str) -> str:
-        """Crea una key de cache normalizada (máximo 30 chars)."""
+        """Crea key de cache normalizada"""
         texto_norm = normalizar_texto(texto)
         return texto_norm[:30]
     
     def _extraer_respuesta(self, response: Dict) -> Optional[str]:
-        """Extrae la respuesta del objeto de respuesta de la API."""
+        """Extrae respuesta de API"""
         if not response or not isinstance(response, dict):
             return None
         
@@ -745,61 +719,23 @@ class ActionBuscarFAQ(Action):
         return response.get("RESPUESTA", response.get("respuesta", ""))
     
     def _es_respuesta_valida(self, respuesta: str) -> bool:
-
+        """Valida que no sea mensaje de error"""
         if not respuesta or len(respuesta.strip()) < 15:
             return False
         
-        respuesta_lower = respuesta.lower()
+        resp_lower = respuesta.lower()
         
-        # ✅ LISTA COMPLETA de mensajes de error de APEX
-        errores_apex = [
-            # Errores explícitos (con "error:")
-            'error:',
-            'error al procesar',
-            'error interno',
-            
-            # Mensajes de NO_DATA_FOUND
-            'no encontré una respuesta exacta',
-            'intenta reformular',
-            
-            # Mensajes de validación
-            'tu pregunta es muy corta',
-            'podrías ser más específico',
-            'por favor escribe tu pregunta',
-            
-            # Mensajes de datos no disponibles
-            'no hay preguntas frecuentes disponibles',
-            'la respuesta está vacía',
-            
-            # Indicadores de que debe contactar asesor (parte del mensaje de error)
-            'contacta a un asesor',
-            'contacta al asesor',
-            
-            # Indicador de código de error
-            'código:',
-            '(código:',
-            
-            # Mensaje genérico de reintento
-            'por favor, intenta nuevamente',
-            'intenta nuevamente'
+        errores = [
+            'error:', 'no encontré', 'intenta reformular',
+            'muy corta', 'código:', 'sqlcode', 'error interno'
         ]
         
-        # Verificar si contiene algún mensaje de error
-        if any(error in respuesta_lower for error in errores_apex):
-            logger.warning(f"⚠️ Mensaje de error detectado de APEX: {respuesta[:100]}...")
-            return False
-        
-        # ✅ Validación adicional: respuestas muy cortas probablemente son errores
-        if len(respuesta.strip()) < 20:
-            logger.warning(f"⚠️ Respuesta sospechosamente corta: {respuesta}")
-            return False
-        
-        return True
+        return not any(err in resp_lower for err in errores)
     
     def _formatear_respuesta_completa(
         self, respuesta: str, intent: str, postgrado_nombre: str
     ) -> str:
-        """✅ Formatea respuesta + sugerencias en UN SOLO MENSAJE."""
+        """Formatea respuesta con sugerencias"""
         
         emoji_map = {
             "consultar_costos": "💰",
@@ -811,87 +747,40 @@ class ActionBuscarFAQ(Action):
             "solicitar_link_inscripcion": "🔗",
             "consultar_dirigido": "👥",
             "consultar_becas": "🎓",
-            "consultar_financiacion": "💳",
-            "consultar_proceso_admision": "📝"
+            "consultar_financiacion": "💳"
         }
         
         emoji = emoji_map.get(intent, "ℹ️")
+        mensaje = f"{emoji} *{postgrado_nombre}*\n\n{respuesta}\n\n"
         
-        # No agregar header si la respuesta ya tiene emoji
-        if respuesta.strip().startswith(tuple(emoji_map.values())):
-            mensaje = respuesta
-        else:
-            mensaje = f"{emoji} *{postgrado_nombre}*\n\n{respuesta}"
-        
-        # ✅ AGREGAR SUGERENCIAS CONTEXTUALES
-        mensaje += "\n\n"
-        
+        # Sugerencias contextuales
         if intent == "consultar_costos":
-            mensaje += "También puedes preguntar sobre:\n"
-            mensaje += "📋 Requisitos • 📅 Fechas • 💳 Financiación"
-        elif intent == "consultar_requisitos":
-            mensaje += "También puedes preguntar sobre:\n"
-            mensaje += "💰 Costos • 📅 Fechas • 🔗 Link de inscripción"
-        elif intent == "consultar_fechas":
-            mensaje += "También puedes preguntar sobre:\n"
-            mensaje += "💰 Costos • 📋 Requisitos • 🔗 Link de inscripción"
-        elif intent == "solicitar_link_inscripcion":
-            mensaje += "También puedes preguntar sobre:\n"
-            mensaje += "💰 Costos • 📋 Requisitos • 📅 Fechas"
-        elif intent == "consultar_financiacion":
-            mensaje += "También puedes preguntar sobre:\n"
-            mensaje += "💰 Costos • 📋 Requisitos • 🎓 Becas"
-        elif intent == "consultar_proceso_admision":
-            mensaje += "También puedes preguntar sobre:\n"
-            mensaje += "📋 Requisitos • 📅 Fechas • 🔗 Link inscripción"
+            mensaje += "También: 📋 Requisitos • 📅 Fechas • 💳 Financiación"
+        elif intent == "consultar_modalidad":
+            mensaje += "También: ⏱️ Duración • 📅 Fechas • 🔗 Inscripción"
+        elif intent == "consultar_duracion":
+            mensaje += "También: 💻 Modalidad • 📚 Plan estudios • 💰 Costos"
         else:
-            mensaje += "También puedes preguntar sobre:\n"
-            mensaje += "💰 Costos • 📋 Requisitos • 📅 Fechas • ❓ Otro"
+            mensaje += "También: 💰 Costos • 📋 Requisitos • 📅 Fechas"
         
-        mensaje += "\n\n🏠 Escribe 'menú principal' para ver otros programas."
+        mensaje += "\n\n🏠 'menú principal' para otros programas"
         
         return mensaje
     
-    def _mensaje_no_encontrado(self, intent: str, postgrado_nombre: str, pregunta_original: str) -> str:
-        """✅ Mensaje contextual mejorado cuando no se encuentra respuesta."""
+    def _mensaje_no_encontrado(self, intent: str, postgrado: str, pregunta: str) -> str:
+        """Mensaje cuando no hay respuesta"""
         
-        mensaje = f"🤔 No encontré información sobre:\n"
-        mensaje += f"*\"{pregunta_original}\"*\n\n"
+        mensaje = f"🤔 No encontré información sobre:\n*\"{pregunta}\"*\n\n"
         
-        # Analizar la pregunta para dar sugerencias más específicas
-        pregunta_lower = pregunta_original.lower()
-        
-        # Detectar qué está buscando el usuario
-        if any(word in pregunta_lower for word in ['inscrib', 'registro', 'como', 'pasos', 'proceso']):
-            mensaje += ("💡 Intenta reformular tu pregunta:\n"
-                     "• 'como inscribirme'\n"
-                     "• 'pasos para inscripcion'\n"
-                     "• 'proceso de admision'\n"
-                     "• 'link de inscripcion'\n\n")
-        
-        elif any(word in pregunta_lower for word in ['costo', 'precio', 'cuanto', 'pago', 'valor']):
-            mensaje += ("💡 Intenta preguntar:\n"
-                     "• 'cuanto cuesta'\n"
-                     "• 'valor de matricula'\n"
-                     "• 'costos'\n\n")
-        
-        elif any(word in pregunta_lower for word in ['requisito', 'documento', 'necesit', 'piden']):
-            mensaje += ("💡 Intenta preguntar:\n"
-                     "• 'requisitos'\n"
-                     "• 'documentos necesarios'\n"
-                     "• 'que necesito'\n\n")
-        
-        elif any(word in pregunta_lower for word in ['fecha', 'cuando', 'plazo', 'hasta']):
-            mensaje += ("💡 Intenta preguntar:\n"
-                     "• 'fechas de inscripcion'\n"
-                     "• 'cuando son las inscripciones'\n"
-                     "• 'plazo de inscripcion'\n\n")
-        
+        # Sugerencias según intent
+        if intent == "consultar_modalidad":
+            mensaje += "💡 Intenta:\n• 'modalidad'\n• 'es virtual o presencial'\n• 'horarios'\n\n"
+        elif intent == "consultar_duracion":
+            mensaje += "💡 Intenta:\n• 'cuanto dura'\n• 'duracion'\n• 'semestres'\n\n"
+        elif intent == "consultar_proceso_admision":
+            mensaje += "💡 Intenta:\n• 'como inscribirme'\n• 'proceso inscripcion'\n• 'link inscripcion'\n\n"
         else:
-            # Sugerencias generales
-            mensaje += ("💡 Puedo ayudarte con:\n"
-                     "💰 Costos • 📋 Requisitos • 📅 Fechas • 🔗 Link inscripción\n"
-                     "📝 Proceso admisión • 💳 Financiación • 🎓 Becas\n\n")
+            mensaje += "💡 Puedo ayudarte con:\n💰 Costos • 📋 Requisitos • 📅 Fechas\n💻 Modalidad • ⏱️ Duración • 🔗 Inscripción\n\n"
         
         mensaje += "O escribe 'contactar asesor' para ayuda personalizada."
         

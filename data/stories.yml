@@ -702,3 +702,11 @@ stories:
       - intent: nlu_fallback  # Usuario confuso
       - action: action_default_fallback  # Detecta "listo"
       - action: action_despedida  # Auto-despedida
+
+  
+  - story: Despedida post-agradecimiento
+    steps:
+      - intent: agradecer
+      - action: utter_de_nada
+      - intent: negate_and_end
+      - action: action_despedida

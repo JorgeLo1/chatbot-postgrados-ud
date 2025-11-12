@@ -27,13 +27,6 @@ rules:
   - action: utter_de_nada
   wait_for_user_input: true
 
-- rule: Despedida post-agradecimiento
-  steps:
-  - intent: agradecer
-  - action: utter_de_nada
-  - intent: negate_and_end
-  - action: action_despedida
-
 - rule: Responder a agradecimiento
   steps:
   - intent: agradecer
