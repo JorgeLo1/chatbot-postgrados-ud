@@ -8,7 +8,7 @@ intents:
   - goodbye
   - affirm
   - deny
-  - negate_and_end  # ✅ NUEVO INTENT
+  - negate_and_end 
   - bot_challenge
   - mood_great
   - mood_unhappy
@@ -164,7 +164,7 @@ responses:
         📋 Explicarte requisitos de admisión
         📅 Darte fechas de inscripción
         ⏱️ Informarte sobre duración y modalidad
-        📞 Conectarte con un asesor
+        ❓ O escribe tu pregunta libremente si no aparece en la lista.
         
         Escribe lo que necesites o 'ver programas' para comenzar.
 

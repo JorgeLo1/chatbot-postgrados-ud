@@ -92,18 +92,7 @@ def make_api_request(
     data: Optional[Dict] = None,
     params: Optional[Dict] = None
 ) -> Optional[Dict]:
-    """
-    Realiza petición HTTP a la API de Apex
     
-    Args:
-        method: GET o POST
-        endpoint: endpoint relativo (ej: 'postgrados' o 'faq/buscar/7')
-        data: datos para POST
-        params: parámetros query para GET (ej: {'pregunta': 'valor'})
-    
-    Returns:
-        Respuesta JSON o None si hay error
-    """
     endpoint_limpio = endpoint.strip('/')
     url = f"{APEX_API_BASE_URL}/{endpoint_limpio}"
     
@@ -214,12 +203,12 @@ class ActionSaludoMejorado(Action):
         
         logger.info("👋 Ejecutando action_saludo_mejorado")
         
-        mensaje = "¡Bienvenido! 🎓\n\n"
-        mensaje += "Soy tu asistente virtual de Postgrados de la Universidad.\n\n"
-        mensaje += "📚 *¿Qué programa te interesa?*\n\n"
-        mensaje += "Puedes:\n"
-        mensaje += "• Escribir el nombre del programa (ej: 'avalúos', 'bioingeniería')\n"
-        mensaje += "• Ver todos los programas escribiendo 'ver programas'\n"
+        mensaje = ( "¡Bienvenido! 🎓\n\n"
+                     "Soy tu asistente virtual de Postgrados de la Facultad de Ingeniería.\n\n" )
+        mensaje += ("📚 *¿Qué programa te interesa?*\n\n"
+                     "Puedes:\n"
+                     "• Escribir el nombre del programa (ej: 'avalúos', 'bioingeniería')\n"
+                     "• Ver todos los programas escribiendo 'ver programas'\n" )
         
         dispatcher.utter_message(text=mensaje)
         
@@ -231,7 +220,6 @@ class ActionSaludoMejorado(Action):
 # ============================================
 
 class ActionListarPostgrados(Action):
-    """Lista todos los programas de postgrado disponibles"""
 
     def name(self) -> Text:
         return "action_listar_postgrados"
@@ -266,21 +254,37 @@ class ActionListarPostgrados(Action):
                 return []
         
         if postgrados:
-            MAX_PROGRAMAS_MOSTRAR = 20
-            
+            # ✅ CONSTRUCCIÓN DEL MENSAJE COMPLETO
             mensaje = "📚 *Programas de Postgrado Disponibles:*\n\n"
             
-            for i, pg in enumerate(postgrados[:MAX_PROGRAMAS_MOSTRAR], 1):
-                nombre = pg.get('NOMBRE', pg.get('nombre', 'Sin nombre'))
-                facultad = pg.get('FACULTAD', pg.get('facultad', 'No especificada'))
+            # Agrupar por facultad para mejor organización
+            facultades = {}
+            for pg in postgrados:
+                facultad = pg.get('FACULTAD', pg.get('facultad', 'Sin Facultad'))
+                if facultad not in facultades:
+                    facultades[facultad] = []
+                facultades[facultad].append(pg)
+            
+            # Construir lista numerada global
+            contador = 1
+            for facultad, programas in sorted(facultades.items()):
+                mensaje += f"🏛️ *{facultad}*\n"
                 
-                mensaje += f"{i}. *{nombre}*\n"
-                mensaje += f"   🏛️ Facultad: {facultad}\n\n"
+                for pg in programas:
+                    nombre = pg.get('NOMBRE', pg.get('nombre', 'Sin nombre'))
+                    mensaje += f"{contador}. {nombre}\n"
+                    contador += 1
+                
+                mensaje += "\n"  # Separación entre facultades
             
-            if len(postgrados) > MAX_PROGRAMAS_MOSTRAR:
-                mensaje += f"... y {len(postgrados) - MAX_PROGRAMAS_MOSTRAR} programas más.\n\n"
+            # Instrucciones finales
+            mensaje += ("━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                 f"📊 *Total: {len(postgrados)} programas*\n\n")
+            mensaje += ("💡 *¿Cómo seleccionar?*\n"
+                 "• Escribe el *número* (ej: 5)\n"
+                 "• O escribe el *nombre* del programa\n"
+                 "• O palabras clave (ej: 'avalúos', 'software')")
             
-            mensaje += "💡 *Escribe el número* o el *nombre del programa* que te interesa."
             dispatcher.utter_message(text=mensaje)
             
             # Guardar lista completa para selección posterior
@@ -409,11 +413,11 @@ class ActionSeleccionarPostgrado(Action):
         
         else:
             # No encontrado - SUGERIR ALTERNATIVAS
-            mensaje = f"❌ No encontré el programa '{postgrado_nombre}'.\n\n"
-            mensaje += "💡 *Sugerencias:*\n"
-            mensaje += "• Verifica la escritura\n"
-            mensaje += "• Usa palabras clave (ej: 'avalúos', 'bioingeniería')\n"
-            mensaje += "• Escribe 'ver programas' para la lista completa"
+            mensaje = (f"❌ No encontré el programa '{postgrado_nombre}'.\n\n"
+                "💡 *Sugerencias:*\n"
+                "• Verifica la escritura\n"
+                "• Usa palabras clave (ej: 'avalúos', 'bioingeniería')\n"
+                "• Escribe 'ver programas' para la lista completa")
             
             dispatcher.utter_message(text=mensaje)
             
@@ -444,15 +448,15 @@ class ActionSeleccionarPostgrado(Action):
         facultad = pg.get('FACULTAD', pg.get('facultad', 'Universidad'))
         id_postgrado = pg.get('ID_POSTGRADO', pg.get('id_postgrado', pg.get('ID', pg.get('id'))))
         
-        mensaje = f"✅ Perfecto, hablemos sobre *{nombre}* de la Facultad de {facultad}.\n\n"
-        mensaje += "¿Qué quieres saber? Puedes preguntar sobre:\n"
-        mensaje += "💰 Costos y becas\n"
-        mensaje += "📋 Requisitos de admisión\n"
-        mensaje += "📅 Fechas de inscripción\n"
-        mensaje += "⏱️ Duración del programa\n"
-        mensaje += "💻 Modalidad (presencial/virtual)\n"
-        mensaje += "📞 Solicitar contacto con un asesor\n"
-        mensaje += "🏠 Retornar al menú principal\n"
+        mensaje = (f"✅ Perfecto, hablemos sobre *{nombre}* de la Facultad de {facultad}.\n\n"
+                 "¿Qué quieres saber? Puedes preguntar sobre:\n"
+                 "💰 Costos y becas\n"
+                 "📋 Requisitos de admisión\n"
+                 "📅 Fechas de inscripción\n"
+                 "⏱️ Duración del programa\n"
+                 "💻 Modalidad (presencial/virtual)\n"
+                 "❓ O escribe tu pregunta libremente si no aparece en la lista.\n"
+                 "🏠 Retornar al menú principal\n")
         
         dispatcher.utter_message(text=mensaje)
         
@@ -515,15 +519,15 @@ class ActionSeleccionarNumero(Action):
         facultad = pg.get('FACULTAD', pg.get('facultad', 'Universidad'))
         id_postgrado = pg.get('ID_POSTGRADO', pg.get('id_postgrado', pg.get('ID', pg.get('id'))))
         
-        mensaje = f"✅ Perfecto, hablemos sobre *{nombre}* de la Facultad de {facultad}.\n\n"
-        mensaje += "¿Qué quieres saber? Puedes preguntar sobre:\n"
-        mensaje += "💰 Costos y becas\n"
-        mensaje += "📋 Requisitos de admisión\n"
-        mensaje += "📅 Fechas de inscripción\n"
-        mensaje += "⏱️ Duración del programa\n"
-        mensaje += "💻 Modalidad (presencial/virtual)\n"
-        mensaje += "📞 O solicitar contacto con un asesor\n"
-        mensaje += "🏠 Retornar al menú principal\n"
+        mensaje = (f"✅ Perfecto, hablemos sobre *{nombre}* de la Facultad de {facultad}.\n\n"
+                 "¿Qué quieres saber? Puedes preguntar sobre:\n"
+                 "💰 Costos y becas\n"
+                 "📋 Requisitos de admisión\n"
+                 "📅 Fechas de inscripción\n"
+                 "⏱️ Duración del programa\n"
+                 "💻 Modalidad (presencial/virtual)\n"
+                 "❓ O escribe tu pregunta libremente si no aparece en la lista.\n"
+                 "🏠 Retornar al menú principal\n")
         
         dispatcher.utter_message(text=mensaje)
         
@@ -535,19 +539,10 @@ class ActionSeleccionarNumero(Action):
 
 
 # ============================================
-# ACTION: Buscar FAQ - ✅ OPTIMIZADA (UN SOLO MENSAJE)
-# ============================================
-
-# ============================================
-# ACTION: Buscar FAQ - ✅ OPTIMIZADA PARA APEX
+# ACTION: Buscar FAQ 
 # ============================================
 
 class ActionBuscarFAQ(Action):
-    """
-    Busca respuesta en FAQ aprovechando el scoring avanzado de APEX.
-    Envía la pregunta completa del usuario para que APEX haga el matching inteligente.
-    ✅ AJUSTADA para detectar todos los mensajes de error de APEX.
-    """
 
     def name(self) -> Text:
         return "action_buscar_faq"
@@ -717,10 +712,7 @@ class ActionBuscarFAQ(Action):
         return ' '.join(list(dict.fromkeys(encontradas)))  # Mantiene orden
     
     def _limpiar_pregunta(self, pregunta: str) -> str:
-        """
-        Limpia la pregunta de forma MUY conservadora.
-        Solo elimina palabras absolutamente innecesarias.
-        """
+        
         # Eliminar SOLO palabras de cortesía (no afectan búsqueda)
         stopwords = ['por favor', 'favor', 'gracias', 'hola', 'buenas']
         
@@ -753,19 +745,7 @@ class ActionBuscarFAQ(Action):
         return response.get("RESPUESTA", response.get("respuesta", ""))
     
     def _es_respuesta_valida(self, respuesta: str) -> bool:
-        """
-        ✅ MEJORADO: Detecta TODOS los mensajes de error de la función APEX buscar_faq.
-        
-        Mensajes de error de APEX que debemos detectar:
-        1. "Error: ID de postgrado no válido."
-        2. "Error: Por favor escribe tu pregunta."
-        3. "Tu pregunta es muy corta. ¿Podrías ser más específico?"
-        4. "No hay preguntas frecuentes disponibles para este programa..."
-        5. "No encontré una respuesta exacta para tu pregunta. Intenta reformular..."
-        6. "Error interno en la búsqueda. Por favor, contacta a un asesor."
-        7. "La respuesta está vacía. Por favor, contacta a un asesor..."
-        8. "Error al procesar tu pregunta (Código: ...)..."
-        """
+
         if not respuesta or len(respuesta.strip()) < 15:
             return False
         
@@ -866,7 +846,7 @@ class ActionBuscarFAQ(Action):
             mensaje += "📋 Requisitos • 📅 Fechas • 🔗 Link inscripción"
         else:
             mensaje += "También puedes preguntar sobre:\n"
-            mensaje += "💰 Costos • 📋 Requisitos • 📅 Fechas • 📞 Asesor"
+            mensaje += "💰 Costos • 📋 Requisitos • 📅 Fechas • ❓ Otro"
         
         mensaje += "\n\n🏠 Escribe 'menú principal' para ver otros programas."
         
@@ -883,35 +863,35 @@ class ActionBuscarFAQ(Action):
         
         # Detectar qué está buscando el usuario
         if any(word in pregunta_lower for word in ['inscrib', 'registro', 'como', 'pasos', 'proceso']):
-            mensaje += "💡 Intenta reformular tu pregunta:\n"
-            mensaje += "• 'como inscribirme'\n"
-            mensaje += "• 'pasos para inscripcion'\n"
-            mensaje += "• 'proceso de admision'\n"
-            mensaje += "• 'link de inscripcion'\n\n"
+            mensaje += ("💡 Intenta reformular tu pregunta:\n"
+                     "• 'como inscribirme'\n"
+                     "• 'pasos para inscripcion'\n"
+                     "• 'proceso de admision'\n"
+                     "• 'link de inscripcion'\n\n")
         
         elif any(word in pregunta_lower for word in ['costo', 'precio', 'cuanto', 'pago', 'valor']):
-            mensaje += "💡 Intenta preguntar:\n"
-            mensaje += "• 'cuanto cuesta'\n"
-            mensaje += "• 'valor de matricula'\n"
-            mensaje += "• 'costos'\n\n"
+            mensaje += ("💡 Intenta preguntar:\n"
+                     "• 'cuanto cuesta'\n"
+                     "• 'valor de matricula'\n"
+                     "• 'costos'\n\n")
         
         elif any(word in pregunta_lower for word in ['requisito', 'documento', 'necesit', 'piden']):
-            mensaje += "💡 Intenta preguntar:\n"
-            mensaje += "• 'requisitos'\n"
-            mensaje += "• 'documentos necesarios'\n"
-            mensaje += "• 'que necesito'\n\n"
+            mensaje += ("💡 Intenta preguntar:\n"
+                     "• 'requisitos'\n"
+                     "• 'documentos necesarios'\n"
+                     "• 'que necesito'\n\n")
         
         elif any(word in pregunta_lower for word in ['fecha', 'cuando', 'plazo', 'hasta']):
-            mensaje += "💡 Intenta preguntar:\n"
-            mensaje += "• 'fechas de inscripcion'\n"
-            mensaje += "• 'cuando son las inscripciones'\n"
-            mensaje += "• 'plazo de inscripcion'\n\n"
+            mensaje += ("💡 Intenta preguntar:\n"
+                     "• 'fechas de inscripcion'\n"
+                     "• 'cuando son las inscripciones'\n"
+                     "• 'plazo de inscripcion'\n\n")
         
         else:
             # Sugerencias generales
-            mensaje += "💡 Puedo ayudarte con:\n"
-            mensaje += "💰 Costos • 📋 Requisitos • 📅 Fechas • 🔗 Link inscripción\n"
-            mensaje += "📝 Proceso admisión • 💳 Financiación • 🎓 Becas\n\n"
+            mensaje += ("💡 Puedo ayudarte con:\n"
+                     "💰 Costos • 📋 Requisitos • 📅 Fechas • 🔗 Link inscripción\n"
+                     "📝 Proceso admisión • 💳 Financiación • 🎓 Becas\n\n")
         
         mensaje += "O escribe 'contactar asesor' para ayuda personalizada."
         
@@ -961,29 +941,29 @@ class ActionManejarPreguntaGeneral(Action):
             if respuesta:
                 # ✅ UN SOLO MENSAJE con respuesta + opciones
                 mensaje = f"ℹ️ *{postgrado_nombre}*\n\n{respuesta}\n\n"
-                mensaje += "📋 *¿Qué más te gustaría saber?*\n\n"
-                mensaje += "💰 Costos y formas de pago\n"
-                mensaje += "📋 Requisitos de admisión\n"
-                mensaje += "📅 Fechas de inscripción\n"
-                mensaje += "⏱️ Duración del programa\n"
-                mensaje += "💻 Modalidad y horarios\n"
-                mensaje += "📚 Plan de estudios\n"
-                mensaje += "🔗 Link de inscripción\n"
-                mensaje += "📞 Contactar un asesor"
+                mensaje += ("📋 *¿Qué más te gustaría saber?*\n\n"
+                         "💰 Costos y formas de pago\n"
+                         "📋 Requisitos de admisión\n"
+                         "📅 Fechas de inscripción\n"
+                         "⏱️ Duración del programa\n"
+                         "💻 Modalidad y horarios\n"
+                         "📚 Plan de estudios\n"
+                         "🔗 Link de inscripción\n"
+                         "❓ O escribe tu pregunta libremente si no aparece en la lista.\n")
                 
                 dispatcher.utter_message(text=mensaje)
                 return []
         
         # Si no hay información general, mostrar opciones
         mensaje = f"ℹ️ *Información sobre {postgrado_nombre}*\n\n"
-        mensaje += "¿Qué aspecto específico te interesa?\n\n"
-        mensaje += "💰 Costos\n"
-        mensaje += "📋 Requisitos\n"
-        mensaje += "📅 Fechas\n"
-        mensaje += "⏱️ Duración\n"
-        mensaje += "💻 Modalidad\n"
-        mensaje += "📚 Plan de estudios\n"
-        mensaje += "🔗 Link de inscripción"
+        mensaje += ("¿Qué aspecto específico te interesa?\n\n"
+                 "💰 Costos\n"
+                 "📋 Requisitos\n"
+                 "📅 Fechas\n"
+                 "⏱️ Duración\n"
+                 "💻 Modalidad\n"
+                 "📚 Plan de estudios\n"
+                 "🔗 Link de inscripción")
         
         dispatcher.utter_message(text=mensaje)
         
@@ -1209,14 +1189,14 @@ class ActionDefaultFallback(Action):
             mensaje = "🤔 No estoy seguro de entender.\n\n"
             
             if not postgrado_id:
-                mensaje += "¿Quieres que te muestre los programas disponibles?\n\n"
-                mensaje += "Escribe:\n• 'ver programas'\n• 'ayuda'\n• O el nombre de un programa"
+                mensaje += ("¿Quieres que te muestre los programas disponibles?\n\n"
+                         "Escribe:\n• 'ver programas'\n• 'ayuda'\n• O el nombre de un programa")
             else:
-                mensaje += "Puedes preguntarme:\n"
-                mensaje += "💰 ¿Cuánto cuesta?\n"
-                mensaje += "📋 ¿Qué requisitos necesito?\n"
-                mensaje += "📅 ¿Cuándo son las inscripciones?\n"
-                mensaje += "📞 Contactar asesor"
+                mensaje += ("Puedes preguntarme:\n"
+                         "💰 ¿Cuánto cuesta?\n"
+                         "📋 ¿Qué requisitos necesito?\n"
+                         "📅 ¿Cuándo son las inscripciones?\n"
+                         "📞 Contactar asesor")
             
             dispatcher.utter_message(text=mensaje)
             return [SlotSet("contador_fallback", contador)]
@@ -1227,23 +1207,23 @@ class ActionDefaultFallback(Action):
             mensaje += "Te sugiero:\n\n"
             
             if postgrado_id:
-                mensaje += "1️⃣ Hacer una pregunta específica (ej: 'costos', 'fechas')\n"
-                mensaje += "2️⃣ Cambiar de programa (escribe 'menú principal')\n"
-                mensaje += "3️⃣ Hablar con un asesor (escribe 'asesor')"
+                mensaje += ("1️⃣ Hacer una pregunta específica (ej: 'costos', 'fechas')\n"
+                         "2️⃣ Cambiar de programa (escribe 'menú principal')\n"
+                         "3️⃣ Hablar con un asesor (escribe 'asesor')")
             else:
-                mensaje += "1️⃣ Ver todos los programas → 'ver programas'\n"
-                mensaje += "2️⃣ Buscar un programa específico → escribe su nombre\n"
-                mensaje += "3️⃣ Pedir ayuda → 'ayuda'"
+                mensaje += ("1️⃣ Ver todos los programas → 'ver programas'\n"
+                         "2️⃣ Buscar un programa específico → escribe su nombre\n"
+                         "3️⃣ Pedir ayuda → 'ayuda'")
             
             dispatcher.utter_message(text=mensaje)
             return [SlotSet("contador_fallback", contador)]
         
         else:
             # Tercer fallback: escalar a humano
-            mensaje = "😔 Lamento no poder ayudarte de manera satisfactoria.\n\n"
-            mensaje += "🤝 ¿Te gustaría hablar con un asesor humano?\n\n"
-            mensaje += "Un especialista puede resolver tus dudas personalizadamente.\n\n"
-            mensaje += "Escribe 'sí' o 'contactar asesor' para que te llamemos."
+            mensaje = ("😔 Lamento no poder ayudarte de manera satisfactoria.\n\n"
+                     "🤝 ¿Te gustaría hablar con un asesor humano?\n\n"
+                     "Un especialista puede resolver tus dudas personalizadamente.\n\n"
+                     "Escribe 'sí' o 'contactar asesor' para que te llamemos.")
             
             dispatcher.utter_message(text=mensaje)
             return [
@@ -1271,10 +1251,10 @@ class ActionReiniciarConversacion(Action):
         
         logger.info("🔄 Ejecutando action_reiniciar_conversacion")
         
-        mensaje = "🔄 *Conversación reiniciada*\n\n"
-        mensaje += "¡Hola! Soy tu asistente virtual de Postgrados. 👋\n\n"
-        mensaje += "📚 *¿Qué programa te interesa?*\n\n"
-        mensaje += "Escribe el nombre del programa o 'ver programas' para ver todas las opciones."
+        mensaje = ("🔄 *Conversación reiniciada*\n\n"
+                 "¡Hola! Soy tu asistente virtual de Postgrados. 👋\n\n"
+                 "📚 *¿Qué programa te interesa?*\n\n"
+                 "Escribe el nombre del programa o 'ver programas' para ver todas las opciones.")
         
         dispatcher.utter_message(text=mensaje)
         
@@ -1305,19 +1285,19 @@ class ActionDespedida(Action):
         
         # ✅ Mensajes personalizados según contexto (UN SOLO MENSAJE)
         if postgrado_nombre:
-            mensaje = f"👋 ¡Hasta pronto!\n\n"
-            mensaje += f"Espero haber resuelto tus dudas sobre *{postgrado_nombre}*.\n\n"
-            mensaje += "¡Mucho éxito en tu formación académica! 🎓"
+            mensaje = (f"👋 ¡Hasta pronto!\n\n"
+                        f"Espero haber resuelto tus dudas sobre *{postgrado_nombre}*.\n\n"
+                        "¡Mucho éxito en tu formación académica! 🎓")
         elif intent == "negate_and_end":
             # Usuario dijo "nada más" o similar
-            mensaje = "✅ ¡Perfecto!\n\n"
-            mensaje += "Si tienes más preguntas en el futuro, no dudes en volver.\n\n"
-            mensaje += "¡Éxitos! 🎓"
+            mensaje = ("✅ ¡Perfecto!\n\n"
+                        "Si tienes más preguntas en el futuro, no dudes en volver.\n\n"
+                        "¡Éxitos! 🎓")
         else:
             # Despedida genérica
-            mensaje = "👋 ¡Hasta luego!\n\n"
-            mensaje += "Recuerda que puedes volver cuando necesites información.\n\n"
-            mensaje += "¡Que tengas un excelente día! 😊"
+            mensaje = ("👋 ¡Hasta luego!\n\n"
+                     "Recuerda que puedes volver cuando necesites información.\n\n"
+                     "¡Que tengas un excelente día! 😊")
         
         # ✅ Enviar mensaje sin metadata (más simple)
         dispatcher.utter_message(text=mensaje)
@@ -1473,11 +1453,11 @@ class ActionEnviarDatosContacto(Action):
         
         if response and response.get("status") == "success":
             # ✅ UN SOLO MENSAJE con todos los detalles
-            mensaje_respuesta = f"✅ *¡Perfecto {nombre}!* Tus datos han sido registrados.\n\n"
-            mensaje_respuesta += f"📧 Te enviaremos información a: {email}\n"
-            mensaje_respuesta += f"📱 Y te contactaremos al: {telefono}\n\n"
-            mensaje_respuesta += "Un asesor se comunicará contigo en las próximas 24 horas.\n\n"
-            mensaje_respuesta += "¿Hay algo más en lo que pueda ayudarte?"
+            mensaje_respuesta = (f"✅ *¡Perfecto {nombre}!* Tus datos han sido registrados.\n\n"
+                                 f"📧 Te enviaremos información a: {email}\n"
+                                 f"📱 Y te contactaremos al: {telefono}\n\n"
+                                 "Un asesor se comunicará contigo en las próximas 24 horas.\n\n"
+                                 "¿Hay algo más en lo que pueda ayudarte?")
             dispatcher.utter_message(text=mensaje_respuesta)
         else:
             error_msg = response.get("message", "Error desconocido") if response else "Sin conexión"
@@ -1559,9 +1539,9 @@ class ActionObtenerInfoEspecifica(Action):
             if descripcion:
                 mensaje += f"📝 {descripcion}\n\n"
             if correo:
-                mensaje += f"📧 Contacto: {correo}\n\n"
-            mensaje += "¿Qué información específica necesitas?\n"
-            mensaje += "💰 Costos • 📅 Fechas • 📋 Requisitos • ⏱️ Duración • 💻 Modalidad"
+                mensaje += (f"📧 Contacto: {correo}\n\n"
+                    "¿Qué información específica necesitas?\n"
+                    "💰 Costos • 📅 Fechas • 📋 Requisitos • ⏱️ Duración • 💻 Modalidad")
         
         dispatcher.utter_message(text=mensaje)
         
@@ -1573,23 +1553,6 @@ class ActionObtenerInfoEspecifica(Action):
 # ============================================
 
 class ActionBuscarFaqLibre(Action):
-    """
-    ✅ VERSIÓN OPTIMIZADA CON ESTRATEGIA DE HINTS
-    
-    🎯 PROPÓSITO:
-    Manejar preguntas que:
-    1. NO tienen intent específico en Rasa
-    2. PERO SÍ tienen respuesta en FAQ de APEX
-    
-    🧠 ESTRATEGIA:
-    Como intent=pregunta_postgrado tiene baja confianza (0.3-0.5),
-    NO usamos hints predefinidos. Dejamos que APEX haga TODO el scoring.
-    
-    📊 VENTAJAS:
-    - APEX tiene 5 niveles de scoring (exacto → semántico → débil)
-    - No necesitamos adivinar qué busca el usuario
-    - Evitamos falsos positivos
-    """
 
     def name(self) -> Text:
         return "action_buscar_faq_libre"
@@ -1604,7 +1567,7 @@ class ActionBuscarFaqLibre(Action):
         intent = tracker.latest_message.get("intent", {}).get("name")
         confidence = tracker.latest_message.get("intent", {}).get("confidence", 0)
         
-        logger.info(f"🔍 Búsqueda libre FAQ (COMODÍN)")
+        logger.info(f"🔍 Búsqueda libre FAQ")
         logger.info(f"   Postgrado: {postgrado_nombre} (ID: {postgrado_id})")
         logger.info(f"   Pregunta: '{user_message}'")
         logger.info(f"   Intent: {intent} (conf: {confidence:.2f})")
@@ -1623,16 +1586,6 @@ class ActionBuscarFaqLibre(Action):
                 "Tu pregunta es muy corta. ¿Podrías ser más específico? 😅"
             ))
             return []
-        
-        # ==================== ESTRATEGIA: CONFIAR EN APEX ====================
-        # A diferencia de ActionBuscarFAQ (que tiene intent específico con alta confianza),
-        # aquí tenemos intent genérico con BAJA confianza (0.3-0.5).
-        # 
-        # Por tanto:
-        # ✅ SI: Enviar pregunta ORIGINAL directamente a APEX
-        # ❌ NO: Intentar múltiples variantes (causaría más ruido)
-        #
-        # APEX hará el trabajo pesado con sus 5 niveles de scoring.
         
         logger.info("💡 Estrategia: Búsqueda directa (confianza en scoring de APEX)")
         
@@ -1740,14 +1693,7 @@ class ActionBuscarFaqLibre(Action):
     # ==================== MÉTODOS AUXILIARES ====================
     
     def _extraer_respuesta_apex(self, response) -> Optional[str]:
-        """
-        ✅ Extrae respuesta de APEX (maneja ambos formatos)
-        
-        Formatos soportados:
-        1. String directo: "La respuesta es..."
-        2. JSON: {"respuesta": "La respuesta es..."}
-        3. JSON anidado: {"status": "success", "data": {"respuesta": "..."}}
-        """
+    
         try:
             content_type = response.headers.get('Content-Type', '').lower()
             
@@ -1783,15 +1729,7 @@ class ActionBuscarFaqLibre(Action):
             return None
     
     def _detectar_tipo_error_apex(self, respuesta: str) -> Optional[str]:
-        """
-        ✅ Detecta si la respuesta es un mensaje de error de APEX
-        
-        Returns:
-            - None: Respuesta válida
-            - "VALIDACION": Error de validación (input del usuario)
-            - "NO_DATA": No se encontró respuesta en la BD
-            - "TECNICO": Error técnico del servidor
-        """
+    
         if not respuesta or len(respuesta.strip()) < 15:
             return "NO_DATA"
         
@@ -1837,14 +1775,7 @@ class ActionBuscarFaqLibre(Action):
     
     def _formatear_respuesta(self, respuesta: str, postgrado_nombre: str, 
                             pregunta_original: str) -> str:
-        """
-        ✅ Formatea respuesta con sugerencias inteligentes
         
-        Analiza:
-        1. El contenido de la respuesta de APEX
-        2. La pregunta original del usuario
-        3. Sugiere temas relacionados
-        """
         mensaje = f"💡 *{postgrado_nombre}*\n\n{respuesta}\n\n"
         
         # ========== ANÁLISIS SEMÁNTICO ==========
@@ -1856,23 +1787,23 @@ class ActionBuscarFaqLibre(Action):
             mensaje += "También puedes preguntar:\n📋 Requisitos • 📅 Fechas • 💳 Financiación"
         
         elif any(w in resp_lower for w in ['convenio', 'empresa', 'alianza']):
-            mensaje += "También puedes preguntar:\n💼 Prácticas • 🎓 Perfil egresados • 📞 Asesor"
+            mensaje += "También puedes preguntar:\n💼 Prácticas • 🎓 Perfil egresados"
         
         elif any(w in resp_lower for w in ['parqueadero', 'biblioteca', 'laboratorio']):
             mensaje += "También puedes preguntar:\n🏢 Otras instalaciones • 💻 Modalidad • 📞 Visitar campus"
         
         elif any(w in resp_lower for w in ['práctica', 'pasantía']):
-            mensaje += "También puedes preguntar:\n💼 Convenios • 🏢 Empresas aliadas • 📞 Asesor"
+            mensaje += "También puedes preguntar:\n💼 Convenios • 🏢 Empresas aliadas"
         
         elif any(w in resp_lower for w in ['egresado', 'graduado', 'empleo']):
             mensaje += "También puedes preguntar:\n💼 Empleabilidad • 🎓 Red egresados • 📊 Estadísticas"
         
         elif any(w in resp_lower for w in ['investigación', 'grupo', 'semillero']):
-            mensaje += "También puedes preguntar:\n🔬 Líneas investigación • 📚 Publicaciones • 📞 Asesor"
+            mensaje += "También puedes preguntar:\n🔬 Líneas investigación • 📚 Publicaciones"
         
         else:
             # Sugerencias generales
-            mensaje += "También puedes preguntar:\n💰 Costos • 📋 Requisitos • 📅 Fechas • 📞 Asesor"
+            mensaje += "También puedes preguntar:\n💰 Costos • 📋 Requisitos • 📅 Fechas"
         
         mensaje += "\n\n🏠 Escribe 'menú principal' para ver otros programas."
         
@@ -1880,14 +1811,7 @@ class ActionBuscarFaqLibre(Action):
     
     def _enviar_sugerencias(self, dispatcher: CollectingDispatcher, 
                            postgrado_nombre: str, pregunta: str):
-        """
-        ✅ Sugerencias contextuales cuando APEX no encuentra respuesta
-        
-        Estrategia:
-        1. Analizar la pregunta del usuario
-        2. Identificar la categoría
-        3. Sugerir preguntas alternativas o asesor
-        """
+
         mensaje = f"🤔 No encontré información específica sobre:\n"
         mensaje += f"*\"{pregunta}\"*\n\n"
         mensaje += f"para *{postgrado_nombre}*.\n\n"
@@ -2170,10 +2094,10 @@ class ActionEscalarAHumano(Action):
         
         logger.info("👤 Ejecutando action_escalar_a_humano")
         
-        mensaje = "😔 Disculpa, parece que no estoy pudiendo ayudarte correctamente.\n\n"
-        mensaje += "🤝 *¿Te gustaría hablar con un asesor humano?*\n\n"
-        mensaje += "Un especialista puede resolver tus dudas de manera personalizada.\n\n"
-        mensaje += "📞 Escribe 'contactar asesor' o 'sí' para que te llamemos."
+        mensaje = ("😔 Disculpa, parece que no estoy pudiendo ayudarte correctamente.\n\n"
+                     "🤝 *¿Te gustaría hablar con un asesor humano?*\n\n"
+                     "Un especialista puede resolver tus dudas de manera personalizada.\n\n"
+                     "📞 Escribe 'contactar asesor' o 'sí' para que te llamemos.")
         
         dispatcher.utter_message(text=mensaje)
         
@@ -2243,10 +2167,6 @@ class ActionLogUnknownIntent(Action):
 # ============================================
 
 class ActionSolicitarPrograma(Action):
-    """
-    ✅ NUEVA: Reemplaza utter_ask_cual_programa + action_listar_postgrados
-    Combina solicitud + lista en UN SOLO MENSAJE
-    """
 
     def name(self) -> Text:
         return "action_solicitar_programa"
