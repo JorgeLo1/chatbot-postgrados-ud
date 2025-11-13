@@ -48,7 +48,7 @@ pipeline:
     # Ranking
     ranking_length: 10
     # CRÍTICO: Threshold más alto para mayor precisión
-    threshold: 0.3  # Evita intents con baja confianza
+    threshold: 0.5  
   
   # Extractor de entidades CRF (para secuencias)
   - name: EntitySynonymMapper
@@ -65,8 +65,8 @@ pipeline:
   
   # Fallback mejorado
   - name: FallbackClassifier
-    threshold: 0.6  # Si confianza < 60%, activa fallback
-    ambiguity_threshold: 0.1  # Diferencia mínima entre top 2 intents
+    threshold: 0.7  # Si confianza < 60%, activa fallback
+    ambiguity_threshold: 0.15  # Diferencia mínima entre top 2 intents
 
 # ============================================
 # POLICIES - OPTIMIZADAS

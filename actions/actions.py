@@ -912,7 +912,10 @@ class ActionGuardarHistorial(Action):
 # ============================================
 
 class ActionContactarAsesor(Action):
-    """Registra solicitud de contacto - SOLICITA TELÉFONO AL USUARIO"""
+    """
+    Acción simplificada: solo valida postgrado y activa el form.
+    El envío real se hace en action_enviar_datos_contacto
+    """
 
     def name(self) -> Text:
         return "action_contactar_asesor"
@@ -926,106 +929,31 @@ class ActionContactarAsesor(Action):
         
         logger.info("📞 Ejecutando action_contactar_asesor")
         
-        # ✅ OBTENER TELÉFONO DEL SLOT (debe ser llenado por un form)
-        telefono_usuario = tracker.get_slot("telefono")
         postgrado_id = tracker.get_slot("postgrado_id")
         postgrado_nombre = tracker.get_slot("postgrado_nombre") or "postgrados"
-        mensaje_usuario = tracker.latest_message.get("text", "")
         
-        # ✅ VALIDAR QUE TENGAMOS POSTGRADO
+        # ✅ VALIDACIÓN: Debe tener postgrado seleccionado
         if not postgrado_id:
             dispatcher.utter_message(
-                text="❌ Primero selecciona un programa de postgrado.\n\nEscribe 'ver programas' para explorar las opciones."
+                text=(
+                    "❌ Primero selecciona un programa de postgrado.\n\n"
+                    "Escribe 'ver programas' para explorar las opciones."
+                )
             )
             return [FollowupAction("action_listar_postgrados")]
         
-        # ✅ SI NO TENEMOS TELÉFONO, ACTIVAR FORMULARIO
-        if not telefono_usuario:
-            dispatcher.utter_message(
-                text="📱 Para que un asesor te contacte, necesito tu número de teléfono.\n\n"
-                     "Por favor, escribe tu número (con código de país si es internacional).\n"
-                     "Ejemplo: +573001234567"
-            )
-            # Activar el form para recopilar datos
-            return [FollowupAction("datos_contacto_form")]
+        # ✅ MENSAJE INICIAL (UN SOLO MENSAJE)
+        mensaje = (
+            f"📞 *Contacto con Asesor - {postgrado_nombre}*\n\n"
+            "Para que un especialista te contacte, necesito algunos datos.\n\n"
+            "El proceso tomará solo 1 minuto. ¿Comenzamos?\n\n"
+            "_(Escribe 'cancelar' en cualquier momento para detener)_"
+        )
         
-        # ✅ VALIDAR FORMATO DE TELÉFONO ANTES DE ENVIAR
-        import re
-        telefono_limpio = re.sub(r'[^\d+]', '', telefono_usuario)
+        dispatcher.utter_message(text=mensaje)
         
-        if not re.match(r'^\+?[0-9]{10,15}', telefono_limpio):
-            dispatcher.utter_message(
-                text=f"❌ El teléfono '{telefono_usuario}' no tiene un formato válido.\n\n"
-                     "Debe contener entre 10 y 15 dígitos.\n"
-                     "Ejemplo: +573001234567 o 3001234567"
-            )
-            return [SlotSet("telefono", None)]
-        
-        # ✅ PREPARAR DATA PARA LA API
-        data = {
-            "telefono": telefono_limpio,
-            "postgrado_id": int(postgrado_id),  # Ya validado que existe
-            "mensaje": mensaje_usuario or f"Solicitud de contacto desde chatbot para {postgrado_nombre}"
-        }
-        
-        logger.info(f"📤 Enviando a API: {data}")
-        
-        # ✅ LLAMAR A LA API
-        response = make_api_request("POST", "contacto", data=data)
-        
-        # ✅ MANEJAR RESPUESTA
-        if response and response.get("status") == "success":
-            mensaje = f"✅ *¡Perfecto!* Tu solicitud ha sido registrada.\n\n"
-            mensaje += f"📞 Un asesor especializado en *{postgrado_nombre}* "
-            mensaje += f"te contactará pronto al número *{telefono_limpio}*.\n\n"
-            
-            # Mostrar correo de contacto si viene en la respuesta
-            if response.get("correo_contacto"):
-                mensaje += f"📧 También puedes escribir a: {response.get('correo_contacto')}\n\n"
-            
-            mensaje += "💡 ¿Hay algo más en lo que pueda ayudarte?"
-            
-            dispatcher.utter_message(text=mensaje)
-            
-            return [SlotSet("ultima_respuesta", mensaje)]
-        
-        # ✅ MANEJO DE ERRORES ESPECÍFICOS
-        elif response and response.get("status") == "error":
-            error_msg = response.get("message", "Error desconocido")
-            logger.error(f"❌ Error del servidor: {error_msg}")
-            
-            if "teléfono" in error_msg.lower():
-                dispatcher.utter_message(
-                    text=f"❌ Hubo un problema con el número de teléfono:\n\n{error_msg}\n\n"
-                         "Por favor, verifica el formato e intenta nuevamente."
-                )
-                return [SlotSet("telefono", None)]
-            
-            elif "postgrado" in error_msg.lower():
-                dispatcher.utter_message(
-                    text=f"❌ {error_msg}\n\nPor favor, selecciona un programa válido."
-                )
-                return [
-                    SlotSet("postgrado_id", None),
-                    FollowupAction("action_listar_postgrados")
-                ]
-            
-            else:
-                dispatcher.utter_message(
-                    text=f"❌ Error al procesar tu solicitud:\n\n{error_msg}\n\n"
-                         "Por favor, intenta nuevamente más tarde."
-                )
-        
-        else:
-            # Error de conexión o timeout
-            dispatcher.utter_message(
-                text="❌ No pude conectar con el servidor en este momento.\n\n"
-                     "Por favor, intenta nuevamente o escribe directamente a:\n"
-                     "📧 postgrados@udistrital.edu.co\n"
-                     "📱 WhatsApp: +57 300 123 4567"
-            )
-        
-        return []
+        # ✅ ACTIVAR FORMULARIO
+        return [FollowupAction("datos_contacto_form")]
 
 
 # ============================================
@@ -1310,49 +1238,84 @@ class ValidateDatosContactoForm(FormValidationAction):
 # ============================================
 
 class ActionEnviarDatosContacto(Action):
-    """Envía los datos de contacto completos a la base de datos"""
+    """
+    Envía los datos completos a la API DESPUÉS de que el form termine
+    """
 
     def name(self) -> Text:
         return "action_enviar_datos_contacto"
 
-    def run(self, dispatcher: CollectingDispatcher, tracker: Tracker, domain: Dict[Text, Any],) -> List[Dict[Text, Any]]:
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
         
         logger.info("📧 Ejecutando action_enviar_datos_contacto")
         
+        # ✅ OBTENER DATOS DEL FORM (ya validados)
         nombre = tracker.get_slot("nombre_completo")
         email = tracker.get_slot("email")
         telefono = tracker.get_slot("telefono")
         postgrado_id = tracker.get_slot("postgrado_id")
         postgrado_nombre = tracker.get_slot("postgrado_nombre") or "postgrado"
         
-        # ✅ CONSTRUIR MENSAJE CON TODOS LOS DATOS
-        mensaje = f"Solicitud de contacto - Nombre: {nombre} - Email: {email} - Programa: {postgrado_nombre}"
+        # ✅ MENSAJE CON TODOS LOS DATOS (para la API)
+        mensaje_api = (
+            f"Solicitud de contacto\n"
+            f"Nombre: {nombre}\n"
+            f"Email: {email}\n"
+            f"Programa: {postgrado_nombre}"
+        )
         
-        # ✅ DATA QUE TU API SÍ ACEPTA
+        # ✅ DATA PARA LA API
         data = {
             "telefono": telefono,
-            "postgrado_id": int(postgrado_id) if postgrado_id else None,
-            "mensaje": mensaje
+            "postgrado_id": int(postgrado_id),
+            "mensaje": mensaje_api
         }
         
-        logger.info(f"🌐 API Request: POST {APEX_API_BASE_URL}/contacto")
-        logger.info(f"📋 Data: {data}")
+        logger.info(f"📤 Enviando a API: {data}")
         
+        # ✅ LLAMAR A LA API
         response = make_api_request("POST", "contacto", data=data)
         
+        # ✅ MANEJAR RESPUESTA
         if response and response.get("status") == "success":
-            # ✅ UN SOLO MENSAJE con todos los detalles
-            mensaje_respuesta = (f"✅ *¡Perfecto {nombre}!* Tus datos han sido registrados.\n\n"
-                                 f"📧 Te enviaremos información a: {email}\n"
-                                 f"📱 Y te contactaremos al: {telefono}\n\n"
-                                 "Un asesor se comunicará contigo en las próximas 24 horas.\n\n"
-                                 "¿Hay algo más en lo que pueda ayudarte?")
-            dispatcher.utter_message(text=mensaje_respuesta)
-        else:
-            error_msg = response.get("message", "Error desconocido") if response else "Sin conexión"
-            logger.error(f"❌ Error del servidor APEX: {error_msg}")
+            # ✅ UN SOLO MENSAJE DE ÉXITO
+            mensaje = (
+                f"✅ *¡Perfecto, {nombre}!* Tu solicitud ha sido registrada.\n\n"
+                f"📧 Recibirás información en: {email}\n"
+                f"📱 Te contactaremos al: {telefono}\n\n"
+                "Un asesor especializado se comunicará contigo en las próximas 24 horas.\n\n"
+                "💡 ¿Hay algo más en lo que pueda ayudarte?"
+            )
+            
+            dispatcher.utter_message(text=mensaje)
+            return [SlotSet("ultima_respuesta", mensaje)]
+        
+        elif response and response.get("status") == "error":
+            error_msg = response.get("message", "Error desconocido")
+            logger.error(f"❌ Error del servidor: {error_msg}")
+            
             dispatcher.utter_message(
-                text="❌ Hubo un problema al registrar tus datos. Por favor, intenta nuevamente."
+                text=(
+                    f"❌ Hubo un problema al registrar tu solicitud:\n\n{error_msg}\n\n"
+                    "Por favor, intenta nuevamente o escribe directamente a:\n"
+                    "📧 postgrados@udistrital.edu.co"
+                )
+            )
+        
+        else:
+            # Error de conexión
+            dispatcher.utter_message(
+                text=(
+                    "❌ No pude conectar con el servidor en este momento.\n\n"
+                    "Por favor, intenta nuevamente o contacta directamente:\n"
+                    "📧 postgrados@udistrital.edu.co\n"
+                    "📱 WhatsApp: +57 300 123 4567"
+                )
             )
         
         return []
@@ -1442,6 +1405,7 @@ class ActionObtenerInfoEspecifica(Action):
 # ============================================
 
 class ActionBuscarFaqLibre(Action):
+    """Búsqueda FAQ mejorada con detección correcta de errores"""
 
     def name(self) -> Text:
         return "action_buscar_faq_libre"
@@ -1453,17 +1417,9 @@ class ActionBuscarFaqLibre(Action):
         postgrado_id = tracker.get_slot("postgrado_id")
         postgrado_nombre = tracker.get_slot("postgrado_nombre") or "este programa"
         user_message = tracker.latest_message.get('text', '').strip()
-        intent = tracker.latest_message.get("intent", {}).get("name")
-        confidence = tracker.latest_message.get("intent", {}).get("confidence", 0)
-        
-        logger.info(f"🔍 Búsqueda libre FAQ")
-        logger.info(f"   Postgrado: {postgrado_nombre} (ID: {postgrado_id})")
-        logger.info(f"   Pregunta: '{user_message}'")
-        logger.info(f"   Intent: {intent} (conf: {confidence:.2f})")
         
         # ==================== VALIDACIONES PREVIAS ====================
         if not postgrado_id:
-            logger.warning("⚠️ No hay postgrado seleccionado")
             dispatcher.utter_message(text=(
                 "Necesito saber sobre qué programa preguntas. 🤔\n\n"
                 "Escribe 'menú principal' para ver los programas disponibles."
@@ -1475,8 +1431,6 @@ class ActionBuscarFaqLibre(Action):
                 "Tu pregunta es muy corta. ¿Podrías ser más específico? 😅"
             ))
             return []
-        
-        logger.info("💡 Estrategia: Búsqueda directa (confianza en scoring de APEX)")
         
         # ==================== CACHE ====================
         try:
@@ -1499,23 +1453,14 @@ class ActionBuscarFaqLibre(Action):
         
         # ==================== LLAMADA ÚNICA A API ====================
         try:
-            api_url = f"{APEX_API_BASE_URL}/faq/buscar/{postgrado_id}"
-            params = {"pregunta": user_message}  # ✅ Pregunta ORIGINAL
-            
-            logger.info(f"🌐 API Request: GET {api_url}")
-            logger.info(f"📋 Params: {params}")
-            
-            response = requests.get(
-                api_url, 
-                params=params, 
-                timeout=APEX_TIMEOUT,
-                verify=False
+            response = make_api_request(
+                "GET",
+                f"faq/buscar/{postgrado_id}",
+                params={"pregunta": user_message}
             )
             
-            logger.info(f"📥 Response Status: {response.status_code}")
-            
-            if response.status_code != 200:
-                logger.error(f"❌ Error HTTP {response.status_code}")
+            if not response:
+                logger.error("❌ Sin respuesta de API")
                 self._enviar_mensaje_error_api(dispatcher)
                 return []
             
@@ -1523,39 +1468,43 @@ class ActionBuscarFaqLibre(Action):
             respuesta = self._extraer_respuesta_apex(response)
             
             if not respuesta:
-                logger.error(f"❌ No se pudo extraer respuesta")
+                logger.error("❌ No se pudo extraer respuesta")
                 self._enviar_sugerencias(dispatcher, postgrado_nombre, user_message)
                 return []
             
             logger.info(f"📄 Respuesta: {respuesta[:100]}...")
             
             # ==================== VALIDAR TIPO DE RESPUESTA ====================
-            tipo_error = self._detectar_tipo_error_apex(respuesta)
+            tipo_respuesta = self._clasificar_respuesta_apex(respuesta)
             
-            if tipo_error:
-                logger.warning(f"⚠️ APEX devolvió error tipo: {tipo_error}")
-                
-                if tipo_error == "NO_DATA":
-                    # No encontró → Sugerencias contextuales
-                    self._enviar_sugerencias(dispatcher, postgrado_nombre, user_message)
-                elif tipo_error == "VALIDACION":
-                    # Error de validación → Devolver mensaje de APEX
-                    dispatcher.utter_message(text=respuesta)
-                else:
-                    # Error técnico
-                    self._enviar_mensaje_error_api(dispatcher)
-                
+            if tipo_respuesta == "ERROR_TECNICO":
+                logger.error(f"❌ Error técnico de APEX")
+                self._enviar_mensaje_error_api(dispatcher)
                 return []
             
-            # ==================== RESPUESTA VÁLIDA ====================
-            logger.info(f"✅ Respuesta válida encontrada")
+            elif tipo_respuesta == "NO_ENCONTRADO":
+                # ✅ APEX dice "no encontré", pero NO es un error
+                logger.info(f"ℹ️ APEX no encontró información específica")
+                self._enviar_sugerencias(dispatcher, postgrado_nombre, user_message)
+                return []
             
-            if cache_key:
-                set_in_cache(cache_key, respuesta)
+            elif tipo_respuesta == "RESPUESTA_VALIDA":
+                # ✅ Contenido útil
+                logger.info(f"✅ Respuesta válida encontrada")
+                
+                if cache_key:
+                    set_in_cache(cache_key, respuesta)
+                
+                mensaje = self._formatear_respuesta(respuesta, postgrado_nombre, user_message)
+                dispatcher.utter_message(text=mensaje)
+                return [SlotSet("ultima_respuesta", respuesta)]
             
-            mensaje = self._formatear_respuesta(respuesta, postgrado_nombre, user_message)
-            dispatcher.utter_message(text=mensaje)
-            return [SlotSet("ultima_respuesta", respuesta)]
+            else:
+                # ✅ RESPUESTA_AMBIGUA - mostrar con advertencia
+                logger.warning(f"⚠️ Respuesta ambigua")
+                mensaje = self._formatear_respuesta(respuesta, postgrado_nombre, user_message)
+                dispatcher.utter_message(text=mensaje)
+                return [SlotSet("ultima_respuesta", respuesta)]
         
         except requests.exceptions.Timeout:
             logger.error("⏱️ Timeout")
@@ -1564,213 +1513,197 @@ class ActionBuscarFaqLibre(Action):
                 "Por favor, intenta nuevamente."
             ))
         
-        except requests.exceptions.ConnectionError:
-            logger.error("🔌 Error de conexión")
-            dispatcher.utter_message(text=(
-                "No pude conectar con el servidor. 🔌\n\n"
-                "Por favor, intenta nuevamente."
-            ))
-        
         except Exception as e:
             logger.error(f"❌ Error inesperado: {type(e).__name__}: {str(e)}")
-            import traceback
-            logger.error(traceback.format_exc())
             self._enviar_mensaje_error_api(dispatcher)
         
         return []
     
-    # ==================== MÉTODOS AUXILIARES ====================
+    # ==================== MÉTODOS AUXILIARES CORREGIDOS ====================
+    
+    def _clasificar_respuesta_apex(self, respuesta: str) -> str:
+        """
+        ✅ CLASIFICACIÓN CORRECTA de respuestas APEX
+        
+        Returns:
+            - "ERROR_TECNICO": Error del servidor/código
+            - "NO_ENCONTRADO": APEX dice explícitamente "no encontré" (NO es error)
+            - "RESPUESTA_VALIDA": Contenido útil
+            - "RESPUESTA_AMBIGUA": Podría ser válida o genérica
+        """
+        if not respuesta or len(respuesta.strip()) < 10:
+            return "ERROR_TECNICO"
+        
+        resp_lower = respuesta.lower()
+        
+        # ========== 1. ERRORES TÉCNICOS (servidor/código) ==========
+        errores_tecnicos = [
+            'error interno',
+            'código:',
+            '(código:',
+            'sqlcode',
+            'ora-',
+            'exception',
+            'stack trace',
+            'null pointer'
+        ]
+        
+        if any(err in resp_lower for err in errores_tecnicos):
+            return "ERROR_TECNICO"
+        
+        # ========== 2. VALIDACIÓN DE INPUT (usuario escribió mal) ==========
+        # Esto NO es error técnico, es feedback al usuario
+        validaciones_input = [
+            'error: id de postgrado',
+            'error: por favor escribe',
+            'tu pregunta es muy corta',
+            '¿podrías ser más específico?'
+        ]
+        
+        if any(val in resp_lower for val in validaciones_input):
+            return "NO_ENCONTRADO"  # Tratar como "no encontrado"
+        
+        # ========== 3. NO ENCONTRADO (APEX no tiene info) ==========
+        # ✅ ESTAS SON RESPUESTAS VÁLIDAS, no errores
+        mensajes_no_encontrado = [
+            'no encontré una respuesta exacta',
+            'no encontré información específica',
+            'intenta reformular',
+            'no hay preguntas frecuentes disponibles',
+            'no tengo información sobre',
+            'no dispongo de datos'
+        ]
+        
+        if any(msg in resp_lower for msg in mensajes_no_encontrado):
+            return "NO_ENCONTRADO"
+        
+        # ========== 4. RESPUESTA VÁLIDA ==========
+        # Indicadores de contenido útil
+        indicadores_validos = [
+            'el costo',
+            'los requisitos',
+            'la duración',
+            'la modalidad',
+            'las fechas',
+            'el programa',
+            'la especialización',
+            'puedes',
+            'debes',
+            'necesitas',
+            'se requiere',
+            'smmlv',
+            'semestre',
+            'crédito',
+            '$',
+            'inscripción',
+            'admisión'
+        ]
+        
+        # Si tiene al menos 2 indicadores Y más de 50 caracteres
+        contador = sum(1 for ind in indicadores_validos if ind in resp_lower)
+        
+        if contador >= 2 and len(respuesta) > 50:
+            return "RESPUESTA_VALIDA"
+        
+        # Si tiene al menos 1 indicador Y más de 100 caracteres
+        if contador >= 1 and len(respuesta) > 100:
+            return "RESPUESTA_VALIDA"
+        
+        # ========== 5. RESPUESTA AMBIGUA ==========
+        # Respuestas genéricas que podrían ser válidas
+        return "RESPUESTA_AMBIGUA"
     
     def _extraer_respuesta_apex(self, response) -> Optional[str]:
-    
+        """Extrae respuesta de API (sin cambios)"""
         try:
             content_type = response.headers.get('Content-Type', '').lower()
             
             if 'application/json' in content_type:
-                # Intenta parsear como JSON
                 try:
                     data = response.json()
                     
-                    # Caso: {"status": "success", "data": {...}}
                     if isinstance(data, dict) and 'data' in data:
                         data = data['data']
                     
-                    # Caso: {"respuesta": "..."}
                     if isinstance(data, dict) and 'respuesta' in data:
                         return str(data['respuesta']).strip()
                     
-                    # Caso: string directo en JSON
                     if isinstance(data, str):
                         return data.strip()
                     
-                    # Fallback: convertir a string
                     return str(data).strip() if data else None
                     
                 except ValueError:
-                    # Si falla JSON, intentar como texto
                     pass
             
-            # Caso: texto plano (tu función PL/SQL hace RETURN directo)
             return response.text.strip()
             
         except Exception as e:
             logger.error(f"Error extrayendo respuesta: {e}")
             return None
     
-    def _detectar_tipo_error_apex(self, respuesta: str) -> Optional[str]:
-    
-        if not respuesta or len(respuesta.strip()) < 15:
-            return "NO_DATA"
-        
-        resp_lower = respuesta.lower()
-        
-        # ========== VALIDACIÓN (input incorrecto) ==========
-        if any(x in resp_lower for x in [
-            'error: id de postgrado',
-            'error: por favor escribe',
-            'tu pregunta es muy corta',
-            '¿podrías ser más específico?'
-        ]):
-            return "VALIDACION"
-        
-        # ========== NO_DATA (esperado, no es error técnico) ==========
-        if any(x in resp_lower for x in [
-            'no encontré una respuesta exacta',
-            'intenta reformular',
-            'no hay preguntas frecuentes disponibles'
-        ]):
-            return "NO_DATA"
-        
-        # ========== TÉCNICO (error del servidor) ==========
-        if any(x in resp_lower for x in [
-            'error interno',
-            'la respuesta está vacía',
-            'error al procesar',
-            'código:',
-            '(código:',
-            'sqlcode'
-        ]):
-            return "TECNICO"
-        
-        # ========== GENÉRICO ==========
-        if resp_lower.startswith('error:'):
-            # Determinar subtipo
-            if 'postgrado' in resp_lower or 'pregunta' in resp_lower:
-                return "VALIDACION"
-            return "TECNICO"
-        
-        # Respuesta válida
-        return None
-    
     def _formatear_respuesta(self, respuesta: str, postgrado_nombre: str, 
                             pregunta_original: str) -> str:
+        """Formatea respuesta con sugerencias contextuales"""
         
         mensaje = f"💡 *{postgrado_nombre}*\n\n{respuesta}\n\n"
         
-        # ========== ANÁLISIS SEMÁNTICO ==========
         resp_lower = respuesta.lower()
-        preg_lower = pregunta_original.lower()
         
-        # Detectar tema principal
+        # Sugerencias según tema detectado
         if any(w in resp_lower for w in ['costo', 'precio', 'pago', 'valor']):
-            mensaje += "También puedes preguntar:\n📋 Requisitos • 📅 Fechas • 💳 Financiación"
+            mensaje += "También: 📋 Requisitos • 📅 Fechas • 💳 Financiación"
         
         elif any(w in resp_lower for w in ['convenio', 'empresa', 'alianza']):
-            mensaje += "También puedes preguntar:\n💼 Prácticas • 🎓 Perfil egresados"
+            mensaje += "También: 💼 Prácticas • 🎓 Perfil egresados"
         
         elif any(w in resp_lower for w in ['parqueadero', 'biblioteca', 'laboratorio']):
-            mensaje += "También puedes preguntar:\n🏢 Otras instalaciones • 💻 Modalidad • 📞 Visitar campus"
-        
-        elif any(w in resp_lower for w in ['práctica', 'pasantía']):
-            mensaje += "También puedes preguntar:\n💼 Convenios • 🏢 Empresas aliadas"
-        
-        elif any(w in resp_lower for w in ['egresado', 'graduado', 'empleo']):
-            mensaje += "También puedes preguntar:\n💼 Empleabilidad • 🎓 Red egresados • 📊 Estadísticas"
-        
-        elif any(w in resp_lower for w in ['investigación', 'grupo', 'semillero']):
-            mensaje += "También puedes preguntar:\n🔬 Líneas investigación • 📚 Publicaciones"
+            mensaje += "También: 💻 Modalidad • 📞 Contactar asesor"
         
         else:
-            # Sugerencias generales
-            mensaje += "También puedes preguntar:\n💰 Costos • 📋 Requisitos • 📅 Fechas"
+            mensaje += "También: 💰 Costos • 📋 Requisitos • 📅 Fechas"
         
-        mensaje += "\n\n🏠 Escribe 'menú principal' para ver otros programas."
+        mensaje += "\n\n🏠 'menú principal' para otros programas"
         
         return mensaje
     
     def _enviar_sugerencias(self, dispatcher: CollectingDispatcher, 
                            postgrado_nombre: str, pregunta: str):
-
+        """Envía sugerencias cuando no hay respuesta específica"""
+        
         mensaje = f"🤔 No encontré información específica sobre:\n"
         mensaje += f"*\"{pregunta}\"*\n\n"
         mensaje += f"para *{postgrado_nombre}*.\n\n"
         
         preg_lower = pregunta.lower()
         
-        # ========== CATEGORIZACIÓN INTELIGENTE ==========
+        # Categorización inteligente
+        if any(w in preg_lower for w in ['parquea', 'estaciona', 'cafeteria', 'wifi']):
+            mensaje += ("🏢 *Instalaciones y servicios*\n"
+                         "Esta información requiere asesoría personalizada.\n"
+                         "Escribe 'contactar asesor'\n\n")
         
-        # 1. Instalaciones y servicios
-        if any(w in preg_lower for w in ['parquea', 'parking', 'estaciona', 'cafeteria', 
-                                          'wifi', 'internet', 'auditorio', 'sala']):
-            mensaje += "🏢 *Instalaciones y servicios*\n"
-            mensaje += "Esta información puede variar según la sede.\n"
-            mensaje += "Escribe 'contactar asesor' para detalles específicos.\n\n"
+        elif any(w in preg_lower for w in ['convenio', 'intercambio', 'movilidad']):
+            mensaje += "🌍 *Convenios y movilidad*\n"
+            mensaje += "Escribe 'contactar asesor' para detalles actualizados.\n\n"
         
-        # 2. Convenios y movilidad
-        elif any(w in preg_lower for w in ['convenio', 'intercambio', 'movilidad', 
-                                            'internacional', 'exterior']):
-            mensaje += "🌍 *Convenios y movilidad académica*\n"
-            mensaje += "Para información actualizada sobre convenios:\n"
-            mensaje += "Escribe 'contactar asesor'\n\n"
-        
-        # 3. Prácticas profesionales
-        elif any(w in preg_lower for w in ['practica', 'pasantia', 'empresa', 
-                                            'donde hacen', 'obligatoria']):
-            mensaje += "💼 *Prácticas profesionales*\n"
-            mensaje += "Esta información requiere asesoría personalizada.\n"
-            mensaje += "Escribe 'contactar asesor'\n\n"
-        
-        # 4. Investigación
-        elif any(w in preg_lower for w in ['investigacion', 'grupo', 'semillero', 
-                                            'proyecto', 'linea']):
-            mensaje += "🔬 *Investigación y grupos*\n"
-            mensaje += "Para conocer grupos y líneas de investigación:\n"
-            mensaje += "Escribe 'contactar asesor'\n\n"
-        
-        # 5. Egresados y empleabilidad
-        elif any(w in preg_lower for w in ['egresado', 'graduado', 'empleo', 
-                                            'trabajan', 'empleabilidad']):
-            mensaje += "🎓 *Egresados y empleabilidad*\n"
-            mensaje += "Para estadísticas y red de egresados:\n"
-            mensaje += "Escribe 'contactar asesor'\n\n"
-        
-        # 6. Docentes y académico
-        elif any(w in preg_lower for w in ['profesor', 'docente', 'maestro', 
-                                            'quien dicta', 'enseña']):
-            mensaje += "👨‍🏫 *Cuerpo docente*\n"
-            mensaje += "Para conocer el equipo académico:\n"
-            mensaje += "Escribe 'contactar asesor'\n\n"
-        
-        # 7. Otras consultas
         else:
-            mensaje += "💡 *Temas disponibles*:\n"
-            mensaje += "💰 Costos • 📋 Requisitos • 📅 Fechas\n"
-            mensaje += "⏱️ Duración • 💻 Modalidad • 📚 Plan de estudios\n"
-            mensaje += "🔗 Link inscripción • 🎓 Becas • 💳 Financiación\n\n"
+            mensaje += ("💡 *Temas disponibles*:\n"
+                     "💰 Costos • 📋 Requisitos • 📅 Fechas\n"
+                     "⏱️ Duración • 💻 Modalidad • 🔗 Inscripción\n\n")
         
-        mensaje += "O escribe 'contactar asesor' para ayuda personalizada.\n"
-        mensaje += "🏠 'menú principal' para explorar otros programas."
+        mensaje += "O escribe 'contactar asesor' para ayuda personalizada."
         
         dispatcher.utter_message(text=mensaje)
     
     def _enviar_mensaje_error_api(self, dispatcher: CollectingDispatcher):
-        """Mensaje de error técnico de API"""
+        """Mensaje de error técnico"""
         dispatcher.utter_message(text=(
             "Hubo un problema técnico al consultar esa información. 😔\n\n"
             "Por favor:\n"
             "• Intenta con otra pregunta\n"
-            "• Escribe 'contactar asesor' para ayuda personalizada\n"
-            "• O escribe 'menú principal' para volver al inicio"
+            "• Escribe 'contactar asesor'\n"
+            "• O 'menú principal' para volver al inicio"
         ))
 
 # ============================================
@@ -2052,7 +1985,7 @@ class ActionLogUnknownIntent(Action):
 
 
 # ============================================
-# ACTION: Solicitar Programa (NUEVA - ✅ CONSOLIDADA)
+# ACTION: Solicitar Programa 
 # ============================================
 
 class ActionSolicitarPrograma(Action):

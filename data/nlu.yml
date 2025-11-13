@@ -1330,50 +1330,120 @@ nlu:
 # ============================================
 - intent: pregunta_postgrado
   examples: |
-    # ========== INFRAESTRUCTURA Y SERVICIOS (20 ejemplos) ==========
-    # Estos NO tienen intent específico pero SÍ hay info en FAQ
-    
+    # ========== PARQUEADERO (30 ejemplos) ==========
     - tienen parqueadero
     - hay parqueadero para estudiantes
     - donde puedo parquear
     - ofrecen estacionamiento
+    - el parqueadero es gratis
+    - cuanto cuesta el parqueadero
+    - parqueadero para motos
+    - hay parqueadero cercano
+    - donde puedo estacionar mi carro
+    - el estacionamiento tiene costo
+    - hay cupos de parqueo
+    - parqueadero techado
+    - estacionamiento seguro
+    - puedo dejar mi carro
+    - parqueadero vigilado
+    - hay portería
+    - estacionar en la universidad
+    - tarifas de parqueadero
+    - hay espacios para parquear
+    - necesito parqueadero
+    - parqueo gratis
+    - estacionamiento cubierto
+    - hay zona de parqueo
+    - donde estaciono
+    - hay lugar para dejar el carro
+    - facilidades de parqueo
+    - parqueadero público
+    - estacionamiento privado
+    - cupos disponibles parqueo
+    - reservar parqueadero
+    
+    # ========== BIBLIOTECA (25 ejemplos) ==========
     - tienen biblioteca
     - hay biblioteca especializada
-    - que recursos tienen
-    - tienen laboratorios
-    - hay laboratorios especializados
+    - que recursos tienen en biblioteca
+    - horarios de biblioteca
+    - biblioteca digital
+    - acceso a bases de datos
+    - recursos bibliográficos
+    - préstamo de libros
+    - sala de lectura
+    - biblioteca virtual
+    - tienen hemeroteca
+    - repositorio institucional
+    - acceso a journals
+    - libros especializados
+    - puedo sacar libros
+    - carnet de biblioteca
+    - horario biblioteca sabados
+    - biblioteca 24 horas
+    - computadores en biblioteca
+    - estudiar en biblioteca
+    - cubículos de estudio
+    - material de consulta
+    - revistas científicas
+    - bases de datos académicas
+    - acceso remoto biblioteca
+    
+    # ========== LABORATORIOS (20 ejemplos) ==========
+    - hay laboratorios
+    - laboratorios especializados
     - que laboratorios tienen
-    - hay cafeteria
-    - tienen zonas wifi
-    - hay internet en el campus
-    - donde son las clases
-    - cual es la sede
-    - tienen auditorio
-    - hay salas de estudio
-    - ofrecen espacios para trabajo
-    - tienen zona de descanso
-    - instalaciones disponibles
+    - equipos de laboratorio
+    - software en laboratorios
+    - acceso a laboratorios
+    - horarios de laboratorio
+    - reservar laboratorio
+    - laboratorio de cómputo
+    - laboratorio de investigación
+    - tienen laboratorio de
+    - equipamiento técnico
+    - herramientas especializadas
+    - instrumentos de laboratorio
+    - practicas de laboratorio
+    - usar los laboratorios
+    - laboratorios disponibles
+    - software especializado
+    - computadores en laboratorio
+    - acceso libre laboratorios
     
-    # ========== CONVENIOS Y ALIANZAS (15 ejemplos) ==========
-    
+    # ========== CONVENIOS (30 ejemplos) ==========
     - tienen convenios
     - hay convenios internacionales
     - con que universidades tienen convenio
     - hacen intercambios
     - ofrecen movilidad academica
     - puedo estudiar un semestre afuera
-    - tienen convenio con empresas
+    - convenio con empresas
     - con que empresas tienen convenio
-    - hay alianzas estrategicas
-    - tienen red de contactos
+    - alianzas estrategicas
+    - red de contactos
     - ofrecen networking
     - organizan eventos empresariales
     - invitan empresas
-    - hay ruedas de negocios
+    - ruedas de negocios
     - conectan con empresas
+    - convenios vigentes
+    - universidades aliadas
+    - intercambio internacional
+    - movilidad estudiantil
+    - semestre en el exterior
+    - doble titulación
+    - programas de intercambio
+    - socios internacionales
+    - convenios activos
+    - alianzas académicas
+    - con cuales empresas
+    - empresas colaboradoras
+    - sector empresarial
+    - vinculación empresarial
+    - ferias empresariales
     
-    # ========== PRÁCTICAS Y EXPERIENCIA (10 ejemplos) ==========
-    
+    # ========== PRÁCTICAS (25 ejemplos) ==========
     - tienen practicas empresariales
     - hay practicas obligatorias
     - donde hacen las practicas
@@ -1384,9 +1454,23 @@ nlu:
     - puedo hacer practica en otra ciudad
     - ayudan a conseguir practica
     - validan experiencia laboral
+    - practica profesional
+    - pasantías
+    - trabajo de grado practica
+    - convenios para practicas
+    - empresas para practicas
+    - requisitos de practica
+    - duracion de practicas
+    - practica paga
+    - practica ad honorem
+    - horas de practica requeridas
+    - certificado de practica
+    - supervision de practica
+    - informe de practica
+    - evaluacion de practica
+    - cuando hacer la practica
     
-    # ========== INVESTIGACIÓN Y GRUPOS (8 ejemplos) ==========
-    
+    # ========== INVESTIGACIÓN (20 ejemplos) ==========
     - hay grupos de investigacion
     - tienen semilleros
     - puedo hacer investigacion
@@ -1395,9 +1479,20 @@ nlu:
     - hay proyectos de investigacion
     - apoyan la investigacion
     - tienen revista cientifica
+    - publicaciones
+    - investigadores
+    - convocatorias investigación
+    - financiación investigación
+    - grupos reconocidos
+    - colciencias
+    - minciencias
+    - proyectos activos
+    - investigación aplicada
+    - desarrollo tecnológico
+    - innovación
+    - patentes
     
-    # ========== EGRESADOS Y EMPLEABILIDAD (7 ejemplos) ==========
-    
+    # ========== EGRESADOS (20 ejemplos) ==========
     - tienen red de egresados
     - hay asociacion de egresados
     - donde trabajan los egresados
@@ -1405,6 +1500,53 @@ nlu:
     - tienen estadisticas de empleo
     - ayudan a conseguir empleo
     - hay bolsa de empleo
+    - tasa de empleabilidad
+    - perfil del egresado
+    - competencias del egresado
+    - salario promedio egresados
+    - empresas que contratan egresados
+    - sectores donde trabajan
+    - historias de éxito
+    - testimonios de egresados
+    - seguimiento a egresados
+    - vinculación laboral
+    - ofertas de empleo
+    - portal de empleo
+    - ferias laborales
+    
+    # ========== PROFESORES/DOCENTES (15 ejemplos) ==========
+    - quien dicta las clases
+    - profesores del programa
+    - docentes especializados
+    - perfil de los profesores
+    - formación de docentes
+    - profesores de planta
+    - docentes catedra
+    - experiencia de profesores
+    - hojas de vida profesores
+    - investigadores docentes
+    - docentes extranjeros
+    - docentes visitantes
+    - conferencistas
+    - calidad docente
+    - profesores reconocidos
+    
+    # ========== INSTALACIONES (15 ejemplos) ==========
+    - hay cafeteria
+    - tienen zonas wifi
+    - hay internet en el campus
+    - donde son las clases
+    - cual es la sede
+    - tienen auditorio
+    - hay salas de estudio
+    - ofrecen espacios para trabajo
+    - tienen zona de descanso
+    - instalaciones disponibles
+    - aulas modernas
+    - espacios colaborativos
+    - zonas comunes
+    - acceso wifi gratuito
+    - velocidad del internet
 
 # ============================================
 # REGEX PATTERNS
@@ -1676,7 +1818,6 @@ nlu:
     - cuota
     - cuotas
   
-
 # ============================================
 # SYNONYMS
 # ============================================
