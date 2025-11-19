@@ -172,6 +172,40 @@ def make_api_request(
         logger.error(traceback.format_exc())
         return None
 
+def registrar_pregunta_sin_respuesta(
+    postgrado_id: str,
+    pregunta: str,
+    usuario_telefono: str = None
+) -> bool:
+    try:
+        # Validar entrada
+        if not pregunta or len(pregunta.strip()) < 3:
+            logger.warning("⚠️ Pregunta muy corta, no se registra")
+            return False
+        
+        data = {
+            "id_postgrado": int(postgrado_id) if postgrado_id else None,
+            "pregunta": pregunta.strip()[:1000],  # Límite de 1000 caracteres
+            "usuario_telefono": usuario_telefono[:50] if usuario_telefono else None
+        }
+        
+        response = make_api_request(
+            "POST",
+            "faq/sin-respuesta",
+            data=data
+        )
+        
+        if response and response.get("status") == "success":
+            id_pregunta = response.get('data', {}).get('id_pregunta')
+            logger.info(f"✅ Pregunta sin respuesta registrada - ID: {id_pregunta}")
+            return True
+        else:
+            logger.warning(f"⚠️ No se pudo registrar pregunta sin respuesta")
+            return False
+            
+    except Exception as e:
+        logger.error(f"❌ Error registrando pregunta sin respuesta: {e}")
+        return False
 
 def normalizar_texto(texto: str) -> str:
     """Normaliza texto para comparaciones"""
@@ -205,7 +239,7 @@ class ActionSaludoMejorado(Action):
         
         mensaje = ( "¡Bienvenido! 🎓\n"
                      "Soy tu asistente virtual de Postgrados de la Facultad de Ingeniería.\n" )
-        mensaje += ("📚 *¿Qué programa te interesa?*\n"
+        mensaje = ("📚 *¿Qué programa te interesa?*\n"
                      "Puedes:\n"
                      "• Escribir el nombre del programa (ej: 'avalúos', 'bioingeniería')\n"
                      "• Ver todos los programas escribiendo 'ver programas'\n" )
@@ -278,8 +312,6 @@ class ActionListarPostgrados(Action):
                 mensaje += "\n"  # Separación entre facultades
             
             # Instrucciones finales
-            mensaje += ("━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                 f"📊 *Total: {len(postgrados)} programas*\n\n")
             mensaje += ("💡 *¿Cómo seleccionar?*\n"
                  "• Escribe el *número* (ej: 5)\n"
                  "• O escribe el *nombre* del programa\n"
@@ -697,6 +729,22 @@ class ActionBuscarFAQ(Action):
         logger.warning(f"❌ No se encontró respuesta")
         mensaje = self._mensaje_no_encontrado(intent, postgrado_nombre, user_message)
         dispatcher.utter_message(text=mensaje)
+
+        # ✅ REGISTRAR PREGUNTA SIN RESPUESTA
+        postgrado_id = tracker.get_slot("postgrado_id")
+        user_message = tracker.latest_message.get("text", "")
+        usuario_id = tracker.sender_id
+        
+        if postgrado_id:
+            registrar_pregunta_sin_respuesta(
+                postgrado_id=postgrado_id,
+                pregunta=user_message,
+                usuario_telefono=usuario_id
+            )
+        
+        mensaje = self._mensaje_no_encontrado(intent, postgrado_nombre, user_message)
+        dispatcher.utter_message(text=mensaje)
+        
         return []
     
     def _normalizar_cache_key(self, texto: str) -> str:
@@ -1405,7 +1453,7 @@ class ActionObtenerInfoEspecifica(Action):
 # ============================================
 
 class ActionBuscarFaqLibre(Action):
-    """Búsqueda FAQ mejorada con detección correcta de errores"""
+    """Búsqueda FAQ mejorada con registro de preguntas sin respuesta"""
 
     def name(self) -> Text:
         return "action_buscar_faq_libre"
@@ -1417,6 +1465,7 @@ class ActionBuscarFaqLibre(Action):
         postgrado_id = tracker.get_slot("postgrado_id")
         postgrado_nombre = tracker.get_slot("postgrado_nombre") or "este programa"
         user_message = tracker.latest_message.get('text', '').strip()
+        usuario_id = tracker.sender_id
         
         # ==================== VALIDACIONES PREVIAS ====================
         if not postgrado_id:
@@ -1451,7 +1500,7 @@ class ActionBuscarFaqLibre(Action):
             logger.warning(f"⚠️ Error en cache: {e}")
             cache_key = None
         
-        # ==================== LLAMADA ÚNICA A API ====================
+        # ==================== LLAMADA API ====================
         try:
             response = make_api_request(
                 "GET",
@@ -1461,6 +1510,12 @@ class ActionBuscarFaqLibre(Action):
             
             if not response:
                 logger.error("❌ Sin respuesta de API")
+                # ✅ REGISTRAR PREGUNTA SIN RESPUESTA
+                registrar_pregunta_sin_respuesta(
+                    postgrado_id=postgrado_id,
+                    pregunta=user_message,
+                    usuario_telefono=usuario_id
+                )
                 self._enviar_mensaje_error_api(dispatcher)
                 return []
             
@@ -1469,6 +1524,12 @@ class ActionBuscarFaqLibre(Action):
             
             if not respuesta:
                 logger.error("❌ No se pudo extraer respuesta")
+                # ✅ REGISTRAR PREGUNTA SIN RESPUESTA
+                registrar_pregunta_sin_respuesta(
+                    postgrado_id=postgrado_id,
+                    pregunta=user_message,
+                    usuario_telefono=usuario_id
+                )
                 self._enviar_sugerencias(dispatcher, postgrado_nombre, user_message)
                 return []
             
@@ -1479,17 +1540,27 @@ class ActionBuscarFaqLibre(Action):
             
             if tipo_respuesta == "ERROR_TECNICO":
                 logger.error(f"❌ Error técnico de APEX")
+                # ✅ REGISTRAR PREGUNTA SIN RESPUESTA
+                registrar_pregunta_sin_respuesta(
+                    postgrado_id=postgrado_id,
+                    pregunta=user_message,
+                    usuario_telefono=usuario_id
+                )
                 self._enviar_mensaje_error_api(dispatcher)
                 return []
             
             elif tipo_respuesta == "NO_ENCONTRADO":
-                # ✅ APEX dice "no encontré", pero NO es un error
                 logger.info(f"ℹ️ APEX no encontró información específica")
+                # ✅ REGISTRAR PREGUNTA SIN RESPUESTA
+                registrar_pregunta_sin_respuesta(
+                    postgrado_id=postgrado_id,
+                    pregunta=user_message,
+                    usuario_telefono=usuario_id
+                )
                 self._enviar_sugerencias(dispatcher, postgrado_nombre, user_message)
                 return []
             
             elif tipo_respuesta == "RESPUESTA_VALIDA":
-                # ✅ Contenido útil
                 logger.info(f"✅ Respuesta válida encontrada")
                 
                 if cache_key:
@@ -1500,7 +1571,7 @@ class ActionBuscarFaqLibre(Action):
                 return [SlotSet("ultima_respuesta", respuesta)]
             
             else:
-                # ✅ RESPUESTA_AMBIGUA - mostrar con advertencia
+                # RESPUESTA_AMBIGUA
                 logger.warning(f"⚠️ Respuesta ambigua")
                 mensaje = self._formatear_respuesta(respuesta, postgrado_nombre, user_message)
                 dispatcher.utter_message(text=mensaje)
@@ -1508,6 +1579,12 @@ class ActionBuscarFaqLibre(Action):
         
         except requests.exceptions.Timeout:
             logger.error("⏱️ Timeout")
+            # ✅ REGISTRAR PREGUNTA SIN RESPUESTA
+            registrar_pregunta_sin_respuesta(
+                postgrado_id=postgrado_id,
+                pregunta=user_message,
+                usuario_telefono=usuario_id
+            )
             dispatcher.utter_message(text=(
                 "La consulta está tardando más de lo normal. ⏱️\n\n"
                 "Por favor, intenta nuevamente."
@@ -1515,11 +1592,17 @@ class ActionBuscarFaqLibre(Action):
         
         except Exception as e:
             logger.error(f"❌ Error inesperado: {type(e).__name__}: {str(e)}")
+            # ✅ REGISTRAR PREGUNTA SIN RESPUESTA
+            registrar_pregunta_sin_respuesta(
+                postgrado_id=postgrado_id,
+                pregunta=user_message,
+                usuario_telefono=usuario_id
+            )
             self._enviar_mensaje_error_api(dispatcher)
         
         return []
     
-    # ==================== MÉTODOS AUXILIARES CORREGIDOS ====================
+    # ==================== MÉTODOS AUXILIARES ====================
     
     def _clasificar_respuesta_apex(self, respuesta: str) -> str:
         """
