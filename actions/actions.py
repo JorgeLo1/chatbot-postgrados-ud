@@ -237,17 +237,21 @@ class ActionSaludoMejorado(Action):
         
         logger.info("👋 Ejecutando action_saludo_mejorado")
         
-        mensaje = ( "¡Bienvenido! 🎓\n"
-                     "Soy tu asistente virtual de Postgrados de la Facultad de Ingeniería.\n" )
-        mensaje = ("📚 *¿Qué programa te interesa?*\n"
-                     "Puedes:\n"
-                     "• Escribir el nombre del programa (ej: 'avalúos', 'bioingeniería')\n"
-                     "• Ver todos los programas escribiendo 'ver programas'\n" )
-        
-        dispatcher.utter_message(text=mensaje)
+        # --- MENSAJE 1: El Saludo ---
+        dispatcher.utter_message(text=(
+            "¡Bienvenido! 🎓\n"
+            "Soy tu asistente virtual de Postgrados de la Facultad de Ingeniería."
+        ))
+
+        # --- MENSAJE 2: Las Opciones ---
+        dispatcher.utter_message(text=(
+            "📚 *¿Qué programa te interesa?*\n"
+            "Puedes:\n"
+            "• Escribir el nombre del programa (ej: 'avalúos', 'bioingeniería')\n"
+            "• Ver todos los programas escribiendo 'ver programas'"
+        ))
         
         return []
-
 
 # ============================================
 # ACTION: Listar Postgrados - OPTIMIZADA
