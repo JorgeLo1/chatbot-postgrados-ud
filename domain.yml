@@ -53,6 +53,13 @@ entities:
 # SLOTS
 # ============================================
 slots:
+
+  categoria_detectada:
+    type: text
+    mappings:
+      - type: custom
+    influence_conversation: false
+  
   postgrado_id:
     type: text
     influence_conversation: true

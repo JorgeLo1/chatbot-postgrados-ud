@@ -15,6 +15,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+import re
 
 # Cargar variables de entorno
 load_dotenv()
@@ -1009,14 +1010,135 @@ class ActionContactarAsesor(Action):
 
 
 # ============================================
-# ACTION: Default Fallback
+# ACTION: Default Fallback with Smart Pattern Detection
 # ============================================
 
 class ActionDefaultFallback(Action):
-    """Acción por defecto cuando no se entiende la intención - MEJORADA"""
+    """Fallback inteligente que detecta preguntas sin depender de keywords fijas"""
 
     def name(self) -> Text:
         return "action_default_fallback"
+    
+    def _es_pregunta_valida(self, mensaje: str) -> tuple:
+        """
+        Detecta si el mensaje es una pregunta válida independientemente del tema
+        Returns: (es_pregunta, tipo_pregunta, confianza)
+        """
+        mensaje_lower = mensaje.lower().strip()
+        
+        # ========== 1. PATRONES INTERROGATIVOS ==========
+        patrones_pregunta = {
+            "interrogativo_directo": [
+                r'^(qué|que|cuál|cual|cuáles|cuales|quién|quien|quiénes|quienes)\b',
+                r'^(cómo|como|cuándo|cuando|cuánto|cuanto|cuánta|cuanta)\b',
+                r'^(dónde|donde|por qué|porque|para qué|para que)\b'
+            ],
+            "verbo_pregunta": [
+                r'\b(hay|tienen|existe|existen|cuentan con|disponen de)\b',
+                r'\b(ofrecen|brindan|proporcionan|incluyen|dan)\b',
+                r'\b(puedo|podemos|se puede|es posible|me permiten)\b',
+                r'\b(necesito|requiero|debo|tengo que)\b'
+            ],
+            "pregunta_indirecta": [
+                r'\b(quiero saber|quisiera saber|me gustaría saber)\b',
+                r'\b(información sobre|info sobre|detalles sobre)\b',
+                r'\b(me interesa|estoy interesado)\b'
+            ],
+            "pregunta_signo": [
+                r'\?$'  # Termina en signo de interrogación
+            ]
+        }
+        
+        confianza = 0
+        tipo_detectado = None
+        
+        for tipo, patrones in patrones_pregunta.items():
+            for patron in patrones:
+                if re.search(patron, mensaje_lower):
+                    confianza += 0.25
+                    if not tipo_detectado:
+                        tipo_detectado = tipo
+        
+        # ========== 2. ESTRUCTURA DE PREGUNTA ==========
+        # Palabras que indican solicitud de información
+        palabras_solicitud = [
+            "cuanto", "donde", "cuando", "como", "cual", "que",
+            "quien", "hay", "tienen", "existe", "puedo",
+            "informacion", "información", "detalles", "sobre"
+        ]
+        
+        palabras_encontradas = sum(1 for palabra in palabras_solicitud if palabra in mensaje_lower)
+        if palabras_encontradas >= 2:
+            confianza += 0.3
+        elif palabras_encontradas == 1:
+            confianza += 0.15
+        
+        # ========== 3. LONGITUD Y ESTRUCTURA ==========
+        palabras = mensaje_lower.split()
+        num_palabras = len(palabras)
+        
+        # Preguntas válidas suelen tener entre 3 y 30 palabras
+        if 3 <= num_palabras <= 30:
+            confianza += 0.2
+        elif num_palabras > 30:
+            confianza += 0.1  # Puede ser válida pero muy larga
+        
+        # ========== 4. NO ES COMANDO/NAVEGACIÓN ==========
+        comandos_navegacion = [
+            "menu", "menú", "inicio", "volver", "atras", "atrás",
+            "si", "sí", "no", "ok", "vale", "siguiente", "anterior"
+        ]
+        
+        es_comando = any(cmd == mensaje_lower for cmd in comandos_navegacion)
+        if es_comando:
+            return (False, None, 0)
+        
+        # ========== 5. CLASIFICACIÓN FINAL ==========
+        es_pregunta = confianza >= 0.4
+        
+        logger.info(f"📊 Análisis: es_pregunta={es_pregunta}, tipo={tipo_detectado}, confianza={confianza:.2f}")
+        
+        return (es_pregunta, tipo_detectado, min(confianza, 1.0))
+    
+    def _detectar_categoria_faq(self, mensaje: str) -> str:
+        """
+        Detecta si la pregunta corresponde a una categoría FAQ específica
+        Esto permite optimizar la búsqueda pero NO es obligatorio
+        """
+        mensaje_lower = mensaje.lower()
+        
+        # Solo categorías muy específicas y fáciles de detectar
+        categorias_especificas = {
+            "costos": ["costo", "precio", "valor", "cuanto cuesta", "tarifa", "matricula", "pagar", "smmlv"],
+            "requisitos": ["requisito", "documento", "necesito", "piden", "exigen", "admision"],
+            "fechas": ["fecha", "cuando", "inscripciones", "inicia", "abre", "cierra", "plazo"],
+            "modalidad": ["modalidad", "virtual", "presencial", "horario", "online"],
+            "duracion": ["duracion", "dura", "tiempo", "semestre", "credito"]
+        }
+        
+        for categoria, keywords in categorias_especificas.items():
+            if any(kw in mensaje_lower for kw in keywords):
+                return categoria
+        
+        return "general"
+    
+    def _deberia_usar_faq_libre(self, mensaje: str, postgrado_id: str) -> bool:
+        """
+        Decide si usar action_buscar_faq_libre (más flexible)
+        vs action_buscar_faq (más estructurado)
+        """
+        # Si no hay postgrado, no se puede usar ninguna FAQ
+        if not postgrado_id:
+            return False
+        
+        categoria = self._detectar_categoria_faq(mensaje)
+        
+        # Categorías específicas van a action_buscar_faq
+        if categoria in ["costos", "requisitos", "fechas", "modalidad", "duracion"]:
+            return False
+        
+        # Todo lo demás (preguntas generales) va a action_buscar_faq_libre
+        return True
 
     def run(
         self,
@@ -1028,18 +1150,19 @@ class ActionDefaultFallback(Action):
         logger.info("🤷 Ejecutando action_default_fallback")
         
         postgrado_id = tracker.get_slot("postgrado_id")
+        postgrado_nombre = tracker.get_slot("postgrado_nombre")
         contador = tracker.get_slot("contador_fallback") or 0
-        mensaje_usuario = tracker.latest_message.get("text", "").lower()
+        mensaje_usuario = tracker.latest_message.get("text", "")
         
-        # ✅ NUEVO: Detectar despedidas implícitas
+        # ✅ DETECCIÓN DE DESPEDIDAS IMPLÍCITAS
         despedidas_implicitas = [
             "nada mas", "nada más", "eso es todo", "solo eso", 
             "suficiente", "ya está", "ya esta", "listo", "perfecto",
-            "no necesito mas", "no necesito más", "con eso"
+            "no necesito mas", "no necesito más", "con eso", "eso era"
         ]
         
-        if any(despedida in mensaje_usuario for despedida in despedidas_implicitas):
-            logger.info("✅ Despedida implícita detectada en fallback")
+        if any(despedida in mensaje_usuario.lower() for despedida in despedidas_implicitas):
+            logger.info("✅ Despedida implícita detectada")
             dispatcher.utter_message(
                 text="¡Perfecto! Si necesitas algo más, aquí estaré. ¡Hasta pronto! 👋"
             )
@@ -1048,55 +1171,135 @@ class ActionDefaultFallback(Action):
                 FollowupAction("action_despedida")
             ]
         
-        # Incrementar contador
-        contador += 1
-        logger.info(f"Contador fallback: {contador}/3")
+        # ✅ ANÁLISIS LINGÜÍSTICO DE LA PREGUNTA
+        es_pregunta, tipo_pregunta, confianza = self._es_pregunta_valida(mensaje_usuario)
         
-        # ✅ ESCALAMIENTO GRADUAL - UN SOLO MENSAJE POR NIVEL
+        # ========== CASO 1: Es una pregunta válida ==========
+        if es_pregunta and confianza >= 0.5:
+            logger.info(f"✅ Pregunta detectada (confianza: {confianza:.2f})")
+            
+            # ¿Tiene programa seleccionado?
+            if not postgrado_id:
+                dispatcher.utter_message(
+                    text="Para responderte mejor, necesito saber sobre qué programa preguntas.\n\n"
+                         "Escribe 'ver programas' para ver las opciones disponibles 📋"
+                )
+                return [
+                    SlotSet("contador_fallback", 0),
+                    FollowupAction("action_listar_postgrados")
+                ]
+            
+            # ✅ DECIDIR QUÉ ACCIÓN FAQ USAR
+            categoria = self._detectar_categoria_faq(mensaje_usuario)
+            usar_faq_libre = self._deberia_usar_faq_libre(mensaje_usuario, postgrado_id)
+            
+            if usar_faq_libre:
+                logger.info(f"📚 Redirigiendo a action_buscar_faq_libre (categoría: {categoria})")
+                accion_destino = "action_buscar_faq_libre"
+            else:
+                logger.info(f"📋 Redirigiendo a action_buscar_faq (categoría: {categoria})")
+                accion_destino = "action_buscar_faq"
+            
+            # Mensaje de feedback mientras busca
+            dispatcher.utter_message(text="🔍 Déjame buscar esa información...")
+            
+            return [
+                SlotSet("contador_fallback", 0),
+                SlotSet("categoria_detectada", categoria),
+                FollowupAction(accion_destino)
+            ]
+        
+        # ========== CASO 2: Parece pregunta pero confianza media ==========
+        elif es_pregunta and confianza >= 0.3:
+            logger.info(f"⚠️ Pregunta con confianza media ({confianza:.2f})")
+            
+            if postgrado_id:
+                mensaje = (
+                    "🤔 Creo que tienes una pregunta, pero no estoy seguro de entenderla bien.\n\n"
+                    "¿Podrías reformularla de forma más específica?\n\n"
+                    "Por ejemplo:\n"
+                    "• '¿Cuánto cuesta el programa?'\n"
+                    "• '¿Qué requisitos necesito?'\n"
+                    "• '¿Tienen convenios internacionales?'"
+                )
+            else:
+                mensaje = (
+                    "Para ayudarte mejor, primero selecciona un programa.\n\n"
+                    "Escribe 'ver programas' 📋"
+                )
+            
+            dispatcher.utter_message(text=mensaje)
+            return [SlotSet("contador_fallback", contador)]  # No incrementar contador
+        
+        # ========== CASO 3: No es pregunta, escalamiento gradual ==========
+        contador += 1
+        logger.info(f"📊 No es pregunta válida. Contador: {contador}/3")
+        
         if contador == 1:
-            # Primer fallback: sugerencia amigable
             mensaje = "🤔 No estoy seguro de entender.\n\n"
             
-            if not postgrado_id:
-                mensaje += ("¿Quieres que te muestre los programas disponibles?\n\n"
-                         "Escribe:\n• 'ver programas'\n• 'ayuda'\n• O el nombre de un programa")
+            if postgrado_id:
+                mensaje += (
+                    f"Estamos viendo: *{postgrado_nombre}*\n\n"
+                    "Puedo ayudarte con:\n"
+                    "💰 Costos y formas de pago\n"
+                    "📋 Requisitos de admisión\n"
+                    "📅 Fechas de inscripción\n"
+                    "⏱️ Duración del programa\n"
+                    "💻 Modalidad (virtual/presencial)\n"
+                    "🔗 Link de inscripción\n\n"
+                    "O cualquier otra duda sobre el programa.\n\n"
+                    "¿Qué quieres saber?"
+                )
             else:
-                mensaje += ("Puedes preguntarme:\n"
-                         "💰 ¿Cuánto cuesta?\n"
-                         "📋 ¿Qué requisitos necesito?\n"
-                         "📅 ¿Cuándo son las inscripciones?\n"
-                         "📞 Contactar asesor")
+                mensaje += (
+                    "¿Qué te gustaría hacer?\n\n"
+                    "• 'Ver programas' → Ver todos los posgrados\n"
+                    "• Escribe el nombre de un programa\n"
+                    "• 'Ayuda' → Conocer qué puedo hacer"
+                )
             
             dispatcher.utter_message(text=mensaje)
             return [SlotSet("contador_fallback", contador)]
         
         elif contador == 2:
-            # Segundo fallback: opciones más explícitas
-            mensaje = "😅 Parece que no nos estamos entendiendo bien.\n\n"
-            mensaje += "Te sugiero:\n\n"
+            mensaje = "😅 Parece que no nos entendemos bien.\n\n"
             
             if postgrado_id:
-                mensaje += ("1️⃣ Hacer una pregunta específica (ej: 'costos', 'fechas')\n"
-                         "2️⃣ Cambiar de programa (escribe 'menú principal')\n"
-                         "3️⃣ Hablar con un asesor (escribe 'asesor')")
+                mensaje += (
+                    "💡 **Intenta hacer preguntas como:**\n\n"
+                    "✅ '¿Cuánto cuesta?'\n"
+                    "✅ '¿Qué requisitos piden?'\n"
+                    "✅ '¿Cuándo son las inscripciones?'\n"
+                    "✅ '¿Tienen biblioteca?'\n"
+                    "✅ '¿Hay convenios con empresas?'\n\n"
+                    "O si prefieres:\n"
+                    "📞 'Contactar asesor' → Hablar con alguien\n"
+                    "🏠 'Menú principal' → Ver otros programas"
+                )
             else:
-                mensaje += ("1️⃣ Ver todos los programas → 'ver programas'\n"
-                         "2️⃣ Buscar un programa específico → escribe su nombre\n"
-                         "3️⃣ Pedir ayuda → 'ayuda'")
+                mensaje += (
+                    "Te sugiero:\n\n"
+                    "1️⃣ 'Ver programas' → Lista completa\n"
+                    "2️⃣ Escribe el nombre del posgrado\n"
+                    "3️⃣ 'Asesor' → Hablar con un especialista"
+                )
             
             dispatcher.utter_message(text=mensaje)
             return [SlotSet("contador_fallback", contador)]
         
         else:
             # Tercer fallback: escalar a humano
-            mensaje = ("😔 Lamento no poder ayudarte de manera satisfactoria.\n\n"
-                     "🤝 ¿Te gustaría hablar con un asesor humano?\n\n"
-                     "Un especialista puede resolver tus dudas personalizadamente.\n\n"
-                     "Escribe 'sí' o 'contactar asesor' para que te llamemos.")
+            mensaje = (
+                "😔 Lamento no poder ayudarte como esperabas.\n\n"
+                "🤝 **¿Te gustaría hablar con un asesor?**\n\n"
+                "Un especialista puede resolver todas tus dudas de forma personalizada.\n\n"
+                "Escribe 'sí' para que te contactemos 📞"
+            )
             
             dispatcher.utter_message(text=mensaje)
             return [
-                SlotSet("contador_fallback", 0),  # Resetear para próxima vez
+                SlotSet("contador_fallback", 0),
                 FollowupAction("action_escalar_a_humano")
             ]
 
