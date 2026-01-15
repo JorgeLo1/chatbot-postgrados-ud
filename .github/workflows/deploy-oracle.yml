@@ -1,0 +1,47 @@
+name: Auto-Deploy to Oracle Cloud
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Update and Redeploy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deploy to Oracle Cloud
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/chatbot-postgrados-ud
+            
+            echo "📥 Pulling latest changes..."
+            git pull origin main
+            
+            echo "🛑 Stopping current container..."
+            docker stop chatbot-rasa || true
+            docker rm chatbot-rasa || true
+            
+            echo "🔨 Building new image..."
+            docker build -t chatbot-rasa:latest .
+            
+            echo "🚀 Starting new container..."
+            docker run -d \
+              --name chatbot-rasa \
+              --restart unless-stopped \
+              -p 5005:5005 \
+              -p 5055:5055 \
+              --env-file .env \
+              chatbot-rasa:latest
+            
+            echo "⏳ Waiting for container to start..."
+            sleep 5
+            
+            echo "✅ Deployment complete!"
+            docker ps | grep chatbot-rasa
+            docker logs --tail 20 chatbot-rasa
