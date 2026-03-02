@@ -16,6 +16,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # FIX: WAF de Oracle bloquea User-Agent "python-requests/x.x.x"
 # Forzamos IPv4 (IPv6 no tiene conectividad en WSL/algunos entornos)
 # y usamos User-Agent de navegador para pasar el WAF.
+# NOTA: En producción Linux con IPv6 activo, este monkey-patch
+# puede omitirse. Controlable con env var: FORCE_IPV4=true (default true en dev).
 # ============================================================
 import socket as _socket
 _orig_getaddrinfo = _socket.getaddrinfo
@@ -48,6 +50,11 @@ OUTPUT_STORIES_FILE = os.path.join("data", "stories_dynamic.yml")
 
 MIN_QUESTION_LENGTH     = 8
 MAX_EXAMPLES_PER_INTENT = 30
+
+# ⚠️  NOTA BD: historial_conversacion.USUARIO es VARCHAR2(20)
+# Los teléfonos WhatsApp (+57XXXXXXXXXX) tienen 13 chars — dentro del límite.
+# Si el sender_id de Rasa es más largo (ej: UUIDs en tests), se truncará en Oracle.
+# En actions.py: usar tracker.sender_id[:20] al construir el payload de historial.
 
 logging.basicConfig(
     level=getattr(logging, LOG_LEVEL, logging.INFO),
@@ -450,7 +457,7 @@ def generar_stories_yml(faqs: list) -> str:
             f"- story: apex_{i}_{intent}",
             "  steps:",
             "  - slot_was_set:",
-            '    - postgrado_id: "1"',
+            "    - postgrado_id: true",   # Fix: no hardcodear ID específico
             f"  - intent: {intent}",
             f"  - action: {action}",
         ]

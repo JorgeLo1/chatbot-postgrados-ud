@@ -17,15 +17,11 @@ rules:
   - action: action_despedida
 
 - rule: Despedirse cuando dice nada mas
+  condition:
+  - active_loop: null
   steps:
   - intent: negate_and_end
   - action: action_despedida
-
-- rule: Agradecer y luego despedirse
-  steps:
-  - intent: agradecer
-  - action: utter_de_nada
-  wait_for_user_input: true
 
 - rule: Responder a agradecimiento
   steps:
@@ -162,6 +158,8 @@ rules:
   - or:
     - intent: deny
     - intent: volver_menu
+    - intent: negate_and_end
+    - intent: goodbye
   - action: action_deactivate_loop
   - active_loop: null
   - action: utter_formulario_cancelado
@@ -183,6 +181,13 @@ rules:
   steps:
   - intent: out_of_scope
   - action: utter_out_of_scope
+
+- rule: Manejar negación fuera de formulario
+  condition:
+  - active_loop: null
+  steps:
+  - intent: deny
+  - action: action_manejar_negacion
 
 - rule: Manejo de afirmación
   steps:
@@ -213,11 +218,10 @@ rules:
   - action: utter_iamabot
 
 # ============================================
-# SECCIÓN 10: Verificar Timeout en Fallback
+# SECCIÓN 10: Fallback NLU
 # ============================================
 
-- rule: verificar timeout en fallback
+- rule: Manejar mensaje no entendido
   steps:
   - intent: nlu_fallback
-  - action: action_verificar_timeout
   - action: action_default_fallback

@@ -36,10 +36,6 @@ intents:
   - pregunta_general
   - volver_menu
   - pregunta_postgrado
-  - unknown_intent
-  - cancelar
-  - preguntar_privacidad
-  - que_puedes_hacer
 
 # ============================================
 # ENTITIES
@@ -153,26 +149,22 @@ slots:
     mappings:
       - type: custom
 
-  advertencia_inactividad_mostrada:
-    type: bool
-    initial_value: false
-    influence_conversation: false
-    mappings:
-      - type: custom
-  
-  ultima_actividad:
-    type: float
-    initial_value: null
-    influence_conversation: false
-    mappings:
-      - type: custom
+
 
 # ============================================
 # RESPONSES 
 # ============================================
 responses:
   utter_de_nada:
-    - text: "¡De nada! 😊 ¿Hay algo más en lo que pueda ayudarte?"
+    - text: "¡De nada! 😊 Si necesitas algo más, aquí estoy."
+    - text: "¡Con gusto! 😊 ¿Puedo ayudarte con algo más?"
+    - text: "¡Para eso estoy! 🎓 ¿Hay otra duda sobre el programa?"
+    - text: "¡De nada! Escribe cuando necesites más información."
+
+  utter_de_nada_cierre:
+    - text: "¡De nada! Que tengas mucho éxito en tu formación. 🎓"
+    - text: "¡Con gusto! Espero haberte sido de ayuda. Hasta pronto 👋"
+    - text: "¡De nada! Fue un placer. Escribe cuando quieras. 😊"
 
   utter_iamabot:
     - text: |
@@ -304,6 +296,7 @@ actions:
   - action_enviar_datos_contacto
   - action_obtener_info_especifica
   - action_manejar_pregunta_general
+  - action_renovar_sesion
   - validate_datos_contacto_form
   - action_buscar_faq_libre
   - action_reiniciar_slots
@@ -315,9 +308,6 @@ actions:
   - action_limpiar_slots_antiguos
   - action_log_unknown_intent
   - action_solicitar_programa
-  - action_verificar_timeout
-  - action_renovar_sesion
-  - action_cerrar_por_timeout
 
 # ============================================
 # FORMS
@@ -333,5 +323,7 @@ forms:
 # SESSION CONFIG
 # ============================================
 session_config:
-  session_expiration_time: 60
-  carry_over_slots_to_new_session: true
+  # Alineado con el timeout del WhatsApp Adapter (5 min)
+  # Si el adapter reinicia la sesión, Rasa no arrastra slots viejos
+  session_expiration_time: 5
+  carry_over_slots_to_new_session: false

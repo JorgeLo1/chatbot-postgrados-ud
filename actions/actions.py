@@ -30,7 +30,7 @@ load_dotenv()
 #         para trabajar con dict (output de make_api_request) en vez
 #         de requests.Response. Antes lanzaba AttributeError siempre.
 #
-# FIX-3: ActionGuardarHistorial / ActionDespedida / ActionCerrarPorTimeout
+# FIX-3: ActionGuardarHistorial / ActionDespedida
 #         — corregidos nombres de campos del payload:
 #         "mensaje_usuario" → "mensaje"
 #         "respuesta_bot"   → "respuesta"
@@ -44,8 +44,6 @@ APEX_API_BASE_URL = os.getenv("APEX_API_URL", "https://oracleapex.com/ords/udcha
 APEX_TIMEOUT = int(os.getenv("APEX_TIMEOUT", "60"))
 ENABLE_CACHE = os.getenv("ENABLE_CACHE", "True").lower() == "true"
 CACHE_TTL = int(os.getenv("CACHE_TTL", "3600"))
-INACTIVITY_TIMEOUT = int(os.getenv("INACTIVITY_TIMEOUT", "300"))
-INACTIVITY_WARNING_TIME = int(os.getenv("INACTIVITY_WARNING_TIME", "240"))
 # En producción, establece APEX_SSL_VERIFY=true y proporciona el certificado si es necesario.
 # En desarrollo puedes dejar APEX_SSL_VERIFY=false para omitir la verificación SSL.
 APEX_SSL_VERIFY = os.getenv("APEX_SSL_VERIFY", "false").lower() != "false"
@@ -75,77 +73,6 @@ _session.headers.update({
 
 
 # ============================================
-# UTILIDADES
-# ============================================
-
-def calcular_tiempo_inactivo(tracker: Tracker) -> int:
-    """
-    Calcula cuántos segundos han pasado desde la última interacción del usuario
-    Returns: segundos de inactividad
-    """
-    from datetime import datetime
-    
-    eventos_usuario = [
-        e for e in tracker.events 
-        if e.get("event") == "user" and e.get("timestamp")
-    ]
-    
-    if not eventos_usuario:
-        return 0
-    
-    ultimo_evento = eventos_usuario[-1]
-    ultimo_timestamp = ultimo_evento.get("timestamp")
-    
-    if not ultimo_timestamp:
-        return 0
-    
-    try:
-        # Convertir timestamp a segundos
-        if isinstance(ultimo_timestamp, (int, float)):
-            tiempo_actual = datetime.now().timestamp()
-            tiempo_inactivo = int(tiempo_actual - ultimo_timestamp)
-        else:
-            # Si es datetime object
-            tiempo_actual = datetime.now()
-            tiempo_inactivo = int((tiempo_actual - ultimo_timestamp).total_seconds())
-        
-        return max(0, tiempo_inactivo)  # Nunca negativo
-    except Exception as e:
-        logger.error(f"Error calculando tiempo inactivo: {e}")
-        return 0
-
-
-def deberia_cerrar_por_inactividad(tracker: Tracker) -> tuple:
-    """
-    Verifica si el chat debe cerrarse por inactividad
-    Returns: (deberia_cerrar, segundos_inactivo)
-    """
-    segundos_inactivo = calcular_tiempo_inactivo(tracker)
-    deberia_cerrar = segundos_inactivo >= INACTIVITY_TIMEOUT
-    
-    logger.debug(f"Inactividad: {segundos_inactivo}s / {INACTIVITY_TIMEOUT}s (cerrar={deberia_cerrar})")
-    
-    return (deberia_cerrar, segundos_inactivo)
-
-
-def deberia_advertir_inactividad(tracker: Tracker) -> tuple:
-    """
-    Verifica si debe mostrar advertencia de inactividad
-    Returns: (deberia_advertir, segundos_restantes)
-    """
-    segundos_inactivo = calcular_tiempo_inactivo(tracker)
-    
-    # Verificar si ya se mostró advertencia
-    ya_advirtio = tracker.get_slot("advertencia_inactividad_mostrada")
-    
-    if ya_advirtio:
-        return (False, 0)
-    
-    deberia_advertir = segundos_inactivo >= INACTIVITY_WARNING_TIME
-    segundos_restantes = max(0, INACTIVITY_TIMEOUT - segundos_inactivo)
-    
-    return (deberia_advertir, segundos_restantes)
-
 def get_from_cache(key: str) -> Optional[Any]:
     """Obtiene un valor del cache si está disponible y no ha expirado"""
     if not ENABLE_CACHE:
@@ -278,7 +205,7 @@ def registrar_pregunta_sin_respuesta(
         data = {
             'id_postgrado':    int(postgrado_id) if postgrado_id else None,
             'pregunta_usuario': pregunta.strip()[:1000],  # nombre real del campo en la tabla
-            'usuario_telefono': usuario_telefono[:50] if usuario_telefono else None
+            'usuario_telefono': usuario_telefono[:15] if usuario_telefono else None  # VARCHAR2(15) en PREGUNTAS_SIN_RESPUESTA
             # ESTADO='PENDIENTE' y FRECUENCIA los gestiona la API/BD
         }
         
@@ -1073,7 +1000,7 @@ class ActionGuardarHistorial(Action):
         # espera: "usuario", "mensaje", "respuesta", "id_postgrado"
         # (NO "mensaje_usuario" ni "respuesta_bot")
         data = {
-            "usuario":      usuario_telefono,
+            "usuario":      usuario_telefono[:20] if usuario_telefono else "desconocido",  # VARCHAR2(20)
             "mensaje":      mensaje_usuario if mensaje_usuario.strip() else "(mensaje vacío)",
             "respuesta":    (ultima_respuesta or "Sin respuesta")[:4000],
             "id_postgrado": int(postgrado_id) if postgrado_id else None
@@ -1277,12 +1204,6 @@ class ActionDefaultFallback(Action):
         
         logger.info("🤷 Ejecutando action_default_fallback")
         
-        deberia_cerrar, segundos_inactivo = deberia_cerrar_por_inactividad(tracker)
-        
-        if deberia_cerrar:
-            logger.info(f"🔒 Cerrando por inactividad desde fallback")
-            return [FollowupAction("action_cerrar_por_timeout")]
-
         postgrado_id = tracker.get_slot("postgrado_id")
         postgrado_nombre = tracker.get_slot("postgrado_nombre")
         contador = tracker.get_slot("contador_fallback") or 0
@@ -1518,7 +1439,7 @@ class ActionDespedida(Action):
             postgrado_id = tracker.get_slot("postgrado_id")
             
             data = {
-                "usuario":      usuario_telefono,
+                "usuario":      usuario_telefono[:20] if usuario_telefono else "desconocido",  # VARCHAR2(20)
                 "mensaje":      "Conversación finalizada",
                 "respuesta":    mensaje,
                 "id_postgrado": int(postgrado_id) if postgrado_id else None
@@ -2478,71 +2399,15 @@ class ActionSolicitarPrograma(Action):
         return [SlotSet("ultima_lista_postgrados", postgrados)]
 
 # ============================================
-# ACTION: Verificar Timeout
-# ============================================
-
-class ActionVerificarTimeout(Action):
-    """Verifica si el chat debe cerrarse por inactividad"""
-
-    def name(self) -> Text:
-        return "action_verificar_timeout"
-
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> List[Dict[Text, Any]]:
-        
-        logger.info("⏱️ Verificando timeout de inactividad")
-        
-        deberia_cerrar, segundos_inactivo = deberia_cerrar_por_inactividad(tracker)
-        
-        if deberia_cerrar:
-            minutos = segundos_inactivo // 60
-            logger.info(f"🔒 Chat cerrado por inactividad: {segundos_inactivo}s ({minutos} min)")
-            
-            mensaje = (
-                f"⏱️ *Sesión finalizada por inactividad*\n\n"
-                f"Han pasado {minutos} minutos sin actividad.\n\n"
-                "¡Gracias por tu interés en nuestros programas de postgrado! 🎓\n\n"
-                "Puedes volver cuando quieras escribiendo 'hola' o 'inicio'."
-            )
-            
-            dispatcher.utter_message(text=mensaje)
-            
-            return [
-                AllSlotsReset(),
-                Restarted(),
-                ConversationPaused()
-            ]
-        
-        # Verificar si debe advertir
-        deberia_advertir, segundos_restantes = deberia_advertir_inactividad(tracker)
-        
-        if deberia_advertir and segundos_restantes > 0:
-            logger.info(f"⚠️ Mostrando advertencia de inactividad ({segundos_restantes}s restantes)")
-            
-            mensaje = (
-                f"⚠️ *Advertencia:* Tu sesión se cerrará en {segundos_restantes} segundos "
-                f"por inactividad.\n\n"
-                "Escribe cualquier mensaje para continuar."
-            )
-            
-            dispatcher.utter_message(text=mensaje)
-            
-            return [SlotSet("advertencia_inactividad_mostrada", True)]
-        
-        # Todo bien, continuar normalmente
-        return []
-
-
-# ============================================
-# ACTION: Renovar Sesión
+# ACTION: Renovar Sesión (stub — el adapter maneja el timeout)
 # ============================================
 
 class ActionRenovarSesion(Action):
-    """Renueva la sesión cuando el usuario interactúa"""
+    """
+    Stub de compatibilidad. El timeout y las alertas de inactividad
+    son gestionados completamente por el WhatsApp Adapter (scheduler).
+    Esta acción no necesita hacer nada.
+    """
 
     def name(self) -> Text:
         return "action_renovar_sesion"
@@ -2553,66 +2418,4 @@ class ActionRenovarSesion(Action):
         tracker: Tracker,
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
-        
-        logger.debug("🔄 Renovando sesión")
-        
-        # Resetear advertencia de inactividad
-        return [SlotSet("advertencia_inactividad_mostrada", False)]
-
-
-# ============================================
-# ACTION: Cerrar por Timeout
-# ============================================
-
-class ActionCerrarPorTimeout(Action):
-    """Cierra explícitamente la conversación por timeout"""
-
-    def name(self) -> Text:
-        return "action_cerrar_por_timeout"
-
-    def run(
-        self,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: Dict[Text, Any],
-    ) -> List[Dict[Text, Any]]:
-        
-        logger.info("🔒 Cerrando chat por timeout")
-        
-        segundos_inactivo = calcular_tiempo_inactivo(tracker)
-        minutos = segundos_inactivo // 60
-        
-        mensaje = (
-            f"⏱️ *Sesión cerrada automáticamente*\n\n"
-            f"Tu conversación fue finalizada después de {minutos} minutos de inactividad.\n\n"
-            "🔄 Para iniciar una nueva conversación, escribe 'hola' o 'inicio'.\n\n"
-            "¡Hasta pronto! 👋"
-        )
-        
-        dispatcher.utter_message(text=mensaje)
-        
-        # Guardar en historial si hubo interacción significativa
-        eventos_usuario = [e for e in tracker.events if e.get("event") == "user"]
-        
-        if len(eventos_usuario) > 2:
-            usuario_telefono = tracker.sender_id
-            postgrado_id = tracker.get_slot("postgrado_id")
-            
-            data = {
-                "usuario":      usuario_telefono,
-                "mensaje":      f"Sesión cerrada por inactividad ({minutos} min)",
-                "respuesta":    mensaje,
-                "id_postgrado": int(postgrado_id) if postgrado_id else None
-            }
-            
-            try:
-                make_api_request("POST", "historial", data=data)
-                logger.info("✅ Historial de timeout guardado")
-            except Exception as e:
-                logger.error(f"Error guardando historial de timeout: {e}")
-        
-        return [
-            AllSlotsReset(),
-            Restarted(),
-            ConversationPaused()
-        ]
+        return []

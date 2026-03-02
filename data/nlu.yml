@@ -14,7 +14,7 @@ nlu:
     - hola bot
     - saludos
     - qué tal
-    - hola, ¿cómo estás?
+    - hola como estas
     - buenas
     - holi
     - ey
@@ -24,16 +24,8 @@ nlu:
     - que mas
     - buenas buenas
     - que hubo
-    - hola como estas
     - que tal todo
     - muy buenas
-    - hola quisiera informacion
-    - buenas quisiera saber
-    - hola me puedes ayudar
-    - buenos dias necesito informacion
-    - hola estoy interesado
-    - buenos días quisiera consultar
-
 # ============================================
 # INTENT: goodbye (Despedidas)
 # ============================================
@@ -49,29 +41,9 @@ nlu:
     - hasta pronto
     - me voy
     - tengo que irme
-    - ya no necesito más ayuda
-    - ya no necesito mas ayuda
-    - ok gracias adiós
-    - ok gracias adios
     - hasta la proxima
     - hasta la próxima
     - nos vemos luego
-    - muchas gracias adiós
-    - muchas gracias adios
-    - gracias y hasta luego
-    - perfecto hasta luego
-    - ok nos vemos
-    - listo nos vemos
-    - me voy gracias
-    - chao gracias
-    - bye gracias
-    - hasta pronto gracias
-    - gracias bye
-    - gracias chao
-    - ok bye
-    - ok chao
-    - perfecto bye
-    - listo bye
     - ya me voy
     - debo irme
     - tengo que salir
@@ -85,14 +57,14 @@ nlu:
     - hasta otra
     - me retiro
     - cierro
-    - salir
     - cerrar chat
     - cerrar conversación
     - cerrar conversacion
     - terminar conversación
     - terminar conversacion
     - con eso me despido
-    
+    - hasta pronto nos vemos
+    - me voy hasta luego
 # ============================================
 # INTENT: negate_and_end 
 # ============================================
@@ -100,80 +72,37 @@ nlu:
   examples: |
     - nada mas
     - nada más
-    - nada
-    - solo eso
+    - nada más que preguntar
+    - no tengo mas preguntas
+    - no tengo más preguntas
     - eso es todo
-    - ya
-    - ya está
-    - ya esta
-    - listo
-    - perfecto
-    - suficiente
-    - no gracias eso es todo
-    - no nada mas
-    - no nada más
-    - no, nada más gracias
+    - eso sería todo
+    - eso es todo por hoy
+    - solo eso era
+    - con eso me basta
+    - con eso es suficiente
     - no necesito nada mas
     - no necesito nada más
-    - con eso estoy bien
-    - perfecto así está bien
-    - es suficiente gracias
-    - hasta aquí llegamos
-    - eso sería todo
-    - solo eso gracias
-    - nada más por ahora
-    - está bien así
-    - ya está bien
-    - listo así está bien
     - no me hace falta nada más
-    - con eso es suficiente
-    - ya tengo todo
-    - no hace falta más
-    - eso me basta
-    - eso nomás
-    - ya con eso
-    - no más gracias
-    - eso es todo por hoy
-    - nada gracias
-    - ya gracias
-    - listo gracias
-    - ok eso es todo
-    - ok nada mas
-    - perfecto nada más
-    - con eso
-    - solo con eso
-    - así está bien
-    - gracias nada mas
-    - solo eso
-    - esta bien gracias
-    - perfecto gracias nada mas
-    - ok gracias eso es todo
-    - bien nada mas
-    - todo bien nada mas
-    - si eso es todo
-    - sí eso es todo
-    - eso es todo gracias
-    - nada mas que preguntar
-    - no tengo mas preguntas
-    - creo que eso es todo
-    - por ahora nada mas
-    - hasta ahi nomas
-    - con eso me basta
-    - ya es suficiente
-    - mas nada
-    - más nada
-    - nada adicional
-    - sin mas
-    - sin más
-    - todo claro gracias
-    - entendido gracias
-    - perfecto ya esta
-    - listo con eso
     - no necesito mas ayuda
     - no necesito más ayuda
-    - ya no quiero saber mas
     - ya tengo lo que necesitaba
-
+    - ya tengo todo
+    - sin más
+    - sin mas
+    - nada adicional
+    - mas nada
+    - más nada
+    - ya no quiero saber mas
+    - ya no quiero saber más
+    - eso era todo
+    - no hace falta más
+    - nada más por ahora
+    - por ahora nada mas
+    - creo que eso es todo
+    - hasta ahí llegamos
+    - hasta ahi llegamos
+    - hasta aquí llegamos
 # ============================================
 # INTENT: affirm (Afirmaciones)
 # ============================================
@@ -211,7 +140,6 @@ nlu:
     - hazlo
     - continuemos
     - sigamos
-
 # ============================================
 # INTENT: deny (Negaciones) 
 # ============================================
@@ -219,27 +147,25 @@ nlu:
   examples: |
     - no
     - nope
-    - no me interesa
     - no ese no
-    - eso no es
-    - no me sirve eso
-    - busco otra cosa
-    - otro programa
-    - prefiero otro
     - no ese programa
+    - ese no
+    - ese programa no
+    - ese no me gusta
     - no me convence
     - mejor no ese
-    - ese no me gusta
     - quiero ver otro
+    - quiero ver otro programa
+    - otro programa
+    - prefiero otro
     - no esa opción
     - no esa opcion
-    - diferente
     - otro distinto
     - no quiero ese
-    - ese no
+    - quiero ver opciones diferentes
+    - mejor busco otra opción
     - negativo
-    - no es lo que busco
-
+    - no me interesa ese
 # ============================================
 # INTENT: bot_challenge
 # ============================================
@@ -260,7 +186,6 @@ nlu:
     - esto es un chatbot
     - hablas como robot
     - eres de verdad
-
 # ============================================
 # INTENT: agradecer
 # ============================================
@@ -269,29 +194,32 @@ nlu:
     - gracias
     - muchas gracias
     - te agradezco
-    - perfecto gracias
-    - ok gracias
-    - excelente gracias
-    - muy bien gracias
+    - mil gracias
+    - agradecido
+    - agradecida
     - gracias por la información
     - gracias por la informacion
     - gracias por tu ayuda
-    - agradecido
-    - mil gracias
-    - super gracias
-    - chevere gracias
-    - chévere gracias
-    - vale gracias
-    - listo gracias
-    - perfecto muchas gracias
-    - ok muchas gracias
-    - genial gracias
-    - bacano gracias
-    - gracias amigo
     - gracias por responder
     - te lo agradezco
     - agradezco tu ayuda
-
+    - muy amable gracias
+    - excelente muchas gracias
+    - super muchas gracias
+    - bacano muchas gracias
+    - genial muchas gracias
+    - gracias amigo
+    - gracias por la info
+    - gracias eso era lo que necesitaba
+    - listo gracias
+    - ok gracias
+    - perfecto gracias
+    - bien gracias
+    - claro gracias
+    - entendido gracias
+    - qué bueno gracias
+    - chevere gracias
+    - todo claro gracias
 # ============================================
 # INTENT: listar_postgrados
 # ============================================
@@ -336,48 +264,30 @@ nlu:
     - todas las opciones
     - ver opciones
     - que hay disponible
-
 # ============================================
 # INTENT: seleccionar_postgrado
 # ============================================
 - intent: seleccionar_postgrado
   examples: |
-    - informacion sobre [Proyectos Informaticos](postgrado_nombre)
-    - quiero saber del posgrado en [proyectos de TI](postgrado_nombre)
     - me dan detalles de la especializacion en [Proyectos Informaticos](postgrado_nombre)
     - me interesa la especializacion en [gestion de proyectos](postgrado_nombre)
-    - informacion sobre [Higiene, Seguridad y Salud en el Trabajo](postgrado_nombre)
     - me dan detalles de la especializacion en [Salud Ocupacional](postgrado_nombre)
-    - quiero saber del posgrado en [HSST](postgrado_nombre)
     - me interesa [Seguridad y Salud en el Trabajo](postgrado_nombre)
-    - informacion sobre [Ingenieria de Software](postgrado_nombre)
     - me dan detalles de la especializacion en [Ingenieria de Software](postgrado_nombre)
     - me interesa la especializacion en [Ingenieria de Software](postgrado_nombre)
-    - quiero saber del posgrado en [desarrollo de software](postgrado_nombre)
-    - informacion sobre [Informatica y Automatica Industrial](postgrado_nombre)
     - me dan detalles de la especializacion en [informatica industrial](postgrado_nombre)
     - me interesa la especializacion en [Automatica Industrial](postgrado_nombre)
-    - quiero saber del posgrado en [automatica industrial](postgrado_nombre)
     - informacion sobre la [Especializacion en Avaluos](postgrado_nombre)
-    - quiero saber del posgrado en [avaluos](postgrado_nombre)
     - me dan detalles de la especializacion para [avaluadores](postgrado_nombre)
     - me interesa la [Especializacion en Avaluos](postgrado_nombre)
-    - informacion sobre [SIG](postgrado_nombre)
-    - informacion sobre [Bioingenieria](postgrado_nombre)
     - me dan detalles de [Bioingenieria](postgrado_nombre)
-    - quiero saber del posgrado en [bioingenieria](postgrado_nombre)
     - me interesa la especializacion en [Bioingenieria](postgrado_nombre)
     - informacion sobre la [Maestria en Ingenieria Industrial](postgrado_nombre)
-    - quiero saber del posgrado en [Ingenieria Industrial](postgrado_nombre)
     - me dan detalles de la maestria en [industrial](postgrado_nombre)
-    - quisiera informacion sobre [avaluos](postgrado_nombre)
-    - necesito info de [bioingeniería](postgrado_nombre)
     - busco información de [gestión de proyectos](postgrado_nombre)
     - como es la [especialización en avalúos](postgrado_nombre)
-    - detalles sobre [teleinformática](postgrado_nombre)
     - [avaluos] por favor
     - sobre [ingeniería del software](postgrado_nombre)
-    - programa [higiene ocupacional](postgrado_nombre)
     - especializacion [avaluos](postgrado_nombre)
     - maestria [bioingeniería](postgrado_nombre)
     - [proyectos informaticos](postgrado_nombre)
@@ -389,7 +299,6 @@ nlu:
     - [bioingenieria](postgrado_nombre)
     - [SIG](postgrado_nombre)
     - [ingenieria industrial](postgrado_nombre)
-
 # ============================================
 # INTENT: seleccionar_numero 
 # ============================================
@@ -443,7 +352,6 @@ nlu:
     - me interesa el 1
     - prefiero el 2
     - la opcion 1
-
 # ============================================
 # INTENT: consultar_costos
 # ============================================
@@ -541,7 +449,6 @@ nlu:
     - valor de crédito
     - costo por credito
     - valor creditos
-
 # ============================================
 # INTENT: consultar_becas
 # ============================================
@@ -584,7 +491,6 @@ nlu:
     - tienen becas
     -hay becas disponibles
     - ofrecen ayuda financiera
-
 # ============================================
 # INTENT: consultar_financiacion
 # ============================================
@@ -621,7 +527,6 @@ nlu:
     - credito estudiantil
     - financiacion universidad
     - te gustaria que te comparta informacion sobre financiacion
-
 # ============================================
 # INTENT: consultar_requisitos
 # ============================================
@@ -648,23 +553,16 @@ nlu:
     - condiciones de ingreso
     - como aplicar
     - cómo aplicar
-    - proceso de admision
-    - proceso de admisión
-    - cual es el proceso de admision
-    - cuál es el proceso de admisión
     - documentación requerida
     - documentacion requerida
     - requisitos de inscripcion
     - requisitos de inscripción
     - que piden para inscribirse
     - qué piden para inscribirse
-    - como me inscribo
-    - cómo me inscribo
     - que necesito
     - qué necesito
     - como es el proceso
     - cómo es el proceso
-    - que debo hacer para inscribirme
     - pasos para inscripcion
     - requisitos previos
     - documentos para inscripcion
@@ -677,20 +575,11 @@ nlu:
     - acta de grado
     - formulario de inscripcion
     - formulario de inscripción
-    - que profesionales pueden hacer
-    - qué profesionales pueden hacer
-    - a quien va dirigida
-    - a quién va dirigida
-    - que perfil necesito
-    - qué perfil necesito
-    - perfil de ingreso
-
 # ============================================
 # INTENT: consultar_fechas
 # ============================================
 - intent: consultar_fechas
   examples: |
-    # INSCRIPCIONES ESPECÍFICAS
     - cuando inician las inscripciones
     - cuándo inician las inscripciones
     - cuando son las inscripciones
@@ -708,7 +597,6 @@ nlu:
     - cuándo cierra inscripciones
     - hasta cuando me puedo inscribir
     - hasta cuándo me puedo inscribir
-    # FECHAS GENERALES
     - fecha de inicio
     - fechas importantes
     - calendario académico
@@ -721,7 +609,6 @@ nlu:
     - cuando inicia el semestre
     - cuando arranca
     - cuándo arranca
-    # PLAZOS
     - periodo de inscripciones
     - plazo de inscripcion
     - plazo de inscripción
@@ -733,20 +620,17 @@ nlu:
     - último día
     - plazo maximo
     - plazo máximo
-    # DISPONIBILIDAD
     - proxima fecha
     - próxima fecha
     - fechas disponibles
     - cuando puedo empezar
     - cuándo puedo empezar
     - fecha de apertura
-
 # ============================================
 # INTENT: consultar_duracion
 # ============================================
 - intent: consultar_duracion
   examples: |
-   # PALABRAS CLAVE DIRECTAS
     - duración
     - duracion
     - cuanto dura
@@ -757,7 +641,6 @@ nlu:
     - duración del programa
     - cuanto tiempo dura
     - cuánto tiempo dura
-    # PREGUNTAS SOBRE TIEMPO
     - cuanto tiempo toma
     - cuánto tiempo toma
     - cuanto se demora
@@ -768,7 +651,6 @@ nlu:
     - tiempo total
     - tiempo necesario
     - periodo de estudio
-    # SEMESTRES Y PERIODOS
     - cuantos semestres
     - cuántos semestres
     - cuantos semestres son
@@ -778,7 +660,6 @@ nlu:
     - semestres
     - duracion en semestres
     - duración en semestres
-    # AÑOS Y MESES
     - cuantos años dura
     - cuántos años dura
     - cuantos meses es
@@ -789,7 +670,6 @@ nlu:
     - 2 años
     - un año
     - dos años
-    # CRÉDITOS
     - cuantos creditos
     - cuántos créditos
     - cuantos creditos tiene
@@ -797,7 +677,6 @@ nlu:
     - créditos del programa
     - numero de creditos
     - número de créditos
-    # COMBINACIONES
     - me pueden decir la duracion
     - quisiera saber la duración
     - necesito saber cuanto dura
@@ -810,13 +689,11 @@ nlu:
     - extensión del programa
     - periodo academico
     - periodo académico
-
 # ============================================
 # INTENT: consultar_modalidad
 # ============================================
 - intent: consultar_modalidad
   examples: |
-    # PALABRAS CLAVE DIRECTAS
     - modalidad
     - que modalidad
     - cual es la modalidad
@@ -830,7 +707,6 @@ nlu:
     - es virtual o presencial
     - es presencial o virtual
     - de que modalidad es
-    # VARIACIONES NATURALES
     - como son las clases
     - cómo son las clases
     - las clases son virtuales
@@ -857,7 +733,6 @@ nlu:
     - hibrido
     - semipresencial
     - mixto
-    # FORMATO Y HORARIO
     - horario
     - horarios
     - que horario tiene
@@ -868,7 +743,6 @@ nlu:
     - formato del curso
     - formato de clases
     - tipo de modalidad
-    # UBICACIÓN
     - donde son las clases
     - dónde son las clases
     - sede
@@ -882,7 +756,6 @@ nlu:
     - viernes
     - miercoles
     - miércoles
-    # COMBINACIONES COMUNES
     - me pueden decir la modalidad
     - quisiera saber la modalidad
     - necesito saber la modalidad
@@ -894,7 +767,6 @@ nlu:
     - es virtual el programa
     - el programa es virtual
     - el programa es presencial
-    
 # ============================================
 # INTENT: consultar_plan_estudios
 # ============================================
@@ -927,13 +799,11 @@ nlu:
     - creditos por materia
     - créditos por materia
     - malla curricular
-
 # ============================================
 # INTENT: solicitar_link_inscripcion
 # ============================================
 - intent: solicitar_link_inscripcion
   examples: |
-    # LINK DIRECTO
     - link de inscripcion
     - link de inscripción
     - enlace de inscripcion
@@ -949,7 +819,6 @@ nlu:
     - necesito el link
     - necesito el enlace
     - link directo
-    # UBICACIÓN
     - donde me inscribo
     - dónde me inscribo
     - donde es la inscripcion
@@ -959,14 +828,12 @@ nlu:
     - página de inscripción
     - pagina para inscribirme
     - página para inscribirme
-    # REGISTRO
     - como me registro
     - cómo me registro
     - enlace para registro
     - link de registro
     - donde registro
     - dónde registro
-    # COMBINACIONES
     - necesito el enlace para inscribirme
     - dame el link de inscripcion
     - quiero el enlace
@@ -974,7 +841,6 @@ nlu:
     - enviame el link
     - comparteme el link
     - compárteme el enlace
-
 # ============================================
 # INTENT: consultar_dirigido
 # ============================================
@@ -999,13 +865,11 @@ nlu:
     - soy ingeniero puedo aplicar
     - necesito ser de cierta carrera
     - que titulo necesito
-
 # ============================================
 # INTENT: consultar_proceso_admision
 # ============================================
 - intent: consultar_proceso_admision
   examples: |
-    # PALABRAS CLAVE DIRECTAS
     - inscripcion
     - inscripción
     - inscripciones
@@ -1015,7 +879,6 @@ nlu:
     - cómo me inscribo
     - quiero inscribirme
     - necesito inscribirme
-    # PROCESO
     - proceso de inscripcion
     - proceso de inscripción
     - pasos para inscribirme
@@ -1027,7 +890,6 @@ nlu:
     - cómo hago para inscribirme
     - que debo hacer para inscribirme
     - qué debo hacer para inscribirme
-    # ADMISIÓN
     - proceso de admision
     - proceso de admisión
     - como es el proceso de admision
@@ -1040,21 +902,16 @@ nlu:
     - pasos para admisión
     - procedimiento de admision
     - procedimiento de admisión
-    # REGISTRO
     - como registro
-    - cómo me registro
-    - como me registro
     - como es el registro
     - proceso de registro
     - pasos de registro
-    # SELECCIÓN
     - proceso de seleccion
     - proceso de selección
     - como ingreso
     - cómo ingreso
     - como entro
     - que tengo que hacer para entrar
-    # COMBINACIONES
     - me explicas el proceso de inscripcion
     - quisiera saber como inscribirme
     - necesito info de inscripcion
@@ -1064,14 +921,22 @@ nlu:
     - como me admiten
     - proceso para entrar
     - como puedo inscribirme
-    - donde me inscribo
-
 # ============================================
 # INTENT: solicitar_informacion_general
 # ============================================
 - intent: solicitar_informacion_general
   examples: |
+    - hola quisiera informacion
+    - buenas quisiera saber sobre los programas
+    - hola me puedes ayudar con informacion
+    - buenos dias necesito informacion sobre postgrados
+    - hola estoy interesado en un programa
+    - buenos días quisiera consultar sobre programas
     - informacion sobre [Proyectos Informaticos](postgrado_nombre)
+    - quisiera saber mas sobre [avaluos](postgrado_nombre)
+    - y sobre [bioingenieria](postgrado_nombre) que me cuentas
+    - cuéntame de [HSST](postgrado_nombre)
+    - dame más info del programa de [ingenieria industrial](postgrado_nombre)
     - me dan detalles de [Avaluos](postgrado_nombre)
     - quiero saber del posgrado en [HSST](postgrado_nombre)
     - me interesa [Bioingenieria](postgrado_nombre)
@@ -1084,7 +949,6 @@ nlu:
     - cuentame sobre [proyectos informaticos](postgrado_nombre)
     - que me puedes decir de [salud ocupacional](postgrado_nombre)
     - dame información de [avaluos](postgrado_nombre)
-
 # ============================================
 # INTENT: contactar_asesor
 # ============================================
@@ -1124,7 +988,6 @@ nlu:
     - más información
     - quiero asesoría
     - quiero asesoria
-
 # ============================================
 # INTENT: pedir_ayuda
 # ============================================
@@ -1158,33 +1021,25 @@ nlu:
     - cómo funciona esto
     - explícame
     - explicame
-
 # ============================================
 # INTENT: reiniciar
 # ============================================
 - intent: reiniciar
   examples: |
     - reiniciar
-    - empezar de nuevo
-    - volver al inicio
     - comenzar otra vez
     - reset
     - restart
     - empezar desde cero
-    - nueva consulta
-    - volver a empezar
     - borrar todo
-    - limpiar
+    - limpiar conversacion
     - clear
-    - otra consulta
     - quiero empezar de nuevo
-    - volvamos al inicio
     - borremos todo
     - nueva búsqueda
     - nueva busqueda
     - reiniciar conversacion
     - reiniciar conversación
-
 # ============================================
 # INTENT: pregunta_general
 # ============================================
@@ -1212,36 +1067,26 @@ nlu:
     - puedo hacer una pregunta
     - dejame preguntarte
     - déjame preguntarte
-
 # ============================================
 # INTENT: mood_great
 # ============================================
 - intent: mood_great
   examples: |
-    - perfecto
-    - excelente
-    - genial
-    - muy bien
-    - fantástico
-    - fantastico
-    - maravilloso
+    - me está yendo muy bien gracias
+    - todo bien por acá
+    - muy bien gracias
+    - fantástico todo
+    - maravilloso como siempre
     - estupendo
-    - increíble
-    - increible
-    - super
-    - chevere
-    - chévere
-    - bacano
-    - brutal
-    - espectacular
-    - de lujo
-    - magistral
-    - buenísimo
-    - buenisimo
-    - me encanta
-    - ideal
-    - top
-
+    - de maravilla
+    - excelente todo por acá
+    - chevere todo
+    - chévere todo
+    - brutal todo
+    - bacano todo
+    - todo genial
+    - increíble como me va
+    - super bien todo
 # ============================================
 # INTENT: mood_unhappy
 # ============================================
@@ -1268,7 +1113,6 @@ nlu:
     - no entiendes
     - horrible
     - fatal
-
 # ============================================
 # INTENT: out_of_scope - CRÍTICO
 # ============================================
@@ -1289,7 +1133,6 @@ nlu:
     - cuánto es 2+2
     - traduce esto al inglés
     - canciones de moda
-
 # ============================================
 # INTENT: volver_menu (después de reiniciar)
 # ============================================
@@ -1308,13 +1151,11 @@ nlu:
     - otra consulta
     - buscar otro programa
     - ver otros programas
-
 # ============================================
 # INTENT: pregunta_postgrado (Preguntas libres sobre el programa)
 # ============================================
 - intent: pregunta_postgrado
   examples: |
-    # ========== PARQUEADERO (30 ejemplos) ==========
     - tienen parqueadero
     - hay parqueadero para estudiantes
     - donde puedo parquear
@@ -1345,8 +1186,6 @@ nlu:
     - estacionamiento privado
     - cupos disponibles parqueo
     - reservar parqueadero
-    
-    # ========== BIBLIOTECA (25 ejemplos) ==========
     - tienen biblioteca
     - hay biblioteca especializada
     - que recursos tienen en biblioteca
@@ -1372,8 +1211,6 @@ nlu:
     - revistas científicas
     - bases de datos académicas
     - acceso remoto biblioteca
-    
-    # ========== LABORATORIOS (20 ejemplos) ==========
     - hay laboratorios
     - laboratorios especializados
     - que laboratorios tienen
@@ -1394,8 +1231,6 @@ nlu:
     - software especializado
     - computadores en laboratorio
     - acceso libre laboratorios
-    
-    # ========== CONVENIOS (30 ejemplos) ==========
     - tienen convenios
     - hay convenios internacionales
     - con que universidades tienen convenio
@@ -1426,8 +1261,6 @@ nlu:
     - sector empresarial
     - vinculación empresarial
     - ferias empresariales
-    
-    # ========== PRÁCTICAS (25 ejemplos) ==========
     - tienen practicas empresariales
     - hay practicas obligatorias
     - donde hacen las practicas
@@ -1453,8 +1286,6 @@ nlu:
     - informe de practica
     - evaluacion de practica
     - cuando hacer la practica
-    
-    # ========== INVESTIGACIÓN (20 ejemplos) ==========
     - hay grupos de investigacion
     - tienen semilleros
     - puedo hacer investigacion
@@ -1475,8 +1306,6 @@ nlu:
     - desarrollo tecnológico
     - innovación
     - patentes
-    
-    # ========== EGRESADOS (20 ejemplos) ==========
     - tienen red de egresados
     - hay asociacion de egresados
     - donde trabajan los egresados
@@ -1497,8 +1326,6 @@ nlu:
     - ofertas de empleo
     - portal de empleo
     - ferias laborales
-    
-    # ========== PROFESORES/DOCENTES (15 ejemplos) ==========
     - quien dicta las clases
     - profesores del programa
     - docentes especializados
@@ -1514,12 +1341,9 @@ nlu:
     - conferencistas
     - calidad docente
     - profesores reconocidos
-    
-    # ========== INSTALACIONES (15 ejemplos) ==========
     - hay cafeteria
     - tienen zonas wifi
     - hay internet en el campus
-    - donde son las clases
     - cual es la sede
     - tienen auditorio
     - hay salas de estudio
@@ -1531,7 +1355,6 @@ nlu:
     - zonas comunes
     - acceso wifi gratuito
     - velocidad del internet
-
 # ============================================
 # REGEX PATTERNS
 # ============================================
@@ -1539,33 +1362,26 @@ nlu:
   examples: |
     - \d+
     - [0-9]+
-
 - regex: email
   examples: |
     - [a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}
-
 - regex: telefono
   examples: |
     - \+?[0-9]{7,15}
     - [0-9]{3}[-\s]?[0-9]{3}[-\s]?[0-9]{4}
-
 - regex: smmlv
   examples: |
     - \d+\.?\d*\s*SMMLV
     - \d+\.?\d*\s*salarios?\s+minimos?
-
 - regex: modalidad_palabras
   examples: |
     - \b(modalidad|virtual|presencial|online|distancia|hibrido|híbrido)\b
-
 - regex: duracion_palabras
   examples: |
     - \b(duracion|duración|dura|tiempo|semestre|año|mes|credito|crédito)\b
-
 - regex: inscripcion_palabras
   examples: |
     - \b(inscripcion|inscripción|inscrib|registro|admision|admisión)\b
-
 # ============================================
 # LOOKUP TABLES
 # ============================================
@@ -1603,7 +1419,6 @@ nlu:
     - ingeniería industrial
     - maestria industrial
     - maestría industrial
-
 - lookup: palabras_costo
   examples: |
     - costo
@@ -1630,7 +1445,6 @@ nlu:
     - semestre
     - financiacion
     - financiación
-
 - lookup: palabras_fechas
   examples: |
     - fecha
@@ -1657,7 +1471,6 @@ nlu:
     - convocatoria
     - periodo
     - período
-
 - lookup: palabras_requisitos
   examples: |
     - requisito
@@ -1685,7 +1498,6 @@ nlu:
     - acta
     - grado
     - perfil
-
 - lookup: palabras_modalidad
   examples: |
     - modalidad
@@ -1711,7 +1523,6 @@ nlu:
     - clases
     - asistir
     - asistencia
-
 - lookup: palabras_duracion
   examples: |
     - duracion
@@ -1741,7 +1552,6 @@ nlu:
     - demora
     - toma
     - lleva
-
 - lookup: palabras_inscripcion
   examples: |
     - inscripcion
@@ -1768,8 +1578,6 @@ nlu:
     - procedimiento
     - como
     - cómo
-
-
 # ============================================
 # SYNONYMS
 # ============================================
@@ -1780,7 +1588,6 @@ nlu:
     - simon
     - see
     - sip
-
 - synonym: "informacion"
   examples: |
     - información
@@ -1789,7 +1596,6 @@ nlu:
     - data
     - datos
     - detalles
-
 - synonym: "costos"
   examples: |
     - costo
@@ -1802,7 +1608,6 @@ nlu:
     - tarifas
     - matricula
     - matrícula
-
 - synonym: "especializacion"
   examples: |
     - especialización
@@ -1811,7 +1616,6 @@ nlu:
     - posgrado
     - postgrado
     - programa
-
 - synonym: "maestria"
   examples: |
     - maestría
@@ -1821,7 +1625,6 @@ nlu:
     - master
     - magister
     - magíster
-
 - synonym: "requisitos"
   examples: |
     - requisitos
@@ -1829,19 +1632,14 @@ nlu:
     - requerimientos
     - documentos
     - papeles
-
 - synonym: "inscripcion"
   examples: |
     - inscripción
     - inscripcion
     - inscripciones
-    - registro
-    - matricula
-    - matrícula
     - inscribirme
     - inscribirse
     - inscribo
-
 - synonym: "fechas"
   examples: |
     - fechas
@@ -1850,7 +1648,6 @@ nlu:
     - cuando
     - cuándo
     - plazos
-
 - synonym: "modalidad"
   examples: |
     - modalidad
@@ -1858,7 +1655,6 @@ nlu:
     - tipo
     - presencial
     - virtual
-
 - synonym: "proyectos informaticos"
   examples: |
     - proyectos informaticos
@@ -1866,21 +1662,18 @@ nlu:
     - proyectos de TI
     - gestion proyectos
     - gestión proyectos
-
 - synonym: "salud ocupacional"
   examples: |
     - salud ocupacional
     - HSST
     - higiene seguridad salud trabajo
     - seguridad trabajo
-
 - synonym: "ingenieria software"
   examples: |
     - ingenieria software
     - ingeniería software
     - desarrollo software
     - software
-
 - synonym: "automatica industrial"
   examples: |
     - automatica industrial
@@ -1888,13 +1681,11 @@ nlu:
     - informatica automatica
     - informática automática
     - informatica industrial
-
 - synonym: "avaluos"
   examples: |
     - avaluos
     - avalúos
     - avaluadores
-
 - synonym: "SIG"
   examples: |
     - SIG
@@ -1902,13 +1693,11 @@ nlu:
     - sistemas información geográfica
     - geomatica
     - geomática
-
 - synonym: "bioingenieria"
   examples: |
     - bioingenieria
     - bioingeniería
     - bio ingenieria
-
 - synonym: "ingenieria industrial"
   examples: |
     - ingenieria industrial
@@ -1916,7 +1705,6 @@ nlu:
     - maestria industrial
     - maestría industrial
     - industrial
-
 - synonym: "virtual"
   examples: |
     - virtual
@@ -1927,7 +1715,6 @@ nlu:
     - remota
     - distancia
     - a distancia
-
 - synonym: "presencial"
   examples: |
     - presencial

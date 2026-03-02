@@ -19,7 +19,7 @@ stories:
           - postgrado_nombre: "maestría en ingeniería de software"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "1"
+          - postgrado_id: true
       - intent: consultar_costos
       - action: action_buscar_faq
       - intent: consultar_requisitos
@@ -41,7 +41,7 @@ stories:
       - intent: seleccionar_numero
       - action: action_seleccionar_numero
       - slot_was_set:
-          - postgrado_id: "1"
+          - postgrado_id: true
       - intent: consultar_costos
       - action: action_buscar_faq
 
@@ -57,7 +57,7 @@ stories:
       - intent: seleccionar_numero
       - action: action_seleccionar_numero
       - slot_was_set:
-          - postgrado_id: "1"
+          - postgrado_id: true
 
   # ==================== FLUJO 5: Usuario busca y selecciona programa ====================
   - story: buscar y seleccionar programa
@@ -69,7 +69,7 @@ stories:
           - postgrado_nombre: "avaluos"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "2"
+          - postgrado_id: true
       - intent: consultar_costos
       - action: action_buscar_faq
 
@@ -81,7 +81,7 @@ stories:
           - postgrado_nombre: "ciencia de datos"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "3"
+          - postgrado_id: true
       - intent: consultar_costos
       - action: action_buscar_faq
 
@@ -102,7 +102,7 @@ stories:
           - postgrado_nombre: "especialización en proyectos"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "4"
+          - postgrado_id: true
       - intent: consultar_duracion
       - action: action_buscar_faq
       - intent: consultar_modalidad
@@ -121,7 +121,7 @@ stories:
           - postgrado_nombre: "doctorado en educación"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "5"
+          - postgrado_id: true
       - intent: pregunta_general
       - action: action_manejar_pregunta_general
       - intent: contactar_asesor
@@ -144,7 +144,7 @@ stories:
           - postgrado_nombre: "maestría"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "6"
+          - postgrado_id: true
       - intent: consultar_becas
       - action: action_buscar_faq
       - intent: consultar_financiacion
@@ -158,7 +158,7 @@ stories:
           - postgrado_nombre: "avaluos"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "2"
+          - postgrado_id: true
       - intent: consultar_costos
       - action: action_buscar_faq
       - intent: seleccionar_postgrado
@@ -166,7 +166,7 @@ stories:
           - postgrado_nombre: "bioingeniería"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "1"
+          - postgrado_id: true
       - intent: consultar_costos
       - action: action_buscar_faq
 
@@ -184,7 +184,7 @@ stories:
           - postgrado_nombre: "ciencias de la información"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "3"
+          - postgrado_id: true
       - intent: consultar_requisitos
       - action: action_buscar_faq
       - intent: consultar_costos
@@ -195,12 +195,7 @@ stories:
       - action: action_buscar_faq
       - intent: consultar_modalidad
       - action: action_buscar_faq
-      - intent: contactar_asesor
-      - action: datos_contacto_form  
-      - active_loop: datos_contacto_form
-      - intent: agradecer
-      - action: utter_de_nada
-      - intent: goodbye
+      - intent: negate_and_end
       - action: action_despedida
 
   # ==================== FLUJO 14: Usuario fuera de alcance ====================
@@ -227,22 +222,11 @@ stories:
           - postgrado_nombre: "MBA"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "7"
+          - postgrado_id: true
       - intent: consultar_costos
       - action: action_buscar_faq
       - intent: deny
-      - action: utter_ask_rephrase
-      - intent: listar_postgrados
-      - action: action_listar_postgrados
-
-  # ==================== FLUJO 17: Fallback recovery ====================
-  - story: recuperacion de fallback
-    steps:
-      - intent: nlu_fallback
-      - action: action_verificar_timeout
-      - action: action_default_fallback
-      - intent: pedir_ayuda
-      - action: utter_opciones_ayuda
+      - action: action_manejar_negacion
       - intent: listar_postgrados
       - action: action_listar_postgrados
 
@@ -258,7 +242,7 @@ stories:
       - intent: seleccionar_numero
       - action: action_seleccionar_numero
       - slot_was_set:
-          - postgrado_id: "1"
+          - postgrado_id: true
 
   # ==================== FLUJO 19: Búsqueda con errores ortográficos ====================
   - story: busqueda con error ortografico
@@ -268,7 +252,7 @@ stories:
           - postgrado_nombre: "especialización en avalúos"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "1"
+          - postgrado_id: true
       - intent: consultar_requisitos
       - action: action_buscar_faq
 
@@ -280,7 +264,7 @@ stories:
           - postgrado_nombre: "avaluos"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "1"
+          - postgrado_id: true
       - intent: solicitar_link_inscripcion
       - action: action_buscar_faq
 
@@ -292,7 +276,7 @@ stories:
           - postgrado_nombre: "bioingenieria"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "2"
+          - postgrado_id: true
       - intent: solicitar_informacion_general
       - action: action_manejar_pregunta_general
       - intent: consultar_costos
@@ -308,7 +292,7 @@ stories:
           - postgrado_nombre: "HSST"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "3"
+          - postgrado_id: true
       - intent: consultar_dirigido
       - action: action_buscar_faq
       - intent: consultar_requisitos
@@ -322,7 +306,7 @@ stories:
           - postgrado_nombre: "proyectos informaticos"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "4"
+          - postgrado_id: true
       - intent: consultar_proceso_admision
       - action: action_buscar_faq
       - intent: consultar_requisitos
@@ -340,23 +324,8 @@ stories:
           - postgrado_nombre: "avaluos"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "1"
+          - postgrado_id: true
       - intent: consultar_costos
-      - action: action_buscar_faq
-
-  # ==================== FLUJO 25: Link sin contexto ====================
-  - story: pedir link sin seleccionar programa
-    steps:
-      - intent: solicitar_link_inscripcion
-      - action: utter_ask_cual_programa
-      - action: action_listar_postgrados
-      - intent: seleccionar_postgrado
-        entities:
-          - postgrado_nombre: "bioingenieria"
-      - action: action_seleccionar_postgrado
-      - slot_was_set:
-          - postgrado_id: "2"
-      - intent: solicitar_link_inscripcion
       - action: action_buscar_faq
 
   # ==================== FLUJO 26: Consultas rápidas ====================
@@ -367,7 +336,7 @@ stories:
           - postgrado_nombre: "salud ocupacional"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "3"
+          - postgrado_id: true
       - intent: consultar_costos
       - action: action_buscar_faq
       - intent: consultar_fechas
@@ -387,7 +356,7 @@ stories:
           - postgrado_nombre: "ingenieria de software"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "5"
+          - postgrado_id: true
       - intent: consultar_plan_estudios
       - action: action_buscar_faq
       - intent: consultar_duracion
@@ -405,7 +374,7 @@ stories:
       - intent: seleccionar_numero
       - action: action_seleccionar_numero
       - slot_was_set:
-          - postgrado_id: "1"
+          - postgrado_id: true
       - intent: consultar_costos
       - action: action_buscar_faq
       - intent: seleccionar_postgrado
@@ -413,7 +382,7 @@ stories:
           - postgrado_nombre: "maestría en ciencia de datos"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "2"
+          - postgrado_id: true
       - intent: consultar_costos
       - action: action_buscar_faq
 
@@ -425,7 +394,7 @@ stories:
           - postgrado_nombre: "bioingenieria"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "2"
+          - postgrado_id: true
       - intent: solicitar_informacion_general
       - action: action_manejar_pregunta_general
       - intent: consultar_requisitos
@@ -441,7 +410,7 @@ stories:
           - postgrado_nombre: "proyectos informaticos"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "4"
+          - postgrado_id: true
       - intent: solicitar_informacion_general
       - action: action_manejar_pregunta_general
       - intent: consultar_fechas
@@ -460,7 +429,7 @@ stories:
       - action: action_despedida
 
   # ==================== FLUJO 33: Agradecer y despedir ====================
-  - story: agradecer y despedir
+  - story: agradecimiento y despedida
     steps:
       - intent: agradecer
       - action: utter_de_nada
@@ -480,7 +449,7 @@ stories:
   - story: usuario niega y luego se despide
     steps:
       - intent: deny
-      - action: utter_ask_rephrase
+      - action: action_manejar_negacion
       - intent: goodbye
       - action: action_despedida
 
@@ -494,19 +463,9 @@ stories:
           - postgrado_nombre: "avaluos"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "1"
+          - postgrado_id: true
       - intent: consultar_costos
       - action: action_buscar_faq
-      - intent: negate_and_end  
-      - action: action_despedida
-
-  # ==================== FLUJO 37: Doble negacion ====================
-  - story: doble negacion despedida
-    steps:
-      - intent: pedir_ayuda
-      - action: utter_opciones_ayuda
-      - intent: deny
-      - action: utter_ask_rephrase
       - intent: negate_and_end  
       - action: action_despedida
 
@@ -518,7 +477,7 @@ stories:
           - postgrado_nombre: "bioingenieria"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "2"
+          - postgrado_id: true
       - intent: consultar_costos
       - action: action_buscar_faq
       - intent: consultar_fechas
@@ -536,7 +495,7 @@ stories:
           - postgrado_nombre: "bioingenieria"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "2"
+          - postgrado_id: true
       - intent: consultar_fechas
       - action: action_buscar_faq
       - intent: agradecer
@@ -552,7 +511,7 @@ stories:
       - intent: seleccionar_numero
       - action: action_seleccionar_numero
       - slot_was_set:
-          - postgrado_id: "1"
+          - postgrado_id: true
       - intent: consultar_costos
       - action: action_buscar_faq
       - intent: consultar_fechas
@@ -572,7 +531,7 @@ stories:
           - postgrado_nombre: "proyectos informaticos"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "4"
+          - postgrado_id: true
       - intent: solicitar_informacion_general
       - action: action_manejar_pregunta_general
       - intent: negate_and_end
@@ -584,6 +543,7 @@ stories:
       - intent: contactar_asesor
       - action: datos_contacto_form
       - active_loop: datos_contacto_form
+      - action: datos_contacto_form
       - intent: deny  # Usuario cancela formulario
       - action: action_deactivate_loop
       - active_loop: null
@@ -591,14 +551,6 @@ stories:
       - action: utter_opciones_ayuda  
       - intent: negate_and_end  # Usuario ahora sí quiere terminar
       - action: action_despedida
-
-  # ==================== FLUJO 43: Volver al menu ====================
-  - story: volver al menu
-    steps:
-      - intent: volver_menu
-      - action: action_reiniciar_slots  
-      - action: action_saludo_mejorado
-      - action: action_listar_postgrados
 
   # ==================== FLUJO 44: Preguntas libres después de seleccionar ====================
 
@@ -609,7 +561,7 @@ stories:
           - postgrado_nombre: "avaluos"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "1"
+          - postgrado_id: true
       - intent: pregunta_postgrado
       - action: action_buscar_faq_libre
 
@@ -620,7 +572,7 @@ stories:
           - postgrado_nombre: "bioingenieria"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "2"
+          - postgrado_id: true
       - intent: consultar_costos
       - action: action_buscar_faq
       - intent: pregunta_postgrado
@@ -635,7 +587,7 @@ stories:
       - intent: seleccionar_numero
       - action: action_seleccionar_numero
       - slot_was_set:
-          - postgrado_id: "3"
+          - postgrado_id: true
       - intent: pregunta_postgrado
       - action: action_buscar_faq_libre
 
@@ -646,22 +598,12 @@ stories:
           - postgrado_nombre: "proyectos"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "4"
+          - postgrado_id: true
       - intent: pregunta_postgrado
       - action: action_buscar_faq_libre
       - intent: contactar_asesor
       - action: datos_contacto_form  
       - active_loop: datos_contacto_form
-
-# ==================== FLUJO 45: Despedida despues de fallback ====================
-
-  - story: fallback recovery con despedida
-    steps:
-      - intent: nlu_fallback
-      - action: action_verificar_timeout
-      - action: action_default_fallback
-      - intent: negate_and_end  # Usuario desiste
-      - action: action_despedida
 
 # ==================== FLUJO 46: Solo consulta costos y termina ====================
  
@@ -672,7 +614,7 @@ stories:
           - postgrado_nombre: "HSST"
       - action: action_seleccionar_postgrado
       - slot_was_set:
-          - postgrado_id: "3"
+          - postgrado_id: true
       - intent: consultar_costos
       - action: action_buscar_faq
       - intent: negate_and_end
@@ -687,7 +629,7 @@ stories:
       - intent: seleccionar_numero
       - action: action_seleccionar_numero
       - slot_was_set:
-          - postgrado_id: "1"
+          - postgrado_id: true
       - intent: deny  # "no ese no"
       - action: action_manejar_negacion
       - intent: seleccionar_postgrado
@@ -695,22 +637,136 @@ stories:
           - postgrado_nombre: "otro programa"
       - action: action_seleccionar_postgrado
 
-# ==================== FLUJO 48: Despedida implícita en fallback ====================
-
-  - story: despedida implicita fallback
+  # ==================== FLUJO 48: Cierre natural solo con gracias (sin goodbye) ====================
+  # En WhatsApp la mayoría de usuarios terminan con "gracias" y se van en silencio
+  - story: cierre natural solo agradecimiento
     steps:
-      - intent: pregunta_postgrado
-      - action: action_buscar_faq_libre
-      - intent: nlu_fallback
-      - action: action_verificar_timeout
-      - action: action_default_fallback
-      - intent: goodbye              # ← el usuario responde y se despide
-      - action: action_despedida
-
-  
-  - story: Despedida post-agradecimiento
-    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "avaluos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: true
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: consultar_fechas
+      - action: action_buscar_faq
       - intent: agradecer
       - action: utter_de_nada
+
+  - story: cierre natural agradecimiento post-requisitos
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "bioingenieria"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: true
+      - intent: consultar_requisitos
+      - action: action_buscar_faq
+      - intent: agradecer
+      - action: utter_de_nada
+
+  # ==================== FLUJO 49: Cierre después de formulario completado ====================
+  - story: cierre despues de formulario con gracias
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "ingenieria de software"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: true
+      - intent: contactar_asesor
+      - action: datos_contacto_form
+      - active_loop: datos_contacto_form
+      - action: datos_contacto_form
+      - active_loop: null
+      - slot_was_set:
+          - requested_slot: null
+      - action: action_enviar_datos_contacto
+      - intent: agradecer
+      - action: utter_de_nada
+
+  - story: cierre despues de formulario con goodbye
+    steps:
+      - intent: contactar_asesor
+      - action: datos_contacto_form
+      - active_loop: datos_contacto_form
+      - action: datos_contacto_form
+      - active_loop: null
+      - slot_was_set:
+          - requested_slot: null
+      - action: action_enviar_datos_contacto
+      - intent: goodbye
+      - action: action_despedida
+
+  # ==================== FLUJO 50: deny en contexto de FAQ (no rechaza programa) ====================
+  # El usuario recibe una FAQ y responde "no, busco otra cosa" — no es goodbye
+  - story: deny respuesta faq luego listar
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "avaluos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: true
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: deny
+      - action: action_manejar_negacion
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+
+  - story: deny respuesta faq luego cambiar programa
+    steps:
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+      - intent: seleccionar_numero
+      - action: action_seleccionar_numero
+      - slot_was_set:
+          - postgrado_id: true
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: deny
+      - action: action_manejar_negacion
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "bioingenieria"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: true
+
+  # ==================== FLUJO 51: negate_and_end en mitad de consulta ====================
+  # Entrenamos que negate_and_end puede aparecer sin ser siempre el final absoluto
+  # cuando el usuario cambia de opinión (la regla con condition lo maneja)
+  - story: negate and end en contexto de opciones
+    steps:
+      - intent: listar_postgrados
+      - action: action_listar_postgrados
+      - intent: seleccionar_numero
+      - action: action_seleccionar_numero
+      - slot_was_set:
+          - postgrado_id: true
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: consultar_modalidad
+      - action: action_buscar_faq
       - intent: negate_and_end
       - action: action_despedida
+
+  # ==================== FLUJO 52: mood_great en contexto de información ====================
+  # Entrenamos la respuesta emocional positiva en medio de conversación
+  - story: usuario positivo luego continua
+    steps:
+      - intent: seleccionar_postgrado
+        entities:
+          - postgrado_nombre: "proyectos informaticos"
+      - action: action_seleccionar_postgrado
+      - slot_was_set:
+          - postgrado_id: true
+      - intent: consultar_costos
+      - action: action_buscar_faq
+      - intent: mood_great
+      - action: utter_happy
+      - intent: consultar_requisitos
+      - action: action_buscar_faq
