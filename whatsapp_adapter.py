@@ -8,17 +8,26 @@ from flask import Flask, request, jsonify
 import requests
 import os
 import logging
+from datetime import datetime
 from dotenv import load_dotenv
+from apscheduler.schedulers.background import BackgroundScheduler
 
 # Cargar variables de entorno
 load_dotenv()
 
-# Configuración
-VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN", "postgrados_ud_webhook_token_2025_")
-WHATSAPP_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN")
+# Configuración WhatsApp / Rasa
+VERIFY_TOKEN      = os.getenv("WHATSAPP_VERIFY_TOKEN", "postgrados_ud_webhook_token_2025_")
+WHATSAPP_TOKEN    = os.getenv("WHATSAPP_ACCESS_TOKEN")
 WHATSAPP_PHONE_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
-RASA_URL = os.getenv("RASA_URL", "http://localhost:5005/webhooks/rest/webhook")
-WHATSAPP_API_URL = f"https://graph.facebook.com/v18.0/{WHATSAPP_PHONE_ID}/messages"
+RASA_URL          = os.getenv("RASA_URL", "http://localhost:5005/webhooks/rest/webhook")
+WHATSAPP_API_URL  = f"https://graph.facebook.com/v18.0/{WHATSAPP_PHONE_ID}/messages"
+
+# Configuración de inactividad
+WARNING_SECONDS = int(os.getenv("INACTIVITY_WARNING_TIME", "240"))  # 4 min → aviso
+TIMEOUT_SECONDS = int(os.getenv("INACTIVITY_TIMEOUT",      "300"))  # 5 min → cierre
+
+# Registro de sesiones activas: { "numero": {"last_activity": datetime, "warned": bool} }
+active_sessions = {}
 
 # Configurar logging
 logging.basicConfig(
@@ -26,6 +35,63 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# ============================================
+# SCHEDULER DE INACTIVIDAD
+# ============================================
+
+def registrar_actividad(phone_number: str):
+    """Registra o renueva la sesion activa del usuario"""
+    active_sessions[phone_number] = {
+        "last_activity": datetime.now(),
+        "warned": False
+    }
+    logger.info(f"🟢 Actividad registrada: {phone_number}")
+
+
+def cerrar_sesion_en_rasa(phone_number: str):
+    """Envia /reiniciar a Rasa para limpiar el estado del usuario"""
+    rasa_base = RASA_URL.replace("/webhooks/rest/webhook", "")
+    try:
+        requests.post(
+            f"{rasa_base}/webhooks/rest/webhook",
+            json={"sender": phone_number, "message": "/reiniciar"},
+            timeout=10
+        )
+        logger.info(f"🔄 Sesion Rasa cerrada para {phone_number}")
+    except Exception as e:
+        logger.error(f"❌ Error cerrando sesion Rasa: {e}")
+
+
+def verificar_inactividad():
+    """Job que corre cada minuto detectando usuarios inactivos"""
+    ahora = datetime.now()
+    a_eliminar = []
+
+    for phone_number, datos in list(active_sessions.items()):
+        segundos_inactivo = (ahora - datos["last_activity"]).total_seconds()
+
+        if segundos_inactivo >= WARNING_SECONDS and not datos["warned"]:
+            segundos_restantes = TIMEOUT_SECONDS - segundos_inactivo
+            logger.info(f"⚠️ Inactividad {phone_number}: enviando aviso")
+            send_whatsapp_message(
+                phone_number,
+                f"⚠️ Tu sesion se cerrara en {int(segundos_restantes)} segundos por inactividad.\n\nEscribe cualquier mensaje para continuar."
+            )
+            active_sessions[phone_number]["warned"] = True
+
+        elif segundos_inactivo >= TIMEOUT_SECONDS:
+            logger.info(f"🔒 Timeout {phone_number}: cerrando sesion")
+            send_whatsapp_message(
+                phone_number,
+                "⏱️ Tu sesion fue cerrada por inactividad.\n\nEscribe *hola* cuando quieras continuar. 👋"
+            )
+            cerrar_sesion_en_rasa(phone_number)
+            a_eliminar.append(phone_number)
+
+    for phone_number in a_eliminar:
+        del active_sessions[phone_number]
+
 
 app = Flask(__name__)
 
@@ -120,6 +186,9 @@ def process_incoming_message(message, value):
             logger.warning("⚠️ Mensaje sin texto")
             return
         
+        # ✅ Registrar actividad para el scheduler de inactividad
+        registrar_actividad(from_number)
+
         logger.info(f"💬 Texto recibido: '{text}'")
         
         # Enviar a Rasa
@@ -262,6 +331,17 @@ if __name__ == '__main__':
     logger.info(f"🔐 Token configurado: {'✅' if WHATSAPP_TOKEN else '❌'}")
     logger.info("=" * 50)
     
+    # ✅ Iniciar scheduler de inactividad
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(
+        verificar_inactividad,
+        trigger="interval",
+        seconds=60,
+        id="verificar_inactividad"
+    )
+    scheduler.start()
+    logger.info("⏰ Scheduler de inactividad iniciado (revisión cada 60s)")
+
     app.run(
         host='0.0.0.0',
         port=port,

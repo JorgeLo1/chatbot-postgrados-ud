@@ -46,6 +46,7 @@ intents:
 # ============================================
 entities:
   - postgrado_nombre
+  - postgrado_correo
   - tipo_consulta
   - numero_opcion
 
@@ -67,6 +68,12 @@ slots:
       - type: custom
 
   postgrado_nombre:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+
+  postgrado_correo:
     type: text
     influence_conversation: false
     mappings:
@@ -146,8 +153,22 @@ slots:
     mappings:
       - type: custom
 
+  advertencia_inactividad_mostrada:
+    type: bool
+    initial_value: false
+    influence_conversation: false
+    mappings:
+      - type: custom
+  
+  ultima_actividad:
+    type: float
+    initial_value: null
+    influence_conversation: false
+    mappings:
+      - type: custom
+
 # ============================================
-# RESPONSES - ✅ ACTUALIZADAS
+# RESPONSES 
 # ============================================
 responses:
   utter_de_nada:
@@ -294,6 +315,9 @@ actions:
   - action_limpiar_slots_antiguos
   - action_log_unknown_intent
   - action_solicitar_programa
+  - action_verificar_timeout
+  - action_renovar_sesion
+  - action_cerrar_por_timeout
 
 # ============================================
 # FORMS

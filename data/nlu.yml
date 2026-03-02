@@ -49,38 +49,13 @@ nlu:
     - hasta pronto
     - me voy
     - tengo que irme
-    - gracias, eso es todo
     - ya no necesito más ayuda
     - ya no necesito mas ayuda
-    - perfecto gracias
     - ok gracias adiós
     - ok gracias adios
     - hasta la proxima
     - hasta la próxima
     - nos vemos luego
-    - eso es todo gracias
-    - nada mas gracias
-    - nada más gracias
-    - ya termine
-    - ya terminé
-    - listo gracias
-    - ok perfecto chao
-    - bueno gracias nos vemos
-    - ya esta bien gracias
-    - ya está bien gracias
-    - me retiro
-    - hasta otra
-    - cierro
-    - termino
-    - finalizo
-    - salir
-    - cerrar chat
-    - cerrar conversación
-    - cerrar conversacion
-    - terminar conversación
-    - terminar conversacion
-    - ya no necesito nada
-    - con eso me despido
     - muchas gracias adiós
     - muchas gracias adios
     - gracias y hasta luego
@@ -106,8 +81,17 @@ nlu:
     - hasta ahi
     - hasta ahí
     - ya fue
-    - eso fue todo
     - terminamos
+    - hasta otra
+    - me retiro
+    - cierro
+    - salir
+    - cerrar chat
+    - cerrar conversación
+    - cerrar conversacion
+    - terminar conversación
+    - terminar conversacion
+    - con eso me despido
     
 # ============================================
 # INTENT: negate_and_end 
@@ -1785,39 +1769,7 @@ nlu:
     - como
     - cómo
 
-- lookup: palabras_costo
-  examples: |
-    - costo
-    - costos
-    - precio
-    - precios
-    - valor
-    - valores
-    - tarifa
-    - tarifas
-    - pagar
-    - pago
-    - pagos
-    - matricula
-    - matrícula
-    - inversion
-    - inversión
-    - SMMLV
-    - salario
-    - salarios
-    - minimo
-    - mínimo
-    - minimos
-    - mínimos
-    - credito
-    - crédito
-    - creditos
-    - créditos
-    - financiacion
-    - financiación
-    - cuota
-    - cuotas
-  
+
 # ============================================
 # SYNONYMS
 # ============================================

@@ -7,103 +7,97 @@ recipe: default.v1
 # LENGUAJE: Español
 language: es
 
-# ============================================
-# PIPELINE OPTIMIZADO PARA ESPAÑOL
-# ============================================
 pipeline:
-  # Tokenización para español con WhitespaceTokenizer
-  - name: WhitespaceTokenizer
-  
+  # Tokenizador spaCy — mejor manejo del español (acentos, morfología)
+  - name: SpacyNLP
+    model: es_core_news_md
+    case_sensitive: false
+
+  - name: SpacyTokenizer
+
   # Expresiones regulares para entidades
   - name: RegexFeaturizer
-  
-  # Extractor de entidades por lookup tables y sinónimos
+
+  # Features léxico-sintácticas
   - name: LexicalSyntacticFeaturizer
-  
-  # Contador de n-gramas para mejorar contexto
+
+  # Features de spaCy (vectores preentrenados)
+  - name: SpacyFeaturizer
+    pooling: mean
+
+  # Contador de n-gramas — palabras completas
   - name: CountVectorsFeaturizer
     analyzer: word
     min_ngram: 1
-    max_ngram: 3  # Captura frases de hasta 3 palabras
-  
+    max_ngram: 3
+
+  # Contador de n-gramas — caracteres (robusto ante errores tipográficos)
   - name: CountVectorsFeaturizer
     analyzer: char_wb
     min_ngram: 1
     max_ngram: 4
-  
-  # Clasificador DIET con configuración robusta
+
+  # Clasificador DIET
   - name: DIETClassifier
-    epochs: 200  # Aumentado para mejor aprendizaje
+    epochs: 200
     constrain_similarities: true
     model_confidence: softmax
-    embedding_dimension: 40  # Aumentado de 20 a 40
+    embedding_dimension: 40
     number_of_negative_examples: 50
-    # Configuración de pérdidas
     loss_type: cross_entropy
     similarity_type: inner
-    # Regularización
     use_sparse_input_dropout: true
     sparse_input_dropout: 0.1
     dense_input_dropout: 0.1
-    # Ranking
     ranking_length: 10
-    # CRÍTICO: Threshold más alto para mayor precisión
-    threshold: 0.5  
-  
-  # Extractor de entidades CRF (para secuencias)
+    # NOTA: threshold no es parámetro de DIET — se controla en FallbackClassifier
+
+  # Mapeo de sinónimos definidos en nlu.yml
   - name: EntitySynonymMapper
-  
-  # Extractor de entidades por expresiones regulares
+
+  # Extractor de entidades por regex
   - name: RegexEntityExtractor
     case_sensitive: false
-  
-  # Clasificador de respuestas (para FAQs)
-  - name: ResponseSelector
-    epochs: 100
-    constrain_similarities: true
-    retrieval_intent: faq
-  
-  # Fallback mejorado
+
+  # FallbackClassifier — umbral ajustado para español conversacional
   - name: FallbackClassifier
-    threshold: 0.7  # Si confianza < 60%, activa fallback
-    ambiguity_threshold: 0.15  # Diferencia mínima entre top 2 intents
+    threshold: 0.65   # Si confianza < 65%, activa nlu_fallback
+    ambiguity_threshold: 0.15
 
 # ============================================
-# POLICIES - OPTIMIZADAS
+# POLICIES 
 # ============================================
 policies:
-  # Memoization para recordar conversaciones exactas
+  # MemoizationPolicy — recuerda flujos exactos del entrenamiento
   - name: MemoizationPolicy
     max_history: 5
-  
-  # RulePolicy para reglas estrictas
+
+  # RulePolicy — manejo estricto de reglas
   - name: RulePolicy
     core_fallback_threshold: 0.3
     core_fallback_action_name: action_default_fallback
     enable_fallback_prediction: true
-  
-  # UnexpecTEDIntentPolicy para manejar intents inesperados
+
+  # UnexpecTEDIntentPolicy — detecta intents fuera de contexto
   - name: UnexpecTEDIntentPolicy
     max_history: 5
     epochs: 100
     constrain_similarities: true
     model_confidence: softmax
-  
-  # TEDPolicy - Transformer principal
+
+  # TEDPolicy — política principal basada en Transformer
   - name: TEDPolicy
-    max_history: 8  # Aumentado para mejor contexto
+    max_history: 8
     epochs: 150
     constrain_similarities: true
     model_confidence: softmax
-    # Configuración de embeddings
     embedding_dimension: 40
     number_of_negative_examples: 50
-    # Regularización
     use_sparse_input_dropout: true
     sparse_input_dropout: 0.1
     dense_input_dropout: 0.1
-    # Split de validación
-    evaluate_on_num_examples: 50
+    # evaluate_on_num_examples: 0 evita error cuando hay pocas stories de validación
+    evaluate_on_num_examples: 0
     evaluate_every_number_of_epochs: 20
 
 # ============================================

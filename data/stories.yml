@@ -91,7 +91,7 @@ stories:
       - intent: greet
       - action: action_saludo_mejorado
       - intent: contactar_asesor
-      - action: datos_contacto_form  # ✅ CAMBIADO
+      - action: datos_contacto_form  
       - active_loop: datos_contacto_form
 
   # ==================== FLUJO 8: Consulta múltiple y luego contacto ====================
@@ -110,7 +110,7 @@ stories:
       - intent: consultar_becas
       - action: action_buscar_faq
       - intent: contactar_asesor
-      - action: datos_contacto_form  # ✅ CAMBIADO
+      - action: datos_contacto_form  
       - active_loop: datos_contacto_form
 
   # ==================== FLUJO 9: No encuentra información ====================
@@ -125,7 +125,7 @@ stories:
       - intent: pregunta_general
       - action: action_manejar_pregunta_general
       - intent: contactar_asesor
-      - action: datos_contacto_form  # ✅ CAMBIADO
+      - action: datos_contacto_form  
       - active_loop: datos_contacto_form
 
   # ==================== FLUJO 10: Usuario pide ayuda ====================
@@ -196,7 +196,7 @@ stories:
       - intent: consultar_modalidad
       - action: action_buscar_faq
       - intent: contactar_asesor
-      - action: datos_contacto_form  # ✅ CAMBIADO
+      - action: datos_contacto_form  
       - active_loop: datos_contacto_form
       - intent: agradecer
       - action: utter_de_nada
@@ -239,6 +239,7 @@ stories:
   - story: recuperacion de fallback
     steps:
       - intent: nlu_fallback
+      - action: action_verificar_timeout
       - action: action_default_fallback
       - intent: pedir_ayuda
       - action: utter_opciones_ayuda
@@ -506,7 +507,7 @@ stories:
       - action: utter_opciones_ayuda
       - intent: deny
       - action: utter_ask_rephrase
-      - intent: negate_and_end  # ✅ CAMBIADO de deny a negate_and_end
+      - intent: negate_and_end  
       - action: action_despedida
 
   # ==================== FLUJO 38: Consulta completa termina ====================
@@ -587,7 +588,7 @@ stories:
       - action: action_deactivate_loop
       - active_loop: null
       - action: utter_formulario_cancelado
-      - action: utter_opciones_ayuda  # ✅ AGREGADO (coincide con la regla)
+      - action: utter_opciones_ayuda  
       - intent: negate_and_end  # Usuario ahora sí quiere terminar
       - action: action_despedida
 
@@ -595,7 +596,7 @@ stories:
   - story: volver al menu
     steps:
       - intent: volver_menu
-      - action: action_reiniciar_slots  # ✅ AGREGADO
+      - action: action_reiniciar_slots  
       - action: action_saludo_mejorado
       - action: action_listar_postgrados
 
@@ -649,7 +650,7 @@ stories:
       - intent: pregunta_postgrado
       - action: action_buscar_faq_libre
       - intent: contactar_asesor
-      - action: datos_contacto_form  # ✅ CAMBIADO
+      - action: datos_contacto_form  
       - active_loop: datos_contacto_form
 
 # ==================== FLUJO 45: Despedida despues de fallback ====================
@@ -657,6 +658,7 @@ stories:
   - story: fallback recovery con despedida
     steps:
       - intent: nlu_fallback
+      - action: action_verificar_timeout
       - action: action_default_fallback
       - intent: negate_and_end  # Usuario desiste
       - action: action_despedida
@@ -699,9 +701,11 @@ stories:
     steps:
       - intent: pregunta_postgrado
       - action: action_buscar_faq_libre
-      - intent: nlu_fallback  # Usuario confuso
-      - action: action_default_fallback  # Detecta "listo"
-      - action: action_despedida  # Auto-despedida
+      - intent: nlu_fallback
+      - action: action_verificar_timeout
+      - action: action_default_fallback
+      - intent: goodbye              # ← el usuario responde y se despide
+      - action: action_despedida
 
   
   - story: Despedida post-agradecimiento

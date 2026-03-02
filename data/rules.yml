@@ -48,7 +48,6 @@ rules:
     - action: action_saludo_mejorado     
     - action: action_listar_postgrados
 
-
 - rule: Mostrar opciones de ayuda
   steps:
   - intent: pedir_ayuda
@@ -166,7 +165,7 @@ rules:
   - action: action_deactivate_loop
   - active_loop: null
   - action: utter_formulario_cancelado
-  - action: utter_opciones_ayuda  # 👈 añadido para que coincida con la story
+  - action: utter_opciones_ayuda 
 
 - rule: Responder preguntas durante formulario
   condition:
@@ -212,3 +211,13 @@ rules:
   steps:
   - intent: bot_challenge
   - action: utter_iamabot
+
+# ============================================
+# SECCIÓN 10: Verificar Timeout en Fallback
+# ============================================
+
+- rule: verificar timeout en fallback
+  steps:
+  - intent: nlu_fallback
+  - action: action_verificar_timeout
+  - action: action_default_fallback

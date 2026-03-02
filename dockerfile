@@ -20,22 +20,28 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copiar todos los archivos del proyecto
+# Copiar archivos de configuración de Rasa
 COPY config.yml domain.yml credentials.yml endpoints.yml ./
+
+# Copiar datos de entrenamiento base (nlu.yml, stories.yml, rules.yml)
+# Estos son los datos ESTÁTICOS — fetch_training_data.py generará
+# nlu_dynamic.yml y stories_dynamic.yml en tiempo de ejecución
 COPY data/ ./data/
+
+# Copiar actions y adaptadores
 COPY actions/ ./actions/
+COPY whatsapp_adapter.py ./
 
-# Entrenar el modelo
-RUN echo "📚 Entrenando modelo de Rasa..." && \
-    rasa train --fixed-model-name model && \
-    echo "✅ Modelo entrenado exitosamente"
+# Copiar script de entrenamiento dinámico
+# (se ejecutará en start.sh, NO aquí)
+COPY fetch_training_data.py ./
 
-# Exponer puertos
-EXPOSE 5005 5055
-
-# Script de inicio
+# Copiar script de inicio
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
+
+# Exponer puertos
+EXPOSE 5005 5055 5006
 
 # Comando de inicio
 CMD ["/app/start.sh"]

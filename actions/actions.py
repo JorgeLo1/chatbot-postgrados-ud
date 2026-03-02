@@ -20,14 +20,35 @@ import re
 # Cargar variables de entorno
 load_dotenv()
 
-# Desactivar warnings SSL (solo para desarrollo/pruebas)
+# =============================================================
+# CHANGELOG DE CORRECCIONES (v1.1)
+# =============================================================
+# FIX-1: ActionBuscarFAQ — eliminado mensaje duplicado al usuario
+#         cuando no se encuentra respuesta en el FAQ.
+#
+# FIX-2: ActionBuscarFaqLibre._extraer_respuesta_apex — reescrito
+#         para trabajar con dict (output de make_api_request) en vez
+#         de requests.Response. Antes lanzaba AttributeError siempre.
+#
+# FIX-3: ActionGuardarHistorial / ActionDespedida / ActionCerrarPorTimeout
+#         — corregidos nombres de campos del payload:
+#         "mensaje_usuario" → "mensaje"
+#         "respuesta_bot"   → "respuesta"
+#         (alineados con lo que espera el endpoint ORDS POST /historial)
+# =============================================================
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# ✅ CONFIGURACIÓN OPTIMIZADA
+# CONFIGURACIÓN 
 APEX_API_BASE_URL = os.getenv("APEX_API_URL", "https://oracleapex.com/ords/udchatbot/chatbot")
 APEX_TIMEOUT = int(os.getenv("APEX_TIMEOUT", "60"))
 ENABLE_CACHE = os.getenv("ENABLE_CACHE", "True").lower() == "true"
 CACHE_TTL = int(os.getenv("CACHE_TTL", "3600"))
+INACTIVITY_TIMEOUT = int(os.getenv("INACTIVITY_TIMEOUT", "300"))
+INACTIVITY_WARNING_TIME = int(os.getenv("INACTIVITY_WARNING_TIME", "240"))
+# En producción, establece APEX_SSL_VERIFY=true y proporciona el certificado si es necesario.
+# En desarrollo puedes dejar APEX_SSL_VERIFY=false para omitir la verificación SSL.
+APEX_SSL_VERIFY = os.getenv("APEX_SSL_VERIFY", "false").lower() != "false"
 
 # Configurar logging
 logging.basicConfig(
@@ -56,6 +77,74 @@ _session.headers.update({
 # ============================================
 # UTILIDADES
 # ============================================
+
+def calcular_tiempo_inactivo(tracker: Tracker) -> int:
+    """
+    Calcula cuántos segundos han pasado desde la última interacción del usuario
+    Returns: segundos de inactividad
+    """
+    from datetime import datetime
+    
+    eventos_usuario = [
+        e for e in tracker.events 
+        if e.get("event") == "user" and e.get("timestamp")
+    ]
+    
+    if not eventos_usuario:
+        return 0
+    
+    ultimo_evento = eventos_usuario[-1]
+    ultimo_timestamp = ultimo_evento.get("timestamp")
+    
+    if not ultimo_timestamp:
+        return 0
+    
+    try:
+        # Convertir timestamp a segundos
+        if isinstance(ultimo_timestamp, (int, float)):
+            tiempo_actual = datetime.now().timestamp()
+            tiempo_inactivo = int(tiempo_actual - ultimo_timestamp)
+        else:
+            # Si es datetime object
+            tiempo_actual = datetime.now()
+            tiempo_inactivo = int((tiempo_actual - ultimo_timestamp).total_seconds())
+        
+        return max(0, tiempo_inactivo)  # Nunca negativo
+    except Exception as e:
+        logger.error(f"Error calculando tiempo inactivo: {e}")
+        return 0
+
+
+def deberia_cerrar_por_inactividad(tracker: Tracker) -> tuple:
+    """
+    Verifica si el chat debe cerrarse por inactividad
+    Returns: (deberia_cerrar, segundos_inactivo)
+    """
+    segundos_inactivo = calcular_tiempo_inactivo(tracker)
+    deberia_cerrar = segundos_inactivo >= INACTIVITY_TIMEOUT
+    
+    logger.debug(f"Inactividad: {segundos_inactivo}s / {INACTIVITY_TIMEOUT}s (cerrar={deberia_cerrar})")
+    
+    return (deberia_cerrar, segundos_inactivo)
+
+
+def deberia_advertir_inactividad(tracker: Tracker) -> tuple:
+    """
+    Verifica si debe mostrar advertencia de inactividad
+    Returns: (deberia_advertir, segundos_restantes)
+    """
+    segundos_inactivo = calcular_tiempo_inactivo(tracker)
+    
+    # Verificar si ya se mostró advertencia
+    ya_advirtio = tracker.get_slot("advertencia_inactividad_mostrada")
+    
+    if ya_advirtio:
+        return (False, 0)
+    
+    deberia_advertir = segundos_inactivo >= INACTIVITY_WARNING_TIME
+    segundos_restantes = max(0, INACTIVITY_TIMEOUT - segundos_inactivo)
+    
+    return (deberia_advertir, segundos_restantes)
 
 def get_from_cache(key: str) -> Optional[Any]:
     """Obtiene un valor del cache si está disponible y no ha expirado"""
@@ -109,14 +198,14 @@ def make_api_request(
                 url, 
                 params=params, 
                 timeout=APEX_TIMEOUT,
-                verify=False
+                verify=APEX_SSL_VERIFY
             )
         elif method.upper() == "POST":
             response = _session.post(
                 url, 
                 json=data, 
                 timeout=APEX_TIMEOUT,
-                verify=False
+                verify=APEX_SSL_VERIFY
             )
         else:
             logger.error(f"❌ Método HTTP no soportado: {method}")
@@ -137,7 +226,7 @@ def make_api_request(
             logger.error(f"Raw content: {response.text[:300]}")
             return None
         
-        # ✅ MANEJAR ESTRUCTURA DE ORACLE APEX
+        # MANEJAR ESTRUCTURA DE ORACLE APEX
         if isinstance(json_data, dict):
             if json_data.get("status") == "error":
                 logger.error(f"❌ Error del servidor APEX: {json_data.get('message')}")
@@ -178,34 +267,33 @@ def registrar_pregunta_sin_respuesta(
     pregunta: str,
     usuario_telefono: str = None
 ) -> bool:
+    # Registra en PREGUNTAS_SIN_RESPUESTA.
+    # La API debe manejar FRECUENCIA: si la pregunta ya existe
+    # para ese postgrado, incrementar FRECUENCIA en vez de duplicar.
     try:
-        # Validar entrada
         if not pregunta or len(pregunta.strip()) < 3:
-            logger.warning("⚠️ Pregunta muy corta, no se registra")
+            logger.warning('Pregunta muy corta, no se registra')
             return False
         
         data = {
-            "id_postgrado": int(postgrado_id) if postgrado_id else None,
-            "pregunta": pregunta.strip()[:1000],  # Límite de 1000 caracteres
-            "usuario_telefono": usuario_telefono[:50] if usuario_telefono else None
+            'id_postgrado':    int(postgrado_id) if postgrado_id else None,
+            'pregunta_usuario': pregunta.strip()[:1000],  # nombre real del campo en la tabla
+            'usuario_telefono': usuario_telefono[:50] if usuario_telefono else None
+            # ESTADO='PENDIENTE' y FRECUENCIA los gestiona la API/BD
         }
         
-        response = make_api_request(
-            "POST",
-            "faq/sin-respuesta",
-            data=data
-        )
+        response = make_api_request('POST', 'faq/sin-respuesta', data=data)
         
-        if response and response.get("status") == "success":
+        if response and response.get('status') == 'success':
             id_pregunta = response.get('data', {}).get('id_pregunta')
-            logger.info(f"✅ Pregunta sin respuesta registrada - ID: {id_pregunta}")
+            logger.info(f'Pregunta sin respuesta registrada - ID: {id_pregunta}')
             return True
         else:
-            logger.warning(f"⚠️ No se pudo registrar pregunta sin respuesta")
+            logger.warning('No se pudo registrar pregunta sin respuesta')
             return False
             
     except Exception as e:
-        logger.error(f"❌ Error registrando pregunta sin respuesta: {e}")
+        logger.error(f'Error registrando pregunta sin respuesta: {e}')
         return False
 
 def normalizar_texto(texto: str) -> str:
@@ -220,7 +308,7 @@ def normalizar_texto(texto: str) -> str:
 
 
 # ============================================
-# ACTION: Saludo Inicial Mejorado
+# ACTION: Saludo Inicial 
 # ============================================
 
 class ActionSaludoMejorado(Action):
@@ -293,7 +381,13 @@ class ActionListarPostgrados(Action):
                 return []
         
         if postgrados:
-            # ✅ CONSTRUCCIÓN DEL MENSAJE COMPLETO
+            # Filtrar solo programas activos (ESTADO = 'S')
+            postgrados = [
+                pg for pg in postgrados
+                if str(pg.get('ESTADO', pg.get('estado', 'S'))).upper() == 'S'
+            ]
+            
+            #  CONSTRUCCIÓN DEL MENSAJE COMPLETO
             mensaje = "📚 *Programas de Postgrado Disponibles:*\n\n"
             
             # Agrupar por facultad para mejor organización
@@ -402,11 +496,11 @@ class ActionSeleccionarPostgrado(Action):
                     pg = postgrados[numero - 1]
                     return self._seleccionar_postgrado(pg, dispatcher)
         
-        # BÚSQUEDA POR NOMBRE (mejorada con normalización)
+        # BÚSQUEDA POR NOMBRE 
         nombre_norm = normalizar_texto(postgrado_nombre)
         coincidencias = []
         
-        # Primero: búsqueda exacta (ignorando acentos)
+        # Primero: búsqueda exacta 
         for pg in postgrados:
             nombre_pg = pg.get('NOMBRE', pg.get('nombre', ''))
             if normalizar_texto(nombre_pg) == nombre_norm:
@@ -426,7 +520,7 @@ class ActionSeleccionarPostgrado(Action):
                 if coincide or nombre_norm in nombre_pg_norm:
                     coincidencias.append(pg)
         
-        # ✅ RESULTADOS
+        # RESULTADOS
         if len(coincidencias) == 1:
             # Una sola coincidencia - SELECCIÓN AUTOMÁTICA
             return self._seleccionar_postgrado(coincidencias[0], dispatcher)
@@ -481,12 +575,20 @@ class ActionSeleccionarPostgrado(Action):
     
     def _seleccionar_postgrado(self, pg: Dict, dispatcher: CollectingDispatcher) -> List[Dict[Text, Any]]:
         """Método auxiliar para seleccionar un postgrado y mostrar el mensaje"""
-        nombre = pg.get('NOMBRE', pg.get('nombre', 'Programa'))
-        facultad = pg.get('FACULTAD', pg.get('facultad', 'Universidad'))
-        id_postgrado = pg.get('ID_POSTGRADO', pg.get('id_postgrado', pg.get('ID', pg.get('id'))))
+        nombre       = pg.get('NOMBRE',              pg.get('nombre', 'Programa'))
+        facultad     = pg.get('FACULTAD',            pg.get('facultad', 'Universidad'))
+        id_postgrado = pg.get('ID_POSTGRADO',        pg.get('id_postgrado', pg.get('ID', pg.get('id'))))
+        # POSTGRADOS.CORREO_ELECTRONICO — guardar para usarlo en action_enviar_datos_contacto
+        correo       = pg.get('CORREO_ELECTRONICO',  pg.get('correo_electronico', ''))
+        descripcion  = pg.get('DESCRIPCION',         pg.get('descripcion', ''))
         
-        mensaje = (f"✅ Perfecto, hablemos sobre *{nombre}* de la Facultad de {facultad}.\n\n"
-                 "¿Qué quieres saber? Puedes preguntar sobre:\n"
+        mensaje = (f"✅ Perfecto, hablemos sobre *{nombre}* de la Facultad de {facultad}.\n\n")
+        
+        # Mostrar descripción si está disponible en la BD
+        if descripcion:
+            mensaje += f"_{descripcion}_\n\n"
+        
+        mensaje += ("¿Qué quieres saber? Puedes preguntar sobre:\n"
                  "💰 Costos y becas\n"
                  "📋 Requisitos de admisión\n"
                  "📅 Fechas de inscripción\n"
@@ -498,9 +600,10 @@ class ActionSeleccionarPostgrado(Action):
         dispatcher.utter_message(text=mensaje)
         
         return [
-            SlotSet("postgrado_id", str(id_postgrado)),
-            SlotSet("postgrado_nombre", nombre),
-            SlotSet("ultima_lista_postgrados", None)  # Limpiar lista
+            SlotSet("postgrado_id",      str(id_postgrado)),
+            SlotSet("postgrado_nombre",  nombre),
+            SlotSet("postgrado_correo",  correo),  # CORREO_ELECTRONICO de la tabla POSTGRADOS
+            SlotSet("ultima_lista_postgrados", None)
         ]
 
 
@@ -540,10 +643,22 @@ class ActionSeleccionarNumero(Action):
         ultima_lista = tracker.get_slot("ultima_lista_postgrados")
         
         if not ultima_lista or not isinstance(ultima_lista, list):
-            dispatcher.utter_message(
-                text="No hay una lista activa. Por favor escribe 'ver programas' para ver todas las opciones."
-            )
-            return []
+            # Intentar recuperar desde caché antes de fallar
+            cache_key = "postgrados_list"
+            ultima_lista = get_from_cache(cache_key)
+            
+            if not ultima_lista:
+                # Último recurso: consultar la API
+                response = make_api_request("GET", "postgrados")
+                if response and response.get("status") == "success":
+                    ultima_lista = response.get("data", [])
+                    set_in_cache(cache_key, ultima_lista)
+            
+            if not ultima_lista or not isinstance(ultima_lista, list):
+                dispatcher.utter_message(
+                    text="No hay una lista activa. Por favor escribe 'ver programas' para ver todas las opciones."
+                )
+                return []
         
         if numero < 1 or numero > len(ultima_lista):
             dispatcher.utter_message(
@@ -584,7 +699,7 @@ class ActionBuscarFAQ(Action):
     def name(self) -> Text:
         return "action_buscar_faq"
     
-    # ✅ MAPEO MEJORADO - Incluye palabras clave que el usuario usa
+    # ✅ MAPEO 
     INTENT_KEYWORDS = {
         "consultar_costos": {
             "keywords": ["costo", "precio", "valor", "cuanto cuesta", "matricula", "pagar", "inversion", "SMMLV", "salario"],
@@ -698,7 +813,7 @@ class ActionBuscarFAQ(Action):
         preguntas_a_probar = preguntas_a_probar[:4]
         logger.info(f"🔍 Probando {len(preguntas_a_probar)} variantes")
         
-        # ✅ BÚSQUEDA SECUENCIAL
+        # BÚSQUEDA SECUENCIAL
         for idx, pregunta in enumerate(preguntas_a_probar, 1):
             logger.info(f"Intento {idx}/{len(preguntas_a_probar)}: '{pregunta}'")
             
@@ -732,21 +847,16 @@ class ActionBuscarFAQ(Action):
         
         # ❌ No encontrado
         logger.warning(f"❌ No se encontró respuesta")
-        mensaje = self._mensaje_no_encontrado(intent, postgrado_nombre, user_message)
-        dispatcher.utter_message(text=mensaje)
 
         # ✅ REGISTRAR PREGUNTA SIN RESPUESTA
-        postgrado_id = tracker.get_slot("postgrado_id")
-        user_message = tracker.latest_message.get("text", "")
-        usuario_id = tracker.sender_id
-        
         if postgrado_id:
             registrar_pregunta_sin_respuesta(
                 postgrado_id=postgrado_id,
                 pregunta=user_message,
-                usuario_telefono=usuario_id
+                usuario_telefono=tracker.sender_id
             )
-        
+
+        # ✅ UN SOLO mensaje al usuario (fix: eliminado el duplicado)
         mensaje = self._mensaje_no_encontrado(intent, postgrado_nombre, user_message)
         dispatcher.utter_message(text=mensaje)
         
@@ -788,8 +898,21 @@ class ActionBuscarFAQ(Action):
     def _formatear_respuesta_completa(
         self, respuesta: str, intent: str, postgrado_nombre: str
     ) -> str:
-        """Formatea respuesta con sugerencias"""
-        
+        """
+        Formatea respuesta con sugerencias contextuales.
+        FAQ.RESPUESTA es CLOB — puede superar el límite de WhatsApp (4096 chars).
+        Se trunca de forma inteligente antes de formatear.
+        """
+        # Truncar CLOB largo antes de formatear
+        WHATSAPP_MAX = 3800  # Dejamos margen para el texto de sugerencias que se agrega después
+        if respuesta and len(respuesta) > WHATSAPP_MAX:
+            corte = max(respuesta.rfind(". ", 0, WHATSAPP_MAX), respuesta.rfind("\n", 0, WHATSAPP_MAX))
+            if corte > WHATSAPP_MAX // 2:
+                respuesta = respuesta[:corte + 1]
+            else:
+                respuesta = respuesta[:WHATSAPP_MAX]
+            respuesta += "\n\n_[Para más detalles, escríbenos al correo del programa.]_"
+
         emoji_map = {
             "consultar_costos": "💰",
             "consultar_requisitos": "📋",
@@ -931,8 +1054,11 @@ class ActionGuardarHistorial(Action):
         
         logger.info("💾 Ejecutando action_guardar_historial")
         
-        usuario_telefono = tracker.sender_id
-        mensaje_usuario = tracker.latest_message.get("text")
+        usuario_telefono = tracker.sender_id or "desconocido"
+        # USUARIO es VARCHAR2(20) NOT NULL — truncar a 20 chars por seguridad
+        usuario_telefono = str(usuario_telefono)[:20]
+
+        mensaje_usuario = tracker.latest_message.get("text") or ""
         postgrado_id = tracker.get_slot("postgrado_id")
         ultima_respuesta = tracker.get_slot("ultima_respuesta")
         
@@ -943,10 +1069,13 @@ class ActionGuardarHistorial(Action):
                     ultima_respuesta = evento.get("text")
                     break
         
+        # Campos alineados con el endpoint ORDS POST /historial:
+        # espera: "usuario", "mensaje", "respuesta", "id_postgrado"
+        # (NO "mensaje_usuario" ni "respuesta_bot")
         data = {
-            "usuario": usuario_telefono,
-            "mensaje": mensaje_usuario,
-            "respuesta": ultima_respuesta or "Sin respuesta",
+            "usuario":      usuario_telefono,
+            "mensaje":      mensaje_usuario if mensaje_usuario.strip() else "(mensaje vacío)",
+            "respuesta":    (ultima_respuesta or "Sin respuesta")[:4000],
             "id_postgrado": int(postgrado_id) if postgrado_id else None
         }
         
@@ -1137,7 +1266,6 @@ class ActionDefaultFallback(Action):
         if categoria in ["costos", "requisitos", "fechas", "modalidad", "duracion"]:
             return False
         
-        # Todo lo demás (preguntas generales) va a action_buscar_faq_libre
         return True
 
     def run(
@@ -1149,6 +1277,12 @@ class ActionDefaultFallback(Action):
         
         logger.info("🤷 Ejecutando action_default_fallback")
         
+        deberia_cerrar, segundos_inactivo = deberia_cerrar_por_inactividad(tracker)
+        
+        if deberia_cerrar:
+            logger.info(f"🔒 Cerrando por inactividad desde fallback")
+            return [FollowupAction("action_cerrar_por_timeout")]
+
         postgrado_id = tracker.get_slot("postgrado_id")
         postgrado_nombre = tracker.get_slot("postgrado_nombre")
         contador = tracker.get_slot("contador_fallback") or 0
@@ -1189,7 +1323,7 @@ class ActionDefaultFallback(Action):
                     FollowupAction("action_listar_postgrados")
                 ]
             
-            # ✅ DECIDIR QUÉ ACCIÓN FAQ USAR
+            # DECIDIR QUÉ ACCIÓN FAQ USAR
             categoria = self._detectar_categoria_faq(mensaje_usuario)
             usar_faq_libre = self._deberia_usar_faq_libre(mensaje_usuario, postgrado_id)
             
@@ -1371,10 +1505,10 @@ class ActionDespedida(Action):
                      "Recuerda que puedes volver cuando necesites información.\n\n"
                      "¡Que tengas un excelente día! 😊")
         
-        # ✅ Enviar mensaje sin metadata (más simple)
+        # Enviar mensaje sin metadata (más simple)
         dispatcher.utter_message(text=mensaje)
         
-        # ✅ Solo guardar historial si hubo conversación significativa
+        # Solo guardar historial si hubo conversación significativa
         eventos_usuario = [e for e in tracker.events if e.get("event") == "user"]
         
         if len(eventos_usuario) > 2:  # Si hubo más de 2 mensajes del usuario
@@ -1384,9 +1518,9 @@ class ActionDespedida(Action):
             postgrado_id = tracker.get_slot("postgrado_id")
             
             data = {
-                "usuario": usuario_telefono,
-                "mensaje": "Conversación finalizada",
-                "respuesta": mensaje,
+                "usuario":      usuario_telefono,
+                "mensaje":      "Conversación finalizada",
+                "respuesta":    mensaje,
                 "id_postgrado": int(postgrado_id) if postgrado_id else None
             }
             
@@ -1395,7 +1529,7 @@ class ActionDespedida(Action):
             except Exception as e:
                 logger.error(f"Error guardando historial: {e}")
         
-        # ✅ Eventos para finalizar limpiamente
+        # Eventos para finalizar limpiamente
         return [
             AllSlotsReset(),      # Limpia todos los slots
             Restarted()           # Reinicia la conversación
@@ -1509,34 +1643,38 @@ class ActionEnviarDatosContacto(Action):
         
         logger.info("📧 Ejecutando action_enviar_datos_contacto")
         
-        # ✅ OBTENER DATOS DEL FORM (ya validados)
+        # OBTENER DATOS DEL FORM (ya validados)
         nombre = tracker.get_slot("nombre_completo")
         email = tracker.get_slot("email")
         telefono = tracker.get_slot("telefono")
         postgrado_id = tracker.get_slot("postgrado_id")
         postgrado_nombre = tracker.get_slot("postgrado_nombre") or "postgrado"
         
-        # ✅ MENSAJE CON TODOS LOS DATOS (para la API)
+        # MENSAJE CON TODOS LOS DATOS (para la API)
+        # Incluir correo del programa si está disponible en el slot
+        correo_postgrado = tracker.get_slot("postgrado_correo") or ""
         mensaje_api = (
             f"Solicitud de contacto\n"
             f"Nombre: {nombre}\n"
             f"Email: {email}\n"
             f"Programa: {postgrado_nombre}"
+            + (f"\nCorreo programa: {correo_postgrado}" if correo_postgrado else "")
         )
         
-        # ✅ DATA PARA LA API
+        # DATA PARA LA API
+        # postgrado_id puede ser None si el usuario contactó sin seleccionar programa
         data = {
-            "telefono": telefono,
-            "postgrado_id": int(postgrado_id),
-            "mensaje": mensaje_api
+            "telefono":    telefono,
+            "postgrado_id": int(postgrado_id) if postgrado_id else None,
+            "mensaje":     mensaje_api
         }
         
         logger.info(f"📤 Enviando a API: {data}")
         
-        # ✅ LLAMAR A LA API
+        # LLAMAR A LA API
         response = make_api_request("POST", "contacto", data=data)
         
-        # ✅ MANEJAR RESPUESTA
+        # MANEJAR RESPUESTA
         if response and response.get("status") == "success":
             # ✅ UN SOLO MENSAJE DE ÉXITO
             mensaje = (
@@ -1813,7 +1951,7 @@ class ActionBuscarFaqLibre(Action):
     
     def _clasificar_respuesta_apex(self, respuesta: str) -> str:
         """
-        ✅ CLASIFICACIÓN CORRECTA de respuestas APEX
+        # CLASIFICACIÓN CORRECTA de respuestas APEX
         
         Returns:
             - "ERROR_TECNICO": Error del servidor/código
@@ -1854,7 +1992,7 @@ class ActionBuscarFaqLibre(Action):
             return "NO_ENCONTRADO"  # Tratar como "no encontrado"
         
         # ========== 3. NO ENCONTRADO (APEX no tiene info) ==========
-        # ✅ ESTAS SON RESPUESTAS VÁLIDAS, no errores
+        #  ESTAS SON RESPUESTAS VÁLIDAS, no errores
         mensajes_no_encontrado = [
             'no encontré una respuesta exacta',
             'no encontré información específica',
@@ -1903,31 +2041,40 @@ class ActionBuscarFaqLibre(Action):
         # Respuestas genéricas que podrían ser válidas
         return "RESPUESTA_AMBIGUA"
     
-    def _extraer_respuesta_apex(self, response) -> Optional[str]:
-        """Extrae respuesta de API (sin cambios)"""
+    def _extraer_respuesta_apex(self, response: dict) -> Optional[str]:
+        """
+        Extrae la respuesta del dict ya procesado por make_api_request().
+        El endpoint faq/buscar/:id retorna:
+          { "status": "success", "data": { "respuesta": "...", ... } }
+        """
         try:
-            content_type = response.headers.get('Content-Type', '').lower()
-            
-            if 'application/json' in content_type:
-                try:
-                    data = response.json()
-                    
-                    if isinstance(data, dict) and 'data' in data:
-                        data = data['data']
-                    
-                    if isinstance(data, dict) and 'respuesta' in data:
-                        return str(data['respuesta']).strip()
-                    
-                    if isinstance(data, str):
-                        return data.strip()
-                    
-                    return str(data).strip() if data else None
-                    
-                except ValueError:
-                    pass
-            
-            return response.text.strip()
-            
+            if not response or not isinstance(response, dict):
+                return None
+
+            # make_api_request() ya devuelve el dict con status/data
+            if response.get("status") == "error":
+                logger.warning(f"API devolvió error: {response.get('message')}")
+                return None
+
+            data = response.get("data", {})
+
+            # Por si acaso data viene como lista (otros endpoints)
+            if isinstance(data, list):
+                if not data:
+                    return None
+                data = data[0]
+
+            if isinstance(data, dict):
+                # El endpoint escribe la clave en minúscula: apex_json.write('respuesta', ...)
+                respuesta = data.get("respuesta") or data.get("RESPUESTA")
+                return str(respuesta).strip() if respuesta else None
+
+            # Caso borde: data es directamente el string de respuesta
+            if isinstance(data, str) and data.strip():
+                return data.strip()
+
+            return None
+
         except Exception as e:
             logger.error(f"Error extrayendo respuesta: {e}")
             return None
@@ -2119,7 +2266,7 @@ class ActionManejarNegacion(Action):
         postgrado_id = tracker.get_slot("postgrado_id")
         ultima_lista = tracker.get_slot("ultima_lista_postgrados")
         
-        # ✅ UN SOLO MENSAJE según contexto
+        # UN SOLO MENSAJE según contexto
         if ultima_lista:
             mensaje = "Entendido. ¿Quieres buscar otro programa o necesitas ayuda?\n\n"
             mensaje += "Escribe el nombre del programa o 'ver programas' para la lista completa."
@@ -2167,7 +2314,7 @@ class ActionManejarAfirmacion(Action):
                 ultimo_bot_message = evento.get("text", "").lower()
                 break
         
-        # ✅ UN SOLO MENSAJE según contexto
+        # UN SOLO MENSAJE según contexto
         if ultimo_bot_message and ("asesor" in ultimo_bot_message or "contactar" in ultimo_bot_message):
             dispatcher.utter_message(
                 text="Perfecto, voy a registrar tu solicitud de contacto. 📞"
@@ -2308,7 +2455,7 @@ class ActionSolicitarPrograma(Action):
             )
             return []
         
-        # ✅ CONSTRUIR MENSAJE CONSOLIDADO (solicitud + lista)
+        # CONSTRUIR MENSAJE CONSOLIDADO (solicitud + lista)
         MAX_PROGRAMAS = 20
         
         mensaje = "📚 Para darte esa información, primero necesito saber qué programa te interesa.\n\n"
@@ -2329,3 +2476,143 @@ class ActionSolicitarPrograma(Action):
         dispatcher.utter_message(text=mensaje)
         
         return [SlotSet("ultima_lista_postgrados", postgrados)]
+
+# ============================================
+# ACTION: Verificar Timeout
+# ============================================
+
+class ActionVerificarTimeout(Action):
+    """Verifica si el chat debe cerrarse por inactividad"""
+
+    def name(self) -> Text:
+        return "action_verificar_timeout"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        logger.info("⏱️ Verificando timeout de inactividad")
+        
+        deberia_cerrar, segundos_inactivo = deberia_cerrar_por_inactividad(tracker)
+        
+        if deberia_cerrar:
+            minutos = segundos_inactivo // 60
+            logger.info(f"🔒 Chat cerrado por inactividad: {segundos_inactivo}s ({minutos} min)")
+            
+            mensaje = (
+                f"⏱️ *Sesión finalizada por inactividad*\n\n"
+                f"Han pasado {minutos} minutos sin actividad.\n\n"
+                "¡Gracias por tu interés en nuestros programas de postgrado! 🎓\n\n"
+                "Puedes volver cuando quieras escribiendo 'hola' o 'inicio'."
+            )
+            
+            dispatcher.utter_message(text=mensaje)
+            
+            return [
+                AllSlotsReset(),
+                Restarted(),
+                ConversationPaused()
+            ]
+        
+        # Verificar si debe advertir
+        deberia_advertir, segundos_restantes = deberia_advertir_inactividad(tracker)
+        
+        if deberia_advertir and segundos_restantes > 0:
+            logger.info(f"⚠️ Mostrando advertencia de inactividad ({segundos_restantes}s restantes)")
+            
+            mensaje = (
+                f"⚠️ *Advertencia:* Tu sesión se cerrará en {segundos_restantes} segundos "
+                f"por inactividad.\n\n"
+                "Escribe cualquier mensaje para continuar."
+            )
+            
+            dispatcher.utter_message(text=mensaje)
+            
+            return [SlotSet("advertencia_inactividad_mostrada", True)]
+        
+        # Todo bien, continuar normalmente
+        return []
+
+
+# ============================================
+# ACTION: Renovar Sesión
+# ============================================
+
+class ActionRenovarSesion(Action):
+    """Renueva la sesión cuando el usuario interactúa"""
+
+    def name(self) -> Text:
+        return "action_renovar_sesion"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        logger.debug("🔄 Renovando sesión")
+        
+        # Resetear advertencia de inactividad
+        return [SlotSet("advertencia_inactividad_mostrada", False)]
+
+
+# ============================================
+# ACTION: Cerrar por Timeout
+# ============================================
+
+class ActionCerrarPorTimeout(Action):
+    """Cierra explícitamente la conversación por timeout"""
+
+    def name(self) -> Text:
+        return "action_cerrar_por_timeout"
+
+    def run(
+        self,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: Dict[Text, Any],
+    ) -> List[Dict[Text, Any]]:
+        
+        logger.info("🔒 Cerrando chat por timeout")
+        
+        segundos_inactivo = calcular_tiempo_inactivo(tracker)
+        minutos = segundos_inactivo // 60
+        
+        mensaje = (
+            f"⏱️ *Sesión cerrada automáticamente*\n\n"
+            f"Tu conversación fue finalizada después de {minutos} minutos de inactividad.\n\n"
+            "🔄 Para iniciar una nueva conversación, escribe 'hola' o 'inicio'.\n\n"
+            "¡Hasta pronto! 👋"
+        )
+        
+        dispatcher.utter_message(text=mensaje)
+        
+        # Guardar en historial si hubo interacción significativa
+        eventos_usuario = [e for e in tracker.events if e.get("event") == "user"]
+        
+        if len(eventos_usuario) > 2:
+            usuario_telefono = tracker.sender_id
+            postgrado_id = tracker.get_slot("postgrado_id")
+            
+            data = {
+                "usuario":      usuario_telefono,
+                "mensaje":      f"Sesión cerrada por inactividad ({minutos} min)",
+                "respuesta":    mensaje,
+                "id_postgrado": int(postgrado_id) if postgrado_id else None
+            }
+            
+            try:
+                make_api_request("POST", "historial", data=data)
+                logger.info("✅ Historial de timeout guardado")
+            except Exception as e:
+                logger.error(f"Error guardando historial de timeout: {e}")
+        
+        return [
+            AllSlotsReset(),
+            Restarted(),
+            ConversationPaused()
+        ]
