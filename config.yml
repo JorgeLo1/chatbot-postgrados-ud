@@ -1,10 +1,9 @@
-# Configuration for Rasa NLU.
-# https://rasa.com/docs/rasa/nlu/components/
+# Configuración de Rasa NLU y políticas para chatbot-postgrados-ud.
+# Referencia: https://rasa.com/docs/rasa/nlu/components/
 
-# RECETA: Para producción con NLU mejorado
 recipe: default.v1
 
-# LENGUAJE: Español
+# Idioma del modelo
 language: es
 
 pipeline:

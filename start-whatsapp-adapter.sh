@@ -6,7 +6,7 @@ echo "║  🚀 Iniciando Sistema Completo        ║"
 echo "╚════════════════════════════════════════╝"
 
 # =========================================================
-# ✅ Cargar variables de entorno
+# Cargar variables de entorno
 # =========================================================
 if [ -f ".env" ]; then
     echo "✅ Cargando .env"
@@ -22,7 +22,7 @@ echo "   Action Server:    ${ACTION_SERVER_PORT:-5055}"
 echo "   WhatsApp Adapter: ${WHATSAPP_ADAPTER_PORT:-5006}"
 
 # =========================================================
-# 🛑 Detener procesos previos
+# Detener procesos previos
 # =========================================================
 echo ""
 echo "🛑 Deteniendo servicios previos..."
@@ -32,7 +32,7 @@ pkill -f "whatsapp_adapter.py" || true
 sleep 2
 
 # =========================================================
-# 🔧 Iniciar Action Server
+# Iniciar Action Server
 # =========================================================
 echo "🔧 Iniciando Action Server..."
 nohup rasa run actions --port ${ACTION_SERVER_PORT:-5055} > action_server.log 2>&1 &
@@ -52,7 +52,7 @@ done
 echo ""
 
 # =========================================================
-# 🤖 Iniciar Rasa Server
+# Iniciar Rasa Server
 # =========================================================
 echo "🤖 Iniciando Rasa Server..."
 nohup rasa run --enable-api --port ${PORT:-5005} --cors "*" > rasa_server.log 2>&1 &
@@ -71,7 +71,7 @@ done
 echo ""
 
 # =========================================================
-# 📱 Iniciar WhatsApp Adapter
+# Iniciar WhatsApp Adapter
 # =========================================================
 echo "📱 Iniciando WhatsApp Adapter..."
 nohup python3.10 whatsapp_adapter.py > whatsapp_adapter.log 2>&1 &
@@ -100,7 +100,7 @@ if ! curl -s http://127.0.0.1:${WHATSAPP_ADAPTER_PORT:-5006}/health > /dev/null;
 fi
 
 # =========================================================
-# 🎉 Finalización
+# Finalización
 # =========================================================
 echo ""
 echo "=================================================="

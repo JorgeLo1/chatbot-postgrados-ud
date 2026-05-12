@@ -5,9 +5,9 @@ from rasa_sdk.events import (
     SlotSet,
     UserUtteranceReverted,
     FollowupAction,
-    AllSlotsReset,      
-    Restarted,          
-    ConversationPaused  
+    AllSlotsReset,
+    Restarted,
+    ConversationPaused
 )
 import requests
 import urllib3
@@ -17,48 +17,24 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import re
 
-# Cargar variables de entorno
 load_dotenv()
-
-# =============================================================
-# CHANGELOG DE CORRECCIONES (v1.1)
-# =============================================================
-# FIX-1: ActionBuscarFAQ — eliminado mensaje duplicado al usuario
-#         cuando no se encuentra respuesta en el FAQ.
-#
-# FIX-2: ActionBuscarFaqLibre._extraer_respuesta_apex — reescrito
-#         para trabajar con dict (output de make_api_request) en vez
-#         de requests.Response. Antes lanzaba AttributeError siempre.
-#
-# FIX-3: ActionGuardarHistorial / ActionDespedida
-#         — corregidos nombres de campos del payload:
-#         "mensaje_usuario" → "mensaje"
-#         "respuesta_bot"   → "respuesta"
-#         (alineados con lo que espera el endpoint ORDS POST /historial)
-# =============================================================
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# CONFIGURACIÓN 
 APEX_API_BASE_URL = os.getenv("APEX_API_URL", "https://oracleapex.com/ords/udchatbot/chatbot")
 APEX_TIMEOUT = int(os.getenv("APEX_TIMEOUT", "60"))
 ENABLE_CACHE = os.getenv("ENABLE_CACHE", "True").lower() == "true"
 CACHE_TTL = int(os.getenv("CACHE_TTL", "3600"))
-# En producción, establece APEX_SSL_VERIFY=true y proporciona el certificado si es necesario.
-# En desarrollo puedes dejar APEX_SSL_VERIFY=false para omitir la verificación SSL.
 APEX_SSL_VERIFY = os.getenv("APEX_SSL_VERIFY", "false").lower() != "false"
 
-# Configurar logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Cache simple en memoria
 _cache = {}
 
-# Session global con headers tipo navegador
 _session = requests.Session()
 _session.headers.update({
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -71,10 +47,8 @@ _session.headers.update({
     'Content-Type': 'application/json'
 })
 
-
-# ============================================
 def get_from_cache(key: str) -> Optional[Any]:
-    """Obtiene un valor del cache si está disponible y no ha expirado"""
+    """Obtiene un valor del cache si está disponible y no ha expirado."""
     if not ENABLE_CACHE:
         return None
     
@@ -88,20 +62,17 @@ def get_from_cache(key: str) -> Optional[Any]:
     
     return None
 
-
 def set_in_cache(key: str, value: Any):
     """Guarda un valor en el cache"""
     if ENABLE_CACHE:
         _cache[key] = (value, datetime.now())
         logger.info(f"💾 Valor guardado en cache: {key}")
 
-
 def clear_cache():
     """Limpia todo el cache"""
     global _cache
     _cache = {}
     logger.info("🗑️ Cache limpiado")
-
 
 def make_api_request(
     method: str,
@@ -233,11 +204,7 @@ def normalizar_texto(texto: str) -> str:
     )
     return texto
 
-
-# ============================================
 # ACTION: Saludo Inicial 
-# ============================================
-
 class ActionSaludoMejorado(Action):
     """Saludo inicial que pregunta por el programa de interés"""
 
@@ -252,14 +219,10 @@ class ActionSaludoMejorado(Action):
     ) -> List[Dict[Text, Any]]:
         
         logger.info("👋 Ejecutando action_saludo_mejorado")
-        
-        # --- MENSAJE 1: El Saludo ---
         dispatcher.utter_message(text=(
             "¡Bienvenido! 🎓\n"
             "Soy tu asistente virtual de Postgrados de la Facultad de Ingeniería."
         ))
-
-        # --- MENSAJE 2: Las Opciones ---
         dispatcher.utter_message(text=(
             "📚 *¿Qué programa te interesa?*\n"
             "Puedes:\n"
@@ -269,10 +232,7 @@ class ActionSaludoMejorado(Action):
         
         return []
 
-# ============================================
-# ACTION: Listar Postgrados - OPTIMIZADA
-# ============================================
-
+# ACTION: Listar Postgrados
 class ActionListarPostgrados(Action):
 
     def name(self) -> Text:
@@ -314,7 +274,6 @@ class ActionListarPostgrados(Action):
                 if str(pg.get('ESTADO', pg.get('estado', 'S'))).upper() == 'S'
             ]
             
-            #  CONSTRUCCIÓN DEL MENSAJE COMPLETO
             mensaje = "📚 *Programas de Postgrado Disponibles:*\n\n"
             
             # Agrupar por facultad para mejor organización
@@ -353,11 +312,7 @@ class ActionListarPostgrados(Action):
             )
             return []
 
-
-# ============================================
-# ACTION: Seleccionar Postgrado - HÍBRIDA MEJORADA
-# ============================================
-
+# ACTION: Seleccionar Postgrado
 class ActionSeleccionarPostgrado(Action):
     """Busca un postgrado por nombre o número y guarda su ID en el slot"""
 
@@ -533,11 +488,7 @@ class ActionSeleccionarPostgrado(Action):
             SlotSet("ultima_lista_postgrados", None)
         ]
 
-
-# ============================================
-# ACTION: Seleccionar Número - OPTIMIZADA
-# ============================================
-
+# ACTION: Seleccionar Número
 class ActionSeleccionarNumero(Action):
     """Maneja la selección de un postgrado por número de lista"""
 
@@ -616,17 +567,11 @@ class ActionSeleccionarNumero(Action):
             SlotSet("ultima_lista_postgrados", None)
         ]
 
-
-# ============================================
 # ACTION: Buscar FAQ 
-# ============================================
-
 class ActionBuscarFAQ(Action):
 
     def name(self) -> Text:
         return "action_buscar_faq"
-    
-    # ✅ MAPEO 
     INTENT_KEYWORDS = {
         "consultar_costos": {
             "keywords": ["costo", "precio", "valor", "cuanto cuesta", "matricula", "pagar", "inversion", "SMMLV", "salario"],
@@ -699,8 +644,6 @@ class ActionBuscarFAQ(Action):
         
         logger.info(f"Intent: {intent} (conf: {confidence:.2f})")
         logger.info(f"Mensaje: '{user_message}'")
-        
-        # ✅ NUEVA ESTRATEGIA: Detección de palabras clave
         preguntas_a_probar = []
         
         # 1. Siempre incluir mensaje original primero
@@ -772,18 +715,14 @@ class ActionBuscarFAQ(Action):
                     dispatcher.utter_message(text=mensaje)
                     return [SlotSet("ultima_respuesta", respuesta)]
         
-        # ❌ No encontrado
+        # No encontrado
         logger.warning(f"❌ No se encontró respuesta")
-
-        # ✅ REGISTRAR PREGUNTA SIN RESPUESTA
         if postgrado_id:
             registrar_pregunta_sin_respuesta(
                 postgrado_id=postgrado_id,
                 pregunta=user_message,
                 usuario_telefono=tracker.sender_id
             )
-
-        # ✅ UN SOLO mensaje al usuario (fix: eliminado el duplicado)
         mensaje = self._mensaje_no_encontrado(intent, postgrado_nombre, user_message)
         dispatcher.utter_message(text=mensaje)
         
@@ -889,11 +828,7 @@ class ActionBuscarFAQ(Action):
         
         return mensaje
 
-
-# ============================================
 # ACTION: Manejar Pregunta General
-# ============================================
-
 class ActionManejarPreguntaGeneral(Action):
     """Maneja preguntas generales cuando el usuario pide 'información' sin especificar qué"""
 
@@ -931,7 +866,6 @@ class ActionManejarPreguntaGeneral(Action):
             respuesta = data.get("RESPUESTA", data.get("respuesta", ""))
             
             if respuesta:
-                # ✅ UN SOLO MENSAJE con respuesta + opciones
                 mensaje = f"ℹ️ *{postgrado_nombre}*\n\n{respuesta}\n\n"
                 mensaje += ("📋 *¿Qué más te gustaría saber?*\n\n"
                          "💰 Costos y formas de pago\n"
@@ -961,11 +895,7 @@ class ActionManejarPreguntaGeneral(Action):
         
         return []
 
-
-# ============================================
 # ACTION: Guardar Historial
-# ============================================
-
 class ActionGuardarHistorial(Action):
     """Guarda la conversación en el historial"""
 
@@ -1015,11 +945,7 @@ class ActionGuardarHistorial(Action):
         
         return []
 
-
-# ============================================
 # ACTION: Contactar Asesor
-# ============================================
-
 class ActionContactarAsesor(Action):
     """
     Acción simplificada: solo valida postgrado y activa el form.
@@ -1040,8 +966,6 @@ class ActionContactarAsesor(Action):
         
         postgrado_id = tracker.get_slot("postgrado_id")
         postgrado_nombre = tracker.get_slot("postgrado_nombre") or "postgrados"
-        
-        # ✅ VALIDACIÓN: Debe tener postgrado seleccionado
         if not postgrado_id:
             dispatcher.utter_message(
                 text=(
@@ -1050,8 +974,6 @@ class ActionContactarAsesor(Action):
                 )
             )
             return [FollowupAction("action_listar_postgrados")]
-        
-        # ✅ MENSAJE INICIAL (UN SOLO MENSAJE)
         mensaje = (
             f"📞 *Contacto con Asesor - {postgrado_nombre}*\n\n"
             "Para que un especialista te contacte, necesito algunos datos.\n\n"
@@ -1060,15 +982,9 @@ class ActionContactarAsesor(Action):
         )
         
         dispatcher.utter_message(text=mensaje)
-        
-        # ✅ ACTIVAR FORMULARIO
         return [FollowupAction("datos_contacto_form")]
 
-
-# ============================================
 # ACTION: Default Fallback with Smart Pattern Detection
-# ============================================
-
 class ActionDefaultFallback(Action):
     """Fallback inteligente que detecta preguntas sin depender de keywords fijas"""
 
@@ -1208,8 +1124,6 @@ class ActionDefaultFallback(Action):
         postgrado_nombre = tracker.get_slot("postgrado_nombre")
         contador = tracker.get_slot("contador_fallback") or 0
         mensaje_usuario = tracker.latest_message.get("text", "")
-        
-        # ✅ DETECCIÓN DE DESPEDIDAS IMPLÍCITAS
         despedidas_implicitas = [
             "nada mas", "nada más", "eso es todo", "solo eso", 
             "suficiente", "ya está", "ya esta", "listo", "perfecto",
@@ -1225,8 +1139,6 @@ class ActionDefaultFallback(Action):
                 SlotSet("contador_fallback", 0),
                 FollowupAction("action_despedida")
             ]
-        
-        # ✅ ANÁLISIS LINGÜÍSTICO DE LA PREGUNTA
         es_pregunta, tipo_pregunta, confianza = self._es_pregunta_valida(mensaje_usuario)
         
         # ========== CASO 1: Es una pregunta válida ==========
@@ -1358,11 +1270,7 @@ class ActionDefaultFallback(Action):
                 FollowupAction("action_escalar_a_humano")
             ]
 
-
-# ============================================
 # ACTION: Reiniciar Conversación
-# ============================================
-
 class ActionReiniciarConversacion(Action):
     """Reinicia la conversación y limpia todos los slots"""
 
@@ -1387,11 +1295,7 @@ class ActionReiniciarConversacion(Action):
         
         return [AllSlotsReset()]
 
-
-# ============================================
 # ACTION: Despedida
-# ============================================
-
 class ActionDespedida(Action):
     """Maneja la despedida del usuario y cierra la conversación - MEJORADA"""
 
@@ -1409,8 +1313,6 @@ class ActionDespedida(Action):
         
         postgrado_nombre = tracker.get_slot("postgrado_nombre")
         intent = tracker.latest_message.get("intent", {}).get("name", "")
-        
-        # ✅ Mensajes personalizados según contexto (UN SOLO MENSAJE)
         if postgrado_nombre:
             mensaje = (f"👋 ¡Hasta pronto!\n\n"
                         f"Espero haber resuelto tus dudas sobre *{postgrado_nombre}*.\n\n"
@@ -1456,11 +1358,7 @@ class ActionDespedida(Action):
             Restarted()           # Reinicia la conversación
         ]
 
-
-# ============================================
 # FORM VALIDATION: Datos de Contacto
-# ============================================
-
 class ValidateDatosContactoForm(FormValidationAction):
     """Valida el formulario de datos de contacto"""
 
@@ -1542,11 +1440,7 @@ class ValidateDatosContactoForm(FormValidationAction):
         
         return {"telefono": telefono_limpio}
 
-
-# ============================================
 # ACTION: Enviar Datos de Contacto
-# ============================================
-
 class ActionEnviarDatosContacto(Action):
     """
     Envía los datos completos a la API DESPUÉS de que el form termine
@@ -1597,7 +1491,6 @@ class ActionEnviarDatosContacto(Action):
         
         # MANEJAR RESPUESTA
         if response and response.get("status") == "success":
-            # ✅ UN SOLO MENSAJE DE ÉXITO
             mensaje = (
                 f"✅ *¡Perfecto, {nombre}!* Tu solicitud ha sido registrada.\n\n"
                 f"📧 Recibirás información en: {email}\n"
@@ -1634,11 +1527,7 @@ class ActionEnviarDatosContacto(Action):
         
         return []
 
-
-# ============================================
 # ACTION: Obtener Información Específica
-# ============================================
-
 class ActionObtenerInfoEspecifica(Action):
     """Obtiene información específica de un postgrado"""
 
@@ -1686,8 +1575,6 @@ class ActionObtenerInfoEspecifica(Action):
         requisitos = info.get('REQUISITOS', info.get('requisitos', ''))
         fechas = info.get('FECHAS', info.get('fechas', ''))
         correo = info.get('CORREO_ELECTRONICO', info.get('correo_electronico', ''))
-        
-        # ✅ UN SOLO MENSAJE según el intent
         if intent == "preguntar_costo" and costo:
             mensaje = f"💰 *Información de Costos - {nombre}*\n\n{costo}"
         elif intent == "preguntar_fechas" and fechas:
@@ -1713,11 +1600,7 @@ class ActionObtenerInfoEspecifica(Action):
         
         return []
 
-
-# ============================================
 # ACTION: Buscar FAQ Libre
-# ============================================
-
 class ActionBuscarFaqLibre(Action):
     """Búsqueda FAQ mejorada con registro de preguntas sin respuesta"""
 
@@ -1776,7 +1659,6 @@ class ActionBuscarFaqLibre(Action):
             
             if not response:
                 logger.error("❌ Sin respuesta de API")
-                # ✅ REGISTRAR PREGUNTA SIN RESPUESTA
                 registrar_pregunta_sin_respuesta(
                     postgrado_id=postgrado_id,
                     pregunta=user_message,
@@ -1790,7 +1672,6 @@ class ActionBuscarFaqLibre(Action):
             
             if not respuesta:
                 logger.error("❌ No se pudo extraer respuesta")
-                # ✅ REGISTRAR PREGUNTA SIN RESPUESTA
                 registrar_pregunta_sin_respuesta(
                     postgrado_id=postgrado_id,
                     pregunta=user_message,
@@ -1806,7 +1687,6 @@ class ActionBuscarFaqLibre(Action):
             
             if tipo_respuesta == "ERROR_TECNICO":
                 logger.error(f"❌ Error técnico de APEX")
-                # ✅ REGISTRAR PREGUNTA SIN RESPUESTA
                 registrar_pregunta_sin_respuesta(
                     postgrado_id=postgrado_id,
                     pregunta=user_message,
@@ -1817,7 +1697,6 @@ class ActionBuscarFaqLibre(Action):
             
             elif tipo_respuesta == "NO_ENCONTRADO":
                 logger.info(f"ℹ️ APEX no encontró información específica")
-                # ✅ REGISTRAR PREGUNTA SIN RESPUESTA
                 registrar_pregunta_sin_respuesta(
                     postgrado_id=postgrado_id,
                     pregunta=user_message,
@@ -1845,7 +1724,6 @@ class ActionBuscarFaqLibre(Action):
         
         except requests.exceptions.Timeout:
             logger.error("⏱️ Timeout")
-            # ✅ REGISTRAR PREGUNTA SIN RESPUESTA
             registrar_pregunta_sin_respuesta(
                 postgrado_id=postgrado_id,
                 pregunta=user_message,
@@ -1858,7 +1736,6 @@ class ActionBuscarFaqLibre(Action):
         
         except Exception as e:
             logger.error(f"❌ Error inesperado: {type(e).__name__}: {str(e)}")
-            # ✅ REGISTRAR PREGUNTA SIN RESPUESTA
             registrar_pregunta_sin_respuesta(
                 postgrado_id=postgrado_id,
                 pregunta=user_message,
@@ -1913,7 +1790,7 @@ class ActionBuscarFaqLibre(Action):
             return "NO_ENCONTRADO"  # Tratar como "no encontrado"
         
         # ========== 3. NO ENCONTRADO (APEX no tiene info) ==========
-        #  ESTAS SON RESPUESTAS VÁLIDAS, no errores
+        # Estas son respuestas válidas, no errores.
         mensajes_no_encontrado = [
             'no encontré una respuesta exacta',
             'no encontré información específica',
@@ -2064,10 +1941,7 @@ class ActionBuscarFaqLibre(Action):
             "• O 'menú principal' para volver al inicio"
         ))
 
-# ============================================
 # ACTION: Reiniciar Slots
-# ============================================
-
 class ActionReiniciarSlots(Action):
     """Limpia todos los slots para volver al menú principal"""
 
@@ -2094,11 +1968,7 @@ class ActionReiniciarSlots(Action):
             SlotSet("telefono", None)
         ]
 
-
-# ============================================
 # ACTION: Confirmar Cambio de Postgrado
-# ============================================
-
 class ActionConfirmarCambioPostgrado(Action):
     """Confirma cuando el usuario quiere cambiar de postgrado seleccionado"""
 
@@ -2125,11 +1995,7 @@ class ActionConfirmarCambioPostgrado(Action):
             SlotSet("postgrado_nombre", None)
         ]
 
-
-# ============================================
 # ACTION: Validar Email
-# ============================================
-
 class ActionValidarEmail(Action):
     """Valida el formato del email durante el formulario"""
 
@@ -2164,11 +2030,7 @@ class ActionValidarEmail(Action):
         logger.info(f"✅ Email válido: {email}")
         return []
 
-
-# ============================================
 # ACTION: Manejar Negación
-# ============================================
-
 class ActionManejarNegacion(Action):
     """Maneja la negación del usuario según el contexto"""
 
@@ -2186,8 +2048,6 @@ class ActionManejarNegacion(Action):
         
         postgrado_id = tracker.get_slot("postgrado_id")
         ultima_lista = tracker.get_slot("ultima_lista_postgrados")
-        
-        # UN SOLO MENSAJE según contexto
         if ultima_lista:
             mensaje = "Entendido. ¿Quieres buscar otro programa o necesitas ayuda?\n\n"
             mensaje += "Escribe el nombre del programa o 'ver programas' para la lista completa."
@@ -2206,11 +2066,7 @@ class ActionManejarNegacion(Action):
             dispatcher.utter_message(text=mensaje)
             return []
 
-
-# ============================================
 # ACTION: Manejar Afirmación
-# ============================================
-
 class ActionManejarAfirmacion(Action):
     """Maneja la afirmación del usuario según el contexto"""
 
@@ -2234,8 +2090,6 @@ class ActionManejarAfirmacion(Action):
             if evento.get("event") == "bot" and evento.get("text"):
                 ultimo_bot_message = evento.get("text", "").lower()
                 break
-        
-        # UN SOLO MENSAJE según contexto
         if ultimo_bot_message and ("asesor" in ultimo_bot_message or "contactar" in ultimo_bot_message):
             dispatcher.utter_message(
                 text="Perfecto, voy a registrar tu solicitud de contacto. 📞"
@@ -2254,11 +2108,7 @@ class ActionManejarAfirmacion(Action):
             )
             return []
 
-
-# ============================================
 # ACTION: Escalar a Humano
-# ============================================
-
 class ActionEscalarAHumano(Action):
     """Ofrece contacto humano después de múltiples fallbacks"""
 
@@ -2283,11 +2133,7 @@ class ActionEscalarAHumano(Action):
         
         return [SlotSet("contador_fallback", 0)]
 
-
-# ============================================
 # ACTION: Limpiar Slots Antiguos
-# ============================================
-
 class ActionLimpiarSlotsAntiguos(Action):
     """Limpia slots que ya no son necesarios para mantener conversación fluida"""
 
@@ -2310,11 +2156,7 @@ class ActionLimpiarSlotsAntiguos(Action):
             SlotSet("contador_fallback", 0)
         ]
 
-
-# ============================================
 # ACTION: Log Unknown Intent
-# ============================================
-
 class ActionLogUnknownIntent(Action):
     """Registra intents desconocidos para análisis"""
 
@@ -2341,11 +2183,7 @@ class ActionLogUnknownIntent(Action):
         
         return []
 
-
-# ============================================
 # ACTION: Solicitar Programa 
-# ============================================
-
 class ActionSolicitarPrograma(Action):
 
     def name(self) -> Text:
@@ -2398,10 +2236,7 @@ class ActionSolicitarPrograma(Action):
         
         return [SlotSet("ultima_lista_postgrados", postgrados)]
 
-# ============================================
 # ACTION: Renovar Sesión (stub — el adapter maneja el timeout)
-# ============================================
-
 class ActionRenovarSesion(Action):
     """
     Stub de compatibilidad. El timeout y las alertas de inactividad

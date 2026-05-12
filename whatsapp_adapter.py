@@ -1,10 +1,5 @@
-# whatsapp_adapter.py - VERSIÓN DEFINITIVA CON PERSISTENCIA
-
 #!/usr/bin/env python3
-"""
-WhatsApp Business API Adapter con Timeout Gestionado
-Las alertas se envían aunque el usuario esté inactivo
-"""
+"""WhatsApp Business API Adapter con manejo de timeout por inactividad."""
 
 from flask import Flask, request, jsonify
 import requests
@@ -40,10 +35,7 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# ============================================
 # PERSISTENCIA DE SESIONES
-# ============================================
-
 class SessionStore:
     """Almacenamiento de sesiones con respaldo en Redis (si está disponible)"""
     
@@ -107,11 +99,7 @@ class SessionStore:
 # Instancia global del store
 session_store = SessionStore()
 
-
-# ============================================
 # GESTIÓN DE SESIONES
-# ============================================
-
 def registrar_actividad(phone_number: str):
     """Registra actividad del usuario"""
     ahora = datetime.now()
@@ -121,7 +109,6 @@ def registrar_actividad(phone_number: str):
         "phone": phone_number
     })
     logger.info(f"🟢 Actividad registrada: {phone_number}")
-
 
 def cerrar_sesion_en_rasa(phone_number: str):
     """Envía /reiniciar a Rasa para limpiar el estado"""
@@ -134,7 +121,6 @@ def cerrar_sesion_en_rasa(phone_number: str):
         logger.info(f"🔄 Sesión Rasa cerrada para {phone_number}")
     except Exception as e:
         logger.error(f"❌ Error cerrando sesión Rasa: {e}")
-
 
 def verificar_inactividad():
     """Job que corre cada CHECK_INTERVAL segundos"""
@@ -194,11 +180,7 @@ def verificar_inactividad():
         except Exception as e:
             logger.error(f"Error procesando {phone_number}: {e}")
 
-
-# ============================================
 # WEBHOOKS
-# ============================================
-
 @app.route('/webhooks/whatsapp/webhook', methods=['GET'])
 def verify_webhook():
     mode = request.args.get('hub.mode')
@@ -208,7 +190,6 @@ def verify_webhook():
     if mode == 'subscribe' and token == VERIFY_TOKEN:
         return challenge, 200
     return 'Forbidden', 403
-
 
 @app.route('/webhooks/whatsapp/webhook', methods=['POST'])
 def receive_message():
@@ -227,7 +208,7 @@ def receive_message():
                         
                         logger.info(f"📱 De {from_number}: {text}")
                         
-                        # ✅ REGISTRAR ACTIVIDAD (esto evita el timeout)
+                        # REGISTRAR ACTIVIDAD (esto evita el timeout)
                         registrar_actividad(from_number)
                         
                         # Enviar a Rasa
@@ -244,11 +225,7 @@ def receive_message():
         logger.error(f"Error: {e}")
         return jsonify({"status": "error"}), 500
 
-
-# ============================================
 # FUNCIONES AUXILIARES
-# ============================================
-
 def send_to_rasa(sender_id, message):
     """Envía mensaje a Rasa"""
     try:
@@ -261,7 +238,6 @@ def send_to_rasa(sender_id, message):
     except Exception as e:
         logger.error(f"Error enviando a Rasa: {e}")
         return None
-
 
 def send_whatsapp_message(to_number, text):
     """Envía mensaje a WhatsApp usando Meta API"""
@@ -300,11 +276,7 @@ def send_whatsapp_message(to_number, text):
         logger.error(f"Error en send_whatsapp_message: {e}")
         return False
 
-
-# ============================================
 # HEALTH CHECK
-# ============================================
-
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({
@@ -314,7 +286,6 @@ def health():
         "warning_time": WARNING_SECONDS,
         "timeout": TIMEOUT_SECONDS
     })
-
 
 @app.route('/', methods=['GET'])
 def root():
@@ -327,11 +298,7 @@ def root():
         }
     })
 
-
-# ============================================
 # INICIO
-# ============================================
-
 if __name__ == '__main__':
     port = int(os.getenv('WHATSAPP_ADAPTER_PORT', 5006))
     

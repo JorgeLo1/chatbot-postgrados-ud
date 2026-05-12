@@ -6,7 +6,7 @@ echo "║  🚀 Iniciando Chatbot Postgrados UD       ║"
 echo "╚════════════════════════════════════════════╝"
 
 # =========================================================
-# ✅ Cargar variables de entorno
+# Cargar variables de entorno
 # =========================================================
 if [ -f ".env" ]; then
     echo "✅ Cargando .env"
@@ -28,7 +28,7 @@ echo "   Entorno:          ${ENVIRONMENT:-development}"
 echo ""
 
 # =========================================================
-# 📥 PASO 1: Descargar datos dinámicos desde APEX
+# PASO 1: Descargar datos dinámicos desde APEX
 # =========================================================
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "📥 PASO 1: Descargando FAQs desde APEX..."
@@ -81,7 +81,7 @@ fi
 echo ""
 
 # =========================================================
-# 🔧 PASO 3: Iniciar Action Server
+# PASO 3: Iniciar Action Server
 # =========================================================
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🔧 PASO 3: Iniciando Action Server..."
@@ -107,7 +107,7 @@ done
 echo ""
 
 # =========================================================
-# 📱 PASO 4: Iniciar WhatsApp Adapter
+# PASO 4: Iniciar WhatsApp Adapter
 # =========================================================
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "📱 PASO 4: Iniciando WhatsApp Adapter..."
@@ -133,7 +133,7 @@ done
 echo ""
 
 # =========================================================
-# 🤖 PASO 5: Iniciar Rasa Server (proceso principal)
+# PASO 5: Iniciar Rasa Server (proceso principal)
 # =========================================================
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🤖 PASO 5: Iniciando Rasa Server..."

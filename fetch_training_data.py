@@ -11,14 +11,10 @@ from datetime import datetime
 
 load_dotenv()
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-# ============================================================
-# FIX: WAF de Oracle bloquea User-Agent "python-requests/x.x.x"
 # Forzamos IPv4 (IPv6 no tiene conectividad en WSL/algunos entornos)
 # y usamos User-Agent de navegador para pasar el WAF.
 # NOTA: En producción Linux con IPv6 activo, este monkey-patch
 # puede omitirse. Controlable con env var: FORCE_IPV4=true (default true en dev).
-# ============================================================
 import socket as _socket
 _orig_getaddrinfo = _socket.getaddrinfo
 def _ipv4_only(host, port, family=0, type=0, proto=0, flags=0):
@@ -33,9 +29,7 @@ _session.headers.update({
     "Connection": "keep-alive",
 })
 
-# ============================================================
 # CONFIGURACIÓN — todo desde .env
-# ============================================================
 APEX_API_BASE_URL = os.getenv("APEX_API_URL", "https://oracleapex.com/ords/udchatbot/chatbot")
 APEX_TIMEOUT      = int(os.getenv("APEX_TIMEOUT", "60"))
 APEX_SSL_VERIFY   = os.getenv("APEX_SSL_VERIFY", "false").lower() != "false"
@@ -51,7 +45,7 @@ OUTPUT_STORIES_FILE = os.path.join("data", "stories_dynamic.yml")
 MIN_QUESTION_LENGTH     = 8
 MAX_EXAMPLES_PER_INTENT = 30
 
-# ⚠️  NOTA BD: historial_conversacion.USUARIO es VARCHAR2(20)
+# NOTA BD: historial_conversacion.USUARIO es VARCHAR2(20)
 # Los teléfonos WhatsApp (+57XXXXXXXXXX) tienen 13 chars — dentro del límite.
 # Si el sender_id de Rasa es más largo (ej: UUIDs en tests), se truncará en Oracle.
 # En actions.py: usar tracker.sender_id[:20] al construir el payload de historial.
@@ -70,10 +64,7 @@ else:
 if ENABLE_CACHE:
     logger.info(f"📦 Cache habilitado (TTL: {CACHE_TTL}s)")
 
-
-# ============================================================
 # CACHE EN MEMORIA
-# ============================================================
 _cache: dict = {}
 
 def get_cached(url: str, params: dict = None) -> dict:
@@ -92,10 +83,7 @@ def get_cached(url: str, params: dict = None) -> dict:
         _cache[key] = (data, time.time())
     return data
 
-
-# ============================================================
 # REGLAS DE DETECCIÓN DE INTENT
-# ============================================================
 INTENT_RULES = [
     {
         "intent": "consultar_costos",
@@ -219,11 +207,7 @@ INTENT_A_ACTION = {
     "pregunta_postgrado":            "action_buscar_faq_libre",
 }
 
-
-# ============================================================
 # UTILIDADES
-# ============================================================
-
 def quitar_tildes(texto: str) -> str:
     return "".join(
         c for c in unicodedata.normalize("NFD", texto)
@@ -271,11 +255,7 @@ def limpiar(texto: str) -> str:
         texto = texto.replace("  ", " ")
     return texto
 
-
-# ============================================================
 # API APEX — usando cache
-# ============================================================
-
 def obtener_postgrados() -> list:
     try:
         data = get_cached(f"{APEX_API_BASE_URL}/postgrados")
@@ -341,7 +321,6 @@ def obtener_todas_las_faqs() -> list:
     logger.info(f"Total FAQs activas: {len(todas)}")
     return todas
 
-
 def obtener_preguntas_respondidas() -> list:
     try:
         data = get_cached(f"{APEX_API_BASE_URL}/preguntas-sin-respuesta", params={"estado": "RESPONDIDA"})
@@ -370,11 +349,7 @@ def obtener_preguntas_respondidas() -> list:
         logger.warning(f"⚠️  No se pudieron obtener preguntas respondidas: {e}")
     return []
 
-
-# ============================================================
 # GENERACIÓN DE ARCHIVOS
-# ============================================================
-
 def generar_nlu_yml(faqs: list) -> tuple:
     intent_ejemplos: dict = {}
     sin_clasificar = []
@@ -427,7 +402,6 @@ def generar_nlu_yml(faqs: list) -> tuple:
     }
     return "\n".join(lines) + "\n", stats
 
-
 def generar_stories_yml(faqs: list) -> str:
     combinaciones = set()
     for faq in faqs:
@@ -463,11 +437,7 @@ def generar_stories_yml(faqs: list) -> str:
         ]
     return "\n".join(lines) + "\n"
 
-
-# ============================================================
 # REPORTE
-# ============================================================
-
 def imprimir_reporte(stats: dict):
     print("\n" + "=" * 55)
     print("REPORTE DE GENERACION")
@@ -494,11 +464,7 @@ def imprimir_reporte(stats: dict):
         print("  Agrega sus palabras clave a INTENT_RULES para clasificarlas.")
     print("=" * 55 + "\n")
 
-
-# ============================================================
 # MAIN
-# ============================================================
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run",  action="store_true", help="Vista previa sin escribir archivos")
@@ -543,7 +509,6 @@ def main():
         logger.info(f"✅ Generado: {OUTPUT_STORIES_FILE}")
 
     logger.info("Siguiente paso: rasa train")
-
 
 if __name__ == "__main__":
     main()
