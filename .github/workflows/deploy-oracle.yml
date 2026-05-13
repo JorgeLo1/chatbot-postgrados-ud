@@ -24,16 +24,14 @@ jobs:
             echo "📥 Pulling latest changes..."
             git pull origin main
             
-            echo "🛑 Stopping current container and freeing ports..."
+            echo "🛑 Stopping current container..."
             docker stop chatbot-rasa || true
             docker rm chatbot-rasa || true
-            pkill -f "whatsapp_adapter.py" || true
-            pkill -f "rasa run actions" || true
             
             echo "🔨 Building new image..."
             docker build -t chatbot-rasa:latest .
             
-            echo "🚀 Starting new container..."
+            echo "🚀 Starting container..."
             docker run -d \
               --name chatbot-rasa \
               --restart unless-stopped \
@@ -43,9 +41,6 @@ jobs:
               --env-file .env \
               chatbot-rasa:latest
             
-            echo "⏳ Waiting for container to start..."
-            sleep 5
-            
-            echo "✅ Deployment complete!"
+            echo "✅ Container started. Training runs in background."
+            echo "Check progress with: docker logs -f chatbot-rasa"
             docker ps | grep chatbot-rasa
-            docker logs --tail 20 chatbot-rasa
