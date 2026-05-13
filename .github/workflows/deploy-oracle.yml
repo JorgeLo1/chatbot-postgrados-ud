@@ -24,9 +24,11 @@ jobs:
             echo "📥 Pulling latest changes..."
             git pull origin main
             
-            echo "🛑 Stopping current container..."
+            echo "🛑 Stopping current container and freeing ports..."
             docker stop chatbot-rasa || true
             docker rm chatbot-rasa || true
+            pkill -f "whatsapp_adapter.py" || true
+            pkill -f "rasa run actions" || true
             
             echo "🔨 Building new image..."
             docker build -t chatbot-rasa:latest .
