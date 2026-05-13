@@ -158,61 +158,32 @@ docker stats chatbot-rasa
 
 ---
 
-### ngrok — túnel HTTPS para WhatsApp (configuración única)
+### ngrok — túnel HTTPS para WhatsApp
 
-ngrok corre como **servicio systemd** en el host (no en tmux). Arranque automático con el servidor, dominio estático — Meta Dashboard no hay que tocar nunca más.
-
-#### Arquitectura actual del canal WhatsApp
+ngrok corre manualmente en sesión `tmux` apuntando a `localhost:5006` (puerto Docker).
 
 ```
 Meta (Graph API)
       │
       ▼
-https://TU_DOMINIO.ngrok-free.app   ← URL estática, configurada una sola vez en Meta
-      │  (systemd chatbot-ngrok en Oracle Cloud)
+https://xxx.ngrok-free.dev   ← configurada en Meta Dashboard
+      │  (tmux ngrok → Oracle Cloud)
       ▼
-http://localhost:5006               ← puerto expuesto por Docker (WhatsApp Adapter)
-      │
-      ▼
-http://localhost:5005               ← Rasa Server (dentro del mismo contenedor)
-      │
-      ▼
-http://localhost:5055               ← Action Server (dentro del mismo contenedor)
+http://localhost:5006        ← puerto expuesto por Docker (WhatsApp Adapter)
 ```
 
-#### Configuración única (ejecutar una sola vez en el servidor)
-
-**1. Obtener dominio estático** (gratis, 1 por cuenta Free):
-- Ir a https://dashboard.ngrok.com/cloud-edge/domains → crear dominio
-
-**2. Configurar ngrok:**
 ```bash
-cp ngrok-config.yml.example ~/.config/ngrok/ngrok.yml
-nano ~/.config/ngrok/ngrok.yml   # rellenar NGROK_AUTHTOKEN y NGROK_STATIC_DOMAIN
+# Arrancar ngrok (si se cae o el servidor reinicia)
+tmux new -s ngrok
+ngrok http 5006
+# Anotar la URL y actualizar Meta Dashboard si cambió
+Ctrl+b, d   # detach
+
+# Ver URL activa
+curl http://localhost:4040/api/tunnels
 ```
 
-**3. Instalar servicio systemd:**
-```bash
-sudo cp chatbot-ngrok.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable chatbot-ngrok
-sudo systemctl start chatbot-ngrok
-sudo systemctl status chatbot-ngrok
-```
-
-**4. Configurar Meta Dashboard una sola vez:**
-1. Meta Developer Dashboard → WhatsApp → Configuración → Webhook
-2. URL: `https://TU_DOMINIO.ngrok-free.app/webhooks/whatsapp/webhook`
-3. Verify token: valor de `WHATSAPP_VERIFY_TOKEN` en `.env`
-
-**Diagnóstico de ngrok:**
-```bash
-sudo systemctl status chatbot-ngrok
-journalctl -u chatbot-ngrok -f
-curl http://localhost:4040/api/tunnels   # URL activa
-```
-
-> `start-whatsapp-adapter.sh` es solo para **desarrollo sin Docker** (arranca todo en host). No usar cuando el contenedor está corriendo — hay conflicto de puertos en 5005/5055/5006.
+> `start-whatsapp-adapter.sh` es solo para **desarrollo sin Docker**. No usar cuando el contenedor está corriendo — hay conflicto de puertos en 5005/5055/5006.
 
 ---
 
