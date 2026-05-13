@@ -1,0 +1,21 @@
+# Configuración de ngrok para el chatbot WhatsApp
+# ─────────────────────────────────────────────────
+# 1. Copia este archivo a ~/.config/ngrok/ngrok.yml en el servidor
+# 2. Rellena NGROK_AUTHTOKEN y NGROK_STATIC_DOMAIN con tus valores reales
+#    - Authtoken: https://dashboard.ngrok.com/get-started/your-authtoken
+#    - Dominio estático (1 gratis por cuenta Free): https://dashboard.ngrok.com/cloud-edge/domains
+#
+# Una vez configurado, ejecutar en el servidor:
+#   ngrok start chatbot
+# o dejar que systemd lo gestione (ver chatbot-ngrok.service)
+
+version: "3"
+
+agent:
+  authtoken: NGROK_AUTHTOKEN   # reemplazar con tu token real
+
+tunnels:
+  chatbot:
+    proto: http
+    addr: 5006                  # puerto del WhatsApp Adapter (dentro del contenedor Docker)
+    domain: NGROK_STATIC_DOMAIN # ej: interaphyseal-inquiringly-dangelo.ngrok-free.app

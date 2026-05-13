@@ -20,18 +20,26 @@ Chatbot conversacional en español construido con **Rasa Open Source 3.6.21** pa
 ### Arquitectura de procesos
 
 ```
-┌─────────────────────┐    ┌─────────────────┐   ┌─────────────────┐
-│ Cliente Web/SISIFO  │───▶│  Rasa Server    │──▶│  Action Server  │
-└─────────────────────┘    │  puerto 5005    │   │  puerto 5055    │
-                           └─────────────────┘   └────────┬────────┘
-┌─────────────────────┐    ┌─────────────────┐            │
-│  WhatsApp Cloud API │───▶│ Flask Adapter   │            │
-│  (Meta Graph v18)   │    │  puerto 5006    │            ▼
-└─────────────────────┘    │ + APScheduler   │   ┌─────────────────┐
-                           │ + Redis (opc.)  │   │ Oracle APEX ORDS│
-                           └─────────────────┘   │ (Backend FAQs)  │
-                                                 └─────────────────┘
+┌─────────────────────┐    ┌──────────────────────────────────────────┐
+│ Cliente Web/SISIFO  │───▶│         Docker: chatbot-rasa             │
+└─────────────────────┘    │  ┌─────────────┐   ┌──────────────────┐ │
+                           │  │ Rasa Server │──▶│  Action Server   │ │
+┌─────────────────────┐    │  │  port 5005  │   │   port 5055      │ │
+│  WhatsApp Cloud API │    │  └─────────────┘   └──────────┬───────┘ │
+│  (Meta Graph v18)   │    │  ┌──────────────────────────┐ │         │
+└──────────┬──────────┘    │  │ WhatsApp Adapter (Flask) │ │         │
+           │               │  │       port 5006          │ │         │
+           ▼               │  └──────────────────────────┘ │         │
+  https://xxx.ngrok-free   └──────────────────────────────────────────┘
+  (systemd → auto-start)                                    │
+                                                            ▼
+                                                   ┌─────────────────┐
+                                                   │ Oracle APEX ORDS│
+                                                   │ (Backend FAQs)  │
+                                                   └─────────────────┘
 ```
+
+**Los 3 servicios corren dentro de Docker.** CI/CD los redesplega todos automáticamente en cada push a `main`. ngrok corre como servicio systemd en el host (arranque automático, dominio estático).
 
 ### Mapa de puertos
 
@@ -108,161 +116,103 @@ ssh -i "ssh-key-2025-10-27.key" ubuntu@149.130.173.156
 
 ---
 
-### Redespliegue del chatbot principal (Docker)
+### Redespliegue (caso normal)
 
-El chatbot principal (Rasa Server + Action Server) corre en un contenedor Docker con restart automático.
+**Hacer push a `main`** → CI/CD hace todo automáticamente. No se necesita intervención manual.
+
+Los tres servicios corren **dentro del contenedor Docker** (`start.sh` paso 3-4-5):
+- Action Server (5055)
+- WhatsApp Adapter (5006)
+- Rasa Server (5005, PID 1)
+
+El contenedor tarda **3–8 minutos** en responder a `/status` (fetch APEX → entrenamiento → inicio).
+
+### Redespliegue manual (si CI/CD falla)
 
 ```bash
-# 1. Detener y eliminar el contenedor actual
-docker stop chatbot-rasa
-docker rm chatbot-rasa
-
-# 2. Reconstruir la imagen (incluye fetch → train dentro del start.sh)
+ssh -i "ssh-key-2025-10-27.key" ubuntu@149.130.173.156
+cd ~/chatbot-postgrados-ud
+git pull origin main
+docker stop chatbot-rasa && docker rm chatbot-rasa
 docker build -t chatbot-rasa:latest .
-
-# 3. Levantar el nuevo contenedor
 docker run -d \
   --name chatbot-rasa \
   --restart unless-stopped \
   -p 5005:5005 \
   -p 5055:5055 \
+  -p 5006:5006 \
   --env-file .env \
   chatbot-rasa:latest
-
-# 4. Verificar logs en tiempo real
 docker logs -f chatbot-rasa
 ```
 
-> El `start.sh` interno ejecuta: fetch APEX → train → Action Server → WhatsApp Adapter (si aplica) → Rasa Server (PID 1).
-> El contenedor puede tardar 3–8 minutos en responder a `/status` por el tiempo de entrenamiento.
+### Verificación post-despliegue
+
+```bash
+curl http://localhost:5005/status   # Rasa Server
+curl http://localhost:5055/health   # Action Server
+curl http://localhost:5006/health   # WhatsApp Adapter
+docker logs --tail 100 chatbot-rasa
+docker stats chatbot-rasa
+```
 
 ---
 
-### Redespliegue del adaptador WhatsApp (tmux + ngrok)
+### ngrok — túnel HTTPS para WhatsApp (configuración única)
 
-El adaptador Flask corre **fuera del contenedor Docker**, en una sesión `tmux` persistente. Ngrok corre en una **segunda sesión tmux separada** para darle HTTPS al adaptador, ya que el servidor Oracle Cloud no tiene SSL configurado directamente.
+ngrok corre como **servicio systemd** en el host (no en tmux). Arranque automático con el servidor, dominio estático — Meta Dashboard no hay que tocar nunca más.
 
-#### Arquitectura real del canal WhatsApp
+#### Arquitectura actual del canal WhatsApp
 
 ```
 Meta (Graph API)
       │
       ▼
-https://xxx.ngrok-free.dev    ← URL HTTPS que se configura en Meta Dashboard
-      │  (ngrok corriendo en Oracle Cloud, sesión tmux "ngrok")
+https://TU_DOMINIO.ngrok-free.app   ← URL estática, configurada una sola vez en Meta
+      │  (systemd chatbot-ngrok en Oracle Cloud)
       ▼
-http://localhost:5006          ← whatsapp_adapter.py (sesión tmux "rasa")
+http://localhost:5006               ← puerto expuesto por Docker (WhatsApp Adapter)
       │
       ▼
-http://localhost:5005          ← Rasa Server (mismo tmux "rasa")
+http://localhost:5005               ← Rasa Server (dentro del mismo contenedor)
       │
       ▼
-http://localhost:5055          ← Action Server (mismo tmux "rasa")
+http://localhost:5055               ← Action Server (dentro del mismo contenedor)
 ```
 
-#### Paso a paso completo de arranque
+#### Configuración única (ejecutar una sola vez en el servidor)
 
+**1. Obtener dominio estático** (gratis, 1 por cuenta Free):
+- Ir a https://dashboard.ngrok.com/cloud-edge/domains → crear dominio
+
+**2. Configurar ngrok:**
 ```bash
-# 1. Conectar al servidor
-ssh -i "ssh-key-2025-10-27.key" ubuntu@149.130.173.156
-
-# 2. Verificar estado actual
-tmux ls
+cp ngrok-config.yml.example ~/.config/ngrok/ngrok.yml
+nano ~/.config/ngrok/ngrok.yml   # rellenar NGROK_AUTHTOKEN y NGROK_STATIC_DOMAIN
 ```
 
-**Sesión "rasa" — servicios:**
-
+**3. Instalar servicio systemd:**
 ```bash
-# Si la sesión existe y hay que reiniciarla:
-tmux attach -t rasa
-Ctrl + C        # detener proceso en primer plano (si aplica)
-exit            # cierra el shell y destruye la sesión
-
-# Si la sesión quedó colgada y no responde:
-tmux kill-session -t rasa
-
-# Limpiar procesos huérfanos (nohup los deja vivos aunque muera tmux)
-pkill -f "rasa run"            || true
-pkill -f "rasa run actions"    || true
-pkill -f "whatsapp_adapter.py" || true
-
-# Crear sesión nueva y lanzar los 3 servicios
-tmux new -s rasa
-bash start-whatsapp-adapter.sh
-# start-whatsapp-adapter.sh arranca en orden:
-#   1. Action Server  (puerto 5055) — espera /health
-#   2. Rasa Server    (puerto 5005) — espera /status
-#   3. WhatsApp Adapter (puerto 5006) — espera /health
-#   Si el adapter no levanta en 40s → mata todo y sale con error
-
-Ctrl + b, luego d   # detach — los servicios siguen corriendo
+sudo cp chatbot-ngrok.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable chatbot-ngrok
+sudo systemctl start chatbot-ngrok
+sudo systemctl status chatbot-ngrok
 ```
 
-**Sesión "ngrok" — túnel HTTPS:**
+**4. Configurar Meta Dashboard una sola vez:**
+1. Meta Developer Dashboard → WhatsApp → Configuración → Webhook
+2. URL: `https://TU_DOMINIO.ngrok-free.app/webhooks/whatsapp/webhook`
+3. Verify token: valor de `WHATSAPP_VERIFY_TOKEN` en `.env`
 
+**Diagnóstico de ngrok:**
 ```bash
-# Si ya existe sesión ngrok, verificar que la URL sigue activa:
-tmux attach -t ngrok
-# Anotar la URL: https://xxx.ngrok-free.dev
-Ctrl + b, luego d   # detach si todo está bien
-
-# Si hay que reiniciar ngrok:
-tmux kill-session -t ngrok    # matar sesión anterior si existe
-tmux new -s ngrok
-ngrok http 5006
-# Ngrok muestra la URL HTTPS asignada, por ejemplo:
-#   Forwarding: https://interaphyseal-inquiringly-dangelo.ngrok-free.dev -> http://localhost:5006
-# IMPORTANTE: copiar esa URL — hay que actualizarla en Meta Dashboard si cambió
-Ctrl + b, luego d   # detach — ngrok sigue corriendo
+sudo systemctl status chatbot-ngrok
+journalctl -u chatbot-ngrok -f
+curl http://localhost:4040/api/tunnels   # URL activa
 ```
 
-**Actualizar webhook en Meta (solo si la URL de ngrok cambió):**
-
-1. Ir a [Meta Developer Dashboard](https://developers.facebook.com/apps)
-2. Seleccionar la app → WhatsApp → Configuración → Webhook
-3. Editar la URL: `https://xxx.ngrok-free.dev/webhooks/whatsapp/webhook`
-4. Verify token: el valor de `WHATSAPP_VERIFY_TOKEN` en `.env`
-5. Guardar y verificar que Meta confirme el webhook
-
-#### Verificación post-arranque
-
-```bash
-# Servicios Rasa
-curl http://localhost:5005/status
-curl http://localhost:5055/health
-curl http://localhost:5006/health
-
-# Ngrok (panel web local)
-curl http://localhost:4040/api/tunnels   # muestra la URL activa
-
-# Logs de cada servicio
-tail -f action_server.log
-tail -f rasa_server.log
-tail -f whatsapp_adapter.log
-```
-
-> **Plan Free de ngrok**: la URL cambia en cada reinicio de ngrok. Cada vez que se reinicia hay que actualizar la URL en Meta Developer Dashboard manualmente. Ver sección 9 para el riesgo asociado.
-
----
-
-### Verificación post-despliegue
-
-```bash
-# Estado del servidor Rasa
-curl http://localhost:5005/status
-
-# Estado del action server
-curl http://localhost:5055/health
-
-# Estado del adaptador WhatsApp
-curl http://localhost:5006/health   # si el endpoint está habilitado
-
-# Últimas líneas del log del contenedor
-docker logs --tail 100 chatbot-rasa
-
-# Ver consumo de recursos
-docker stats chatbot-rasa
-```
+> `start-whatsapp-adapter.sh` es solo para **desarrollo sin Docker** (arranca todo en host). No usar cuando el contenedor está corriendo — hay conflicto de puertos en 5005/5055/5006.
 
 ---
 
@@ -271,9 +221,9 @@ docker stats chatbot-rasa
 `.github/workflows/deploy-oracle.yml` se activa con cada `push` a `main`:
 1. Conecta por SSH a `149.130.173.156`.
 2. Hace `git pull` del repositorio.
-3. Reconstruye la imagen y reinicia el contenedor.
+3. Reconstruye la imagen y reinicia el contenedor (incluye el WhatsApp Adapter en puerto 5006).
 
-> **No hace redespliegue del adaptador WhatsApp** — ese proceso debe hacerse manualmente con tmux si hubo cambios en `whatsapp_adapter.py` o `start-whatsapp-adapter.sh`.
+ngrok no se toca en CI/CD — systemd lo mantiene activo independientemente.
 
 ---
 
@@ -529,7 +479,7 @@ Rasa 3.6 fija `numpy==1.23.5` que arrastra TensorFlow 2.12. No es posible actual
 ### Stack
 
 - **Rasa OSS 3.6.21** es la versión final — no habrá más releases de Rasa Open Source. Migración a Rasa Pro CALM o reescritura es decisión estratégica a tomar en ≥6 meses con datos.
-- **Adaptador WhatsApp corre fuera de Docker en tmux** — no tiene restart automático ante fallos del servidor. Si el servidor reinicia, hay que reconectar manualmente. Pendiente evaluar mover el adaptador dentro del contenedor o usar systemd.
+- **Adaptador WhatsApp** — corre dentro de Docker (puerto 5006 expuesto), redespliegue automático en CI/CD. ngrok gestionado por systemd (`chatbot-ngrok.service`) con dominio estático — sin intervención manual tras configuración inicial.
 - **Ngrok Free con URL dinámica** — la URL HTTPS cambia en cada reinicio de ngrok. Si ngrok cae o el servidor reinicia, hay que actualizar manualmente la URL en Meta Developer Dashboard. Riesgo operativo real: el canal WhatsApp queda mudo hasta que se actualice. Solución a largo plazo: configurar SSL con nginx + certbot (Let's Encrypt) en el servidor para eliminar la dependencia de ngrok.
 
 ---
@@ -539,7 +489,7 @@ Rasa 3.6 fija `numpy==1.23.5` que arrastra TensorFlow 2.12. No es posible actual
 `.github/workflows/deploy-oracle.yml`:
 - Trigger: `push` a `main`.
 - Se conecta por SSH a Oracle Cloud (`149.130.173.156`), hace pull del código, reconstruye la imagen y reinicia el contenedor.
-- **No redesplega el adaptador WhatsApp** (corre en tmux fuera del contenedor).
+- Redesplega los tres servicios: Rasa Server, Action Server y WhatsApp Adapter (puerto 5006 expuesto).
 - **No hay etapa de tests** ni linting antes del deploy — ver Fase 0.
 
 La rama `develop` se usa para WIP. Mergear a `main` solo cuando esté listo para deploy.
@@ -1048,7 +998,7 @@ Antes de cerrar cualquier fase:
 3. `ruff check` y `black --check` pasan sin advertencias.
 4. `rasa shell` arranca localmente sin errores y responde a 5 mensajes golden-path.
 5. La imagen Docker construye y el contenedor responde a `/status` en menos de 10 minutos.
-6. El adaptador WhatsApp responde y la sesión tmux está activa tras el deploy.
+6. El adaptador WhatsApp responde en `curl http://localhost:5006/health` (puerto Docker expuesto).
 7. Las métricas Prometheus (a partir de Fase 5) reportan datos en local.
 8. Documentación actualizada en `README.md` y este `CLAUDE.md`.
 
@@ -1063,7 +1013,7 @@ Antes de cerrar cualquier fase:
 - **Cambios al pipeline NLU** requieren documentar el motivo en el commit y correr `rasa test nlu --cross-validation`.
 - **Mensajes al usuario**: español neutro, sin emojis excesivos; un mensaje por turno cuando sea posible.
 - **Validación de entradas externas**: cualquier dato de Oracle APEX se considera no-confiable hasta normalizar (mayúsculas/minúsculas, `null`, listas anidadas).
-- **Cambios en `whatsapp_adapter.py`** no se redesplegan con CI — requieren sesión tmux manual (ver sección 3).
+- **Cambios en `whatsapp_adapter.py`** se redesplegan con CI igual que el resto del código.
 
 ---
 
