@@ -26,17 +26,11 @@ load_dotenv()
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-<<<<<<< Updated upstream
-=======
 # Configuración general
->>>>>>> Stashed changes
 APEX_API_BASE_URL = os.getenv("APEX_API_URL", "https://oracleapex.com/ords/udchatbot/chatbot")
 APEX_TIMEOUT = int(os.getenv("APEX_TIMEOUT", "60"))
 ENABLE_CACHE = os.getenv("ENABLE_CACHE", "True").lower() == "true"
 CACHE_TTL = int(os.getenv("CACHE_TTL", "3600"))
-<<<<<<< Updated upstream
-APEX_SSL_VERIFY = os.getenv("APEX_SSL_VERIFY", "false").lower() != "false"
-=======
 # APEX_SSL_VERIFY default true — nunca false en producción
 APEX_SSL_VERIFY = os.getenv("APEX_SSL_VERIFY", "true").lower() != "false"
 
@@ -48,7 +42,6 @@ FAQ_INDEX_REFRESH_MINUTES = int(os.getenv("FAQ_INDEX_REFRESH_MINUTES", "10"))
 FAQ_HIT_RATE_ALERT_THRESHOLD = float(os.getenv("FAQ_HIT_RATE_ALERT_THRESHOLD", "0.70"))
 FAQ_FALLBACK_RATE_THRESHOLD = float(os.getenv("FAQ_FALLBACK_RATE_THRESHOLD", "0.20"))
 FAQ_P95_MS_THRESHOLD = int(os.getenv("FAQ_P95_MS_THRESHOLD", "3000"))
->>>>>>> Stashed changes
 
 logging.basicConfig(
     level=logging.INFO,
@@ -225,8 +218,6 @@ def normalizar_texto(texto: str) -> str:
     )
     return texto
 
-<<<<<<< Updated upstream
-=======
 
 # ============================================================
 # INFRAESTRUCTURA FASE A: normalización, sinónimos, spaCy, índice FAQ
@@ -482,7 +473,6 @@ def enviar_alerta_metrica(nombre: str, valor: float, umbral: float, unidad: str 
 
 
 # ============================================
->>>>>>> Stashed changes
 # ACTION: Saludo Inicial 
 class ActionSaludoMejorado(Action):
     """Saludo inicial que pregunta por el programa de interés"""
@@ -497,13 +487,9 @@ class ActionSaludoMejorado(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-<<<<<<< Updated upstream
-        logger.info("👋 Ejecutando action_saludo_mejorado")
-=======
         logger.info("Ejecutando action_saludo_mejorado")
         
         # --- MENSAJE 1: El Saludo ---
->>>>>>> Stashed changes
         dispatcher.utter_message(text=(
             "¡Bienvenido! 🎓\n"
             "Soy tu asistente virtual de Postgrados de la Facultad de Ingeniería."
@@ -850,59 +836,6 @@ class ActionSeleccionarNumero(Action):
             SlotSet("ultima_lista_postgrados", None)
         ]
 
-<<<<<<< Updated upstream
-# ACTION: Buscar FAQ 
-class ActionBuscarFAQ(Action):
-
-    def name(self) -> Text:
-        return "action_buscar_faq"
-    INTENT_KEYWORDS = {
-        "consultar_costos": {
-            "keywords": ["costo", "precio", "valor", "cuanto cuesta", "matricula", "pagar", "inversion", "SMMLV", "salario"],
-            "queries": ["costo", "cuanto cuesta", "valor matricula", "precio"]
-        },
-        "consultar_requisitos": {
-            "keywords": ["requisito", "documento", "necesito", "piden", "admision", "titulo", "hoja vida", "certificado"],
-            "queries": ["requisitos", "documentos necesarios", "que necesito"]
-        },
-        "consultar_fechas": {
-            "keywords": ["fecha", "cuando", "inscripciones", "inicia", "abre", "cierra", "plazo", "calendario"],
-            "queries": ["fechas inscripcion", "cuando inscripciones", "plazo"]
-        },
-        "consultar_duracion": {
-            "keywords": ["duracion", "dura", "tiempo", "semestre", "año", "mes", "credito", "cuanto dura"],
-            "queries": ["duracion", "cuanto dura", "semestres", "tiempo"]
-        },
-        "consultar_modalidad": {
-            "keywords": ["modalidad", "virtual", "presencial", "horario", "online", "distancia", "sede", "hibrido"],
-            "queries": ["modalidad", "virtual presencial", "horario"]
-        },
-        "consultar_plan_estudios": {
-            "keywords": ["plan estudios", "materias", "pensum", "asignaturas", "contenido", "que se estudia"],
-            "queries": ["plan estudios", "materias", "pensum"]
-        },
-        "solicitar_link_inscripcion": {
-            "keywords": ["link", "enlace", "inscripcion", "donde inscribo", "portal", "pagina"],
-            "queries": ["link inscripcion", "donde inscribo", "enlace"]
-        },
-        "consultar_dirigido": {
-            "keywords": ["dirigido", "quien puede", "perfil", "profesionales", "carreras"],
-            "queries": ["quien puede", "perfil ingreso", "dirigido"]
-        },
-        "consultar_proceso_admision": {
-            "keywords": ["proceso", "como inscribirme", "pasos", "admision", "inscripcion"],
-            "queries": ["como inscribirme", "pasos inscripcion", "proceso"]
-        },
-        "consultar_becas": {
-            "keywords": ["beca", "descuento", "ayuda", "apoyo economico", "subsidio"],
-            "queries": ["becas", "descuentos", "ayuda economica"]
-        },
-        "consultar_financiacion": {
-            "keywords": ["financiacion", "cuotas", "credito", "pago", "facilidades"],
-            "queries": ["financiacion", "cuotas", "opciones pago"]
-        }
-    }
-=======
 
 # ============================================
 # ACTION: Buscar FAQ (unificada — reemplaza ActionBuscarFAQ y ActionBuscarFaqLibre)
@@ -924,7 +857,6 @@ class ActionBuscarFaq(Action):
 
     def name(self) -> Text:
         return "action_buscar_faq"
->>>>>>> Stashed changes
 
     def run(
         self,
@@ -953,90 +885,6 @@ class ActionBuscarFaq(Action):
                 text="Por favor, primero dime sobre qué programa necesitas información."
             )
             return [FollowupAction("action_listar_postgrados")]
-<<<<<<< Updated upstream
-        
-        # Obtener intent y mensaje original
-        intent = tracker.latest_message.get("intent", {}).get("name")
-        user_message = tracker.latest_message.get("text", "").strip()
-        confidence = tracker.latest_message.get("intent", {}).get("confidence", 0)
-        
-        logger.info(f"Intent: {intent} (conf: {confidence:.2f})")
-        logger.info(f"Mensaje: '{user_message}'")
-        preguntas_a_probar = []
-        
-        # 1. Siempre incluir mensaje original primero
-        if user_message:
-            preguntas_a_probar.append(user_message)
-        
-        # 2. Si tenemos intent conocido, agregar sus queries
-        if intent in self.INTENT_KEYWORDS:
-            config = self.INTENT_KEYWORDS[intent]
-            
-            # Agregar queries predefinidas
-            for query in config["queries"]:
-                if query not in preguntas_a_probar:
-                    preguntas_a_probar.append(query)
-            
-            logger.info(f"✅ Queries para {intent}: {config['queries']}")
-        
-        # 3. Detectar palabras clave en el mensaje del usuario
-        user_lower = user_message.lower()
-        detected_intents = []
-        
-        for intent_name, config in self.INTENT_KEYWORDS.items():
-            for keyword in config["keywords"]:
-                if keyword in user_lower:
-                    detected_intents.append(intent_name)
-                    break
-        
-        # Si detectamos intent por palabra clave, agregar sus queries
-        if detected_intents and detected_intents[0] != intent:
-            logger.info(f"🔍 Palabras clave detectadas: {detected_intents}")
-            for detected_intent in detected_intents[:1]:  # Solo el primero
-                for query in self.INTENT_KEYWORDS[detected_intent]["queries"][:2]:
-                    if query not in preguntas_a_probar:
-                        preguntas_a_probar.append(query)
-        
-        # 4. Limitar a máximo 4 intentos
-        preguntas_a_probar = preguntas_a_probar[:4]
-        logger.info(f"🔍 Probando {len(preguntas_a_probar)} variantes")
-        
-        # BÚSQUEDA SECUENCIAL
-        for idx, pregunta in enumerate(preguntas_a_probar, 1):
-            logger.info(f"Intento {idx}/{len(preguntas_a_probar)}: '{pregunta}'")
-            
-            # Cache
-            cache_key = f"faq_{postgrado_id}_{self._normalizar_cache_key(pregunta)}"
-            cached = get_from_cache(cache_key)
-            
-            if cached:
-                logger.info(f"💾 Cache hit")
-                mensaje = self._formatear_respuesta_completa(cached, intent, postgrado_nombre)
-                dispatcher.utter_message(text=mensaje)
-                return [SlotSet("ultima_respuesta", cached)]
-            
-            # Llamar API
-            response = make_api_request(
-                "GET",
-                f"faq/buscar/{postgrado_id}",
-                params={"pregunta": pregunta}
-            )
-            
-            if response:
-                respuesta = self._extraer_respuesta(response)
-                
-                if respuesta and self._es_respuesta_valida(respuesta):
-                    logger.info(f"✅ Respuesta válida encontrada")
-                    set_in_cache(cache_key, respuesta)
-                    
-                    mensaje = self._formatear_respuesta_completa(respuesta, intent, postgrado_nombre)
-                    dispatcher.utter_message(text=mensaje)
-                    return [SlotSet("ultima_respuesta", respuesta)]
-        
-        # No encontrado
-        logger.warning(f"❌ No se encontró respuesta")
-        if postgrado_id:
-=======
 
         if len(user_message) < 3:
             dispatcher.utter_message(text="Tu pregunta es muy corta. ¿Podrías ser más específico?")
@@ -1095,68 +943,11 @@ class ActionBuscarFaq(Action):
         if not encontrada:
             # Negative cache + registro en PREGUNTAS_SIN_RESPUESTA
             _NEGATIVE_CACHE[nc_key] = datetime.now()
->>>>>>> Stashed changes
             registrar_pregunta_sin_respuesta(
                 postgrado_id=postgrado_id,
                 pregunta=user_message,
                 usuario_telefono=sender_id
             )
-<<<<<<< Updated upstream
-        mensaje = self._mensaje_no_encontrado(intent, postgrado_nombre, user_message)
-        dispatcher.utter_message(text=mensaje)
-        
-        return []
-    
-    def _normalizar_cache_key(self, texto: str) -> str:
-        """Crea key de cache normalizada"""
-        texto_norm = normalizar_texto(texto)
-        return texto_norm[:30]
-    
-    def _extraer_respuesta(self, response: Dict) -> Optional[str]:
-        """Extrae respuesta de API"""
-        if not response or not isinstance(response, dict):
-            return None
-        
-        if response.get("status") == "success":
-            data = response.get("data", {})
-            if isinstance(data, list) and len(data) > 0:
-                data = data[0]
-            if isinstance(data, dict):
-                return data.get("RESPUESTA", data.get("respuesta", ""))
-        
-        return response.get("RESPUESTA", response.get("respuesta", ""))
-    
-    def _es_respuesta_valida(self, respuesta: str) -> bool:
-        """Valida que no sea mensaje de error"""
-        if not respuesta or len(respuesta.strip()) < 15:
-            return False
-        
-        resp_lower = respuesta.lower()
-        
-        errores = [
-            'error:', 'no encontré', 'intenta reformular',
-            'muy corta', 'código:', 'sqlcode', 'error interno'
-        ]
-        
-        return not any(err in resp_lower for err in errores)
-    
-    def _formatear_respuesta_completa(
-        self, respuesta: str, intent: str, postgrado_nombre: str
-    ) -> str:
-        """
-        Formatea respuesta con sugerencias contextuales.
-        FAQ.RESPUESTA es CLOB — puede superar el límite de WhatsApp (4096 chars).
-        Se trunca de forma inteligente antes de formatear.
-        """
-        # Truncar CLOB largo antes de formatear
-        WHATSAPP_MAX = 3800  # Dejamos margen para el texto de sugerencias que se agrega después
-        if respuesta and len(respuesta) > WHATSAPP_MAX:
-            corte = max(respuesta.rfind(". ", 0, WHATSAPP_MAX), respuesta.rfind("\n", 0, WHATSAPP_MAX))
-            if corte > WHATSAPP_MAX // 2:
-                respuesta = respuesta[:corte + 1]
-            else:
-                respuesta = respuesta[:WHATSAPP_MAX]
-=======
             self._enviar_sugerencias(dispatcher, postgrado_nombre, user_message)
             return []
 
@@ -1168,7 +959,6 @@ class ActionBuscarFaq(Action):
                 respuesta.rfind("\n", 0, WHATSAPP_MAX)
             )
             respuesta = respuesta[:corte + 1] if corte > WHATSAPP_MAX // 2 else respuesta[:WHATSAPP_MAX]
->>>>>>> Stashed changes
             respuesta += "\n\n_[Para más detalles, escríbenos al correo del programa.]_"
 
         mensaje = self._formatear_respuesta(respuesta, intent, postgrado_nombre)
@@ -2114,11 +1904,6 @@ class ActionObtenerInfoEspecifica(Action):
         
         return []
 
-<<<<<<< Updated upstream
-# ACTION: Buscar FAQ Libre
-class ActionBuscarFaqLibre(Action):
-    """Búsqueda FAQ mejorada con registro de preguntas sin respuesta"""
-=======
 
 # ============================================
 # ACTION: Buscar FAQ Libre (alias de ActionBuscarFaq)
@@ -2133,349 +1918,11 @@ class ActionBuscarFaqLibre(ActionBuscarFaq):
         Máximo 10 min → refresh del índice local (_FAQ_INDEX)
         Siguiente query similar → bot responde correctamente
     """
->>>>>>> Stashed changes
 
     def name(self) -> Text:
         return "action_buscar_faq_libre"
 
-<<<<<<< Updated upstream
-    def run(self, dispatcher: CollectingDispatcher,
-            tracker: Tracker,
-            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-
-        postgrado_id = tracker.get_slot("postgrado_id")
-        postgrado_nombre = tracker.get_slot("postgrado_nombre") or "este programa"
-        user_message = tracker.latest_message.get('text', '').strip()
-        usuario_id = tracker.sender_id
-        
-        # ==================== VALIDACIONES PREVIAS ====================
-        if not postgrado_id:
-            dispatcher.utter_message(text=(
-                "Necesito saber sobre qué programa preguntas. 🤔\n\n"
-                "Escribe 'menú principal' para ver los programas disponibles."
-            ))
-            return []
-        
-        if len(user_message) < 3:
-            dispatcher.utter_message(text=(
-                "Tu pregunta es muy corta. ¿Podrías ser más específico? 😅"
-            ))
-            return []
-        
-        # ==================== CACHE ====================
-        try:
-            import hashlib
-            pregunta_hash = hashlib.sha256(
-                f"{postgrado_id}_{user_message.lower()}".encode()
-            ).hexdigest()[:16]
-            
-            cache_key = f"faq_libre_{pregunta_hash}"
-            cached_response = get_from_cache(cache_key)
-            
-            if cached_response:
-                logger.info("💾 Cache hit")
-                mensaje = self._formatear_respuesta(cached_response, postgrado_nombre, user_message)
-                dispatcher.utter_message(text=mensaje)
-                return [SlotSet("ultima_respuesta", cached_response)]
-        except Exception as e:
-            logger.warning(f"⚠️ Error en cache: {e}")
-            cache_key = None
-        
-        # ==================== LLAMADA API ====================
-        try:
-            response = make_api_request(
-                "GET",
-                f"faq/buscar/{postgrado_id}",
-                params={"pregunta": user_message}
-            )
-            
-            if not response:
-                logger.error("❌ Sin respuesta de API")
-                registrar_pregunta_sin_respuesta(
-                    postgrado_id=postgrado_id,
-                    pregunta=user_message,
-                    usuario_telefono=usuario_id
-                )
-                self._enviar_mensaje_error_api(dispatcher)
-                return []
-            
-            # ==================== EXTRAER RESPUESTA ====================
-            respuesta = self._extraer_respuesta_apex(response)
-            
-            if not respuesta:
-                logger.error("❌ No se pudo extraer respuesta")
-                registrar_pregunta_sin_respuesta(
-                    postgrado_id=postgrado_id,
-                    pregunta=user_message,
-                    usuario_telefono=usuario_id
-                )
-                self._enviar_sugerencias(dispatcher, postgrado_nombre, user_message)
-                return []
-            
-            logger.info(f"📄 Respuesta: {respuesta[:100]}...")
-            
-            # ==================== VALIDAR TIPO DE RESPUESTA ====================
-            tipo_respuesta = self._clasificar_respuesta_apex(respuesta)
-            
-            if tipo_respuesta == "ERROR_TECNICO":
-                logger.error(f"❌ Error técnico de APEX")
-                registrar_pregunta_sin_respuesta(
-                    postgrado_id=postgrado_id,
-                    pregunta=user_message,
-                    usuario_telefono=usuario_id
-                )
-                self._enviar_mensaje_error_api(dispatcher)
-                return []
-            
-            elif tipo_respuesta == "NO_ENCONTRADO":
-                logger.info(f"ℹ️ APEX no encontró información específica")
-                registrar_pregunta_sin_respuesta(
-                    postgrado_id=postgrado_id,
-                    pregunta=user_message,
-                    usuario_telefono=usuario_id
-                )
-                self._enviar_sugerencias(dispatcher, postgrado_nombre, user_message)
-                return []
-            
-            elif tipo_respuesta == "RESPUESTA_VALIDA":
-                logger.info(f"✅ Respuesta válida encontrada")
-                
-                if cache_key:
-                    set_in_cache(cache_key, respuesta)
-                
-                mensaje = self._formatear_respuesta(respuesta, postgrado_nombre, user_message)
-                dispatcher.utter_message(text=mensaje)
-                return [SlotSet("ultima_respuesta", respuesta)]
-            
-            else:
-                # RESPUESTA_AMBIGUA
-                logger.warning(f"⚠️ Respuesta ambigua")
-                mensaje = self._formatear_respuesta(respuesta, postgrado_nombre, user_message)
-                dispatcher.utter_message(text=mensaje)
-                return [SlotSet("ultima_respuesta", respuesta)]
-        
-        except requests.exceptions.Timeout:
-            logger.error("⏱️ Timeout")
-            registrar_pregunta_sin_respuesta(
-                postgrado_id=postgrado_id,
-                pregunta=user_message,
-                usuario_telefono=usuario_id
-            )
-            dispatcher.utter_message(text=(
-                "La consulta está tardando más de lo normal. ⏱️\n\n"
-                "Por favor, intenta nuevamente."
-            ))
-        
-        except Exception as e:
-            logger.error(f"❌ Error inesperado: {type(e).__name__}: {str(e)}")
-            registrar_pregunta_sin_respuesta(
-                postgrado_id=postgrado_id,
-                pregunta=user_message,
-                usuario_telefono=usuario_id
-            )
-            self._enviar_mensaje_error_api(dispatcher)
-        
-        return []
-    
-    # ==================== MÉTODOS AUXILIARES ====================
-    
-    def _clasificar_respuesta_apex(self, respuesta: str) -> str:
-        """
-        # CLASIFICACIÓN CORRECTA de respuestas APEX
-        
-        Returns:
-            - "ERROR_TECNICO": Error del servidor/código
-            - "NO_ENCONTRADO": APEX dice explícitamente "no encontré" (NO es error)
-            - "RESPUESTA_VALIDA": Contenido útil
-            - "RESPUESTA_AMBIGUA": Podría ser válida o genérica
-        """
-        if not respuesta or len(respuesta.strip()) < 10:
-            return "ERROR_TECNICO"
-        
-        resp_lower = respuesta.lower()
-        
-        # ========== 1. ERRORES TÉCNICOS (servidor/código) ==========
-        errores_tecnicos = [
-            'error interno',
-            'código:',
-            '(código:',
-            'sqlcode',
-            'ora-',
-            'exception',
-            'stack trace',
-            'null pointer'
-        ]
-        
-        if any(err in resp_lower for err in errores_tecnicos):
-            return "ERROR_TECNICO"
-        
-        # ========== 2. VALIDACIÓN DE INPUT (usuario escribió mal) ==========
-        # Esto NO es error técnico, es feedback al usuario
-        validaciones_input = [
-            'error: id de postgrado',
-            'error: por favor escribe',
-            'tu pregunta es muy corta',
-            '¿podrías ser más específico?'
-        ]
-        
-        if any(val in resp_lower for val in validaciones_input):
-            return "NO_ENCONTRADO"  # Tratar como "no encontrado"
-        
-        # ========== 3. NO ENCONTRADO (APEX no tiene info) ==========
-        # Estas son respuestas válidas, no errores.
-        mensajes_no_encontrado = [
-            'no encontré una respuesta exacta',
-            'no encontré información específica',
-            'intenta reformular',
-            'no hay preguntas frecuentes disponibles',
-            'no tengo información sobre',
-            'no dispongo de datos'
-        ]
-        
-        if any(msg in resp_lower for msg in mensajes_no_encontrado):
-            return "NO_ENCONTRADO"
-        
-        # ========== 4. RESPUESTA VÁLIDA ==========
-        # Indicadores de contenido útil
-        indicadores_validos = [
-            'el costo',
-            'los requisitos',
-            'la duración',
-            'la modalidad',
-            'las fechas',
-            'el programa',
-            'la especialización',
-            'puedes',
-            'debes',
-            'necesitas',
-            'se requiere',
-            'smmlv',
-            'semestre',
-            'crédito',
-            '$',
-            'inscripción',
-            'admisión'
-        ]
-        
-        # Si tiene al menos 2 indicadores Y más de 50 caracteres
-        contador = sum(1 for ind in indicadores_validos if ind in resp_lower)
-        
-        if contador >= 2 and len(respuesta) > 50:
-            return "RESPUESTA_VALIDA"
-        
-        # Si tiene al menos 1 indicador Y más de 100 caracteres
-        if contador >= 1 and len(respuesta) > 100:
-            return "RESPUESTA_VALIDA"
-        
-        # ========== 5. RESPUESTA AMBIGUA ==========
-        # Respuestas genéricas que podrían ser válidas
-        return "RESPUESTA_AMBIGUA"
-    
-    def _extraer_respuesta_apex(self, response: dict) -> Optional[str]:
-        """
-        Extrae la respuesta del dict ya procesado por make_api_request().
-        El endpoint faq/buscar/:id retorna:
-          { "status": "success", "data": { "respuesta": "...", ... } }
-        """
-        try:
-            if not response or not isinstance(response, dict):
-                return None
-
-            # make_api_request() ya devuelve el dict con status/data
-            if response.get("status") == "error":
-                logger.warning(f"API devolvió error: {response.get('message')}")
-                return None
-
-            data = response.get("data", {})
-
-            # Por si acaso data viene como lista (otros endpoints)
-            if isinstance(data, list):
-                if not data:
-                    return None
-                data = data[0]
-
-            if isinstance(data, dict):
-                # El endpoint escribe la clave en minúscula: apex_json.write('respuesta', ...)
-                respuesta = data.get("respuesta") or data.get("RESPUESTA")
-                return str(respuesta).strip() if respuesta else None
-
-            # Caso borde: data es directamente el string de respuesta
-            if isinstance(data, str) and data.strip():
-                return data.strip()
-
-            return None
-
-        except Exception as e:
-            logger.error(f"Error extrayendo respuesta: {e}")
-            return None
-    
-    def _formatear_respuesta(self, respuesta: str, postgrado_nombre: str, 
-                            pregunta_original: str) -> str:
-        """Formatea respuesta con sugerencias contextuales"""
-        
-        mensaje = f"💡 *{postgrado_nombre}*\n\n{respuesta}\n\n"
-        
-        resp_lower = respuesta.lower()
-        
-        # Sugerencias según tema detectado
-        if any(w in resp_lower for w in ['costo', 'precio', 'pago', 'valor']):
-            mensaje += "También: 📋 Requisitos • 📅 Fechas • 💳 Financiación"
-        
-        elif any(w in resp_lower for w in ['convenio', 'empresa', 'alianza']):
-            mensaje += "También: 💼 Prácticas • 🎓 Perfil egresados"
-        
-        elif any(w in resp_lower for w in ['parqueadero', 'biblioteca', 'laboratorio']):
-            mensaje += "También: 💻 Modalidad • 📞 Contactar asesor"
-        
-        else:
-            mensaje += "También: 💰 Costos • 📋 Requisitos • 📅 Fechas"
-        
-        mensaje += "\n\n🏠 'menú principal' para otros programas"
-        
-        return mensaje
-    
-    def _enviar_sugerencias(self, dispatcher: CollectingDispatcher, 
-                           postgrado_nombre: str, pregunta: str):
-        """Envía sugerencias cuando no hay respuesta específica"""
-        
-        mensaje = f"🤔 No encontré información específica sobre:\n"
-        mensaje += f"*\"{pregunta}\"*\n\n"
-        mensaje += f"para *{postgrado_nombre}*.\n\n"
-        
-        preg_lower = pregunta.lower()
-        
-        # Categorización inteligente
-        if any(w in preg_lower for w in ['parquea', 'estaciona', 'cafeteria', 'wifi']):
-            mensaje += ("🏢 *Instalaciones y servicios*\n"
-                         "Esta información requiere asesoría personalizada.\n"
-                         "Escribe 'contactar asesor'\n\n")
-        
-        elif any(w in preg_lower for w in ['convenio', 'intercambio', 'movilidad']):
-            mensaje += "🌍 *Convenios y movilidad*\n"
-            mensaje += "Escribe 'contactar asesor' para detalles actualizados.\n\n"
-        
-        else:
-            mensaje += ("💡 *Temas disponibles*:\n"
-                     "💰 Costos • 📋 Requisitos • 📅 Fechas\n"
-                     "⏱️ Duración • 💻 Modalidad • 🔗 Inscripción\n\n")
-        
-        mensaje += "O escribe 'contactar asesor' para ayuda personalizada."
-        
-        dispatcher.utter_message(text=mensaje)
-    
-    def _enviar_mensaje_error_api(self, dispatcher: CollectingDispatcher):
-        """Mensaje de error técnico"""
-        dispatcher.utter_message(text=(
-            "Hubo un problema técnico al consultar esa información. 😔\n\n"
-            "Por favor:\n"
-            "• Intenta con otra pregunta\n"
-            "• Escribe 'contactar asesor'\n"
-            "• O 'menú principal' para volver al inicio"
-        ))
-
-=======
 # ============================================
->>>>>>> Stashed changes
 # ACTION: Reiniciar Slots
 class ActionReiniciarSlots(Action):
     """Limpia todos los slots para volver al menú principal"""
