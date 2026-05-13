@@ -1,180 +1,198 @@
-# 🎓 Chatbot Postgrados - Universidad Distrital
+# Chatbot Postgrados — Universidad Distrital Francisco José de Caldas
 
-Chatbot inteligente para información sobre programas de postgrado, construido con Rasa 3.6.
-
-## 🚀 Características
-
-- ✅ Consulta de **12+ programas** de postgrado
-- ✅ Información sobre **costos, requisitos, fechas**
-- ✅ Integración con **Oracle APEX**
-- ✅ **Formulario de contacto** con validación
-- ✅ Sistema de **cache** para optimizar rendimiento
-- ✅ Búsqueda inteligente con **NLP en español**
+Chatbot conversacional en español construido con **Rasa Open Source 3.6** para responder consultas sobre programas de postgrado: costos, requisitos, fechas, modalidad y contactos. La información se obtiene en tiempo real desde **Oracle APEX** vía REST. Opera en dos canales: REST webhook (frontend SISIFO) y WhatsApp Cloud API.
 
 ---
 
-## 📋 Requisitos Previos
+## Requisitos
 
-- Python 3.10+
-- pip 23.0+
-- Git
+- Python 3.10 (Rasa 3.6 no es compatible con Python 3.11+)
+- pip 23+
+- Docker (para producción)
+- spaCy `es_core_news_md` 3.5.0
 
 ---
 
-## 🔧 Instalación Local
+## Instalación local
 
-### 1. Clonar repositorio
-
-
-### 2. Crear entorno virtual
 ```bash
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# venv\Scripts\activate   # Windows
-```
-
-### 3. Instalar dependencias
-```bash
+source venv/bin/activate
 pip install -r requirements.txt
-```
+python -m spacy download es_core_news_md
 
-### 4. Configurar variables de entorno
-```bash
 cp .env.example .env
-# Editar .env con tus credenciales
+# Completar .env con credenciales reales
 ```
 
-### 5. Entrenar modelo
-```bash
-rasa train
-```
+### Entrenamiento y arranque
 
-### 6. Iniciar servidores
-
-**Terminal 1 - Action Server:**
 ```bash
+# Entrenar con nombre fijo (igual que en producción)
+rasa train --fixed-model-name model
+
+# Terminal 1 — Action Server
 rasa run actions
-```
 
-**Terminal 2 - Rasa Server:**
-```bash
+# Terminal 2 — Rasa Server
 rasa run --enable-api --cors "*"
 ```
 
----
+### Generar datos dinámicos desde APEX
 
-## 🐳 Docker (Recomendado)
 ```bash
-# Construir imagen
-docker build -t chatbot-ud .
-
-# Ejecutar contenedor
-docker run -p 5005:5005 --env-file .env chatbot-ud
+python fetch_training_data.py            # genera nlu_dynamic.yml + stories_dynamic.yml
+python fetch_training_data.py --dry-run  # vista previa sin escribir
 ```
 
 ---
 
-## 🌐 Deploy en Render
+## Docker
 
-### Opción A: Automático con Blueprint
-
-1. Conectar repositorio en [Render](https://dashboard.render.com/)
-2. Render detectará `render.yaml` automáticamente
-3. Configurar variables de entorno
-4. Deploy
-
-### Opción B: Manual
-
-Ver documentación completa en [DEPLOY.md](DEPLOY.md)
-
----
-
-## 📡 API Endpoints
-
-### REST Webhook
 ```bash
-POST https://tu-app.onrender.com/webhooks/rest/webhook
-Content-Type: application/json
+docker build -t chatbot-rasa:latest .
 
-{
-  "sender": "user_123",
-  "message": "hola"
-}
+docker run -d \
+  --name chatbot-rasa \
+  --restart unless-stopped \
+  -p 5005:5005 \
+  -p 5055:5055 \
+  --env-file .env \
+  chatbot-rasa:latest
+
+docker logs -f chatbot-rasa
 ```
 
-### Health Check
+> El contenedor puede tardar 3–8 minutos en responder a `/status` porque el arranque incluye `fetch → train`.
+
+---
+
+## Despliegue en producción (Oracle Cloud)
+
+El bot corre en **Oracle Cloud (Ubuntu 24, IP: 149.130.173.156)**.
+
+### Chatbot principal (Docker)
+
+El CI/CD en `.github/workflows/deploy-oracle.yml` se activa con cada push a `main`: conecta por SSH, hace `git pull`, reconstruye la imagen y reinicia el contenedor.
+
+Para redespliegue manual:
+
 ```bash
-GET https://tu-app.onrender.com/
+ssh -i "ssh-key-2025-10-27.key" ubuntu@149.130.173.156
+docker stop chatbot-rasa && docker rm chatbot-rasa
+docker build -t chatbot-rasa:latest .
+docker run -d --name chatbot-rasa --restart unless-stopped \
+  -p 5005:5005 -p 5055:5055 --env-file .env chatbot-rasa:latest
+docker logs -f chatbot-rasa
 ```
 
----
+### Adaptador WhatsApp (tmux + ngrok)
 
-## 🧪 Testing
+El adaptador Flask corre **fuera del contenedor** en una sesión tmux. El CI/CD **no lo redesplega** — hacerlo manualmente si cambia `whatsapp_adapter.py`:
+
 ```bash
-# Pruebas conversacionales
-rasa test
+# Servicios (sesión "rasa")
+tmux new -s rasa
+bash start-whatsapp-adapter.sh
+# Ctrl+b, d  → detach
 
-# Pruebas de NLU
-rasa test nlu
+# Túnel HTTPS (sesión "ngrok")
+tmux new -s ngrok
+ngrok http 5006
+# Ctrl+b, d  → detach
+```
 
-# Pruebas de stories
-rasa test core
+Si la URL de ngrok cambia, actualizar el webhook en el [Meta Developer Dashboard](https://developers.facebook.com/apps).
+
+### Verificación post-despliegue
+
+```bash
+curl http://localhost:5005/status
+curl http://localhost:5055/health
+curl http://localhost:5006/health
 ```
 
 ---
 
-## 📊 Estructura del Proyecto
-```
-chatbot-ud/
-├── actions/           # Custom actions
-├── data/              # Training data
-├── models/            # Trained models (no versionado)
-├── tests/             # Test stories
-├── config.yml         # NLU pipeline
-├── domain.yml         # Domain definition
-├── endpoints.yml      # External services
-├── credentials.yml    # Channel credentials
-└── requirements.txt   # Dependencies
+## Variables de entorno
+
+Ver [.env.example](.env.example) para la lista completa. Variables clave:
+
+| Variable | Descripción |
+|----------|-------------|
+| `APEX_API_URL` | URL base de Oracle APEX |
+| `APEX_SSL_VERIFY` | `true` en producción siempre |
+| `WHATSAPP_APP_SECRET` | Secreto Meta para verificación HMAC del webhook |
+| `WHATSAPP_ACCESS_TOKEN` | Token de acceso de la app Meta |
+| `BUSQUEDA_LOCAL_HABILITADA` | Habilita índice local FAQ (rapidfuzz + BM25) |
+| `FAQ_INDEX_REFRESH_MINUTES` | Frecuencia de refresh del índice (default 10) |
+
+---
+
+## Pruebas
+
+```bash
+rasa test core --stories tests/test_stories.yml
+rasa test nlu --nlu data/nlu.yml
+rasa shell nlu   # evaluar predicción de un intent
 ```
 
 ---
 
-## 🔐 Variables de Entorno
+## Estructura
 
-| Variable | Descripción | Requerido |
-|----------|-------------|-----------|
-| `APEX_API_URL` | URL base de Oracle APEX | ✅ |
-| `APEX_TIMEOUT` | Timeout de API (segundos) | ❌ |
-| `ENABLE_CACHE` | Habilitar cache (True/False) | ❌ |
-| `CACHE_TTL` | Tiempo de vida del cache (segundos) | ❌ |
+```
+chatbot-postgrados-ud/
+├── .github/workflows/     # CI/CD → deploy-oracle.yml
+├── actions/
+│   ├── actions.py         # 30+ acciones custom
+│   └── synonyms.yaml      # sinónimos de dominio (editable sin tocar código)
+├── data/
+│   ├── nlu.yml            # ejemplos estáticos de intents
+│   ├── rules.yml          # reglas duras
+│   ├── stories.yml        # flujos conversacionales
+│   ├── nlu_dynamic.yml    # generado por fetch_training_data.py
+│   └── stories_dynamic.yml
+├── tests/
+│   └── test_stories.yml
+├── config.yml             # pipeline NLU + políticas
+├── domain.yml             # intents, slots, responses, forms
+├── endpoints.yml
+├── fetch_training_data.py # genera datos desde APEX
+├── whatsapp_adapter.py    # bridge WhatsApp ↔ Rasa
+├── start.sh               # arranque en contenedor
+├── start-whatsapp-adapter.sh
+├── dockerfile
+├── requirements.txt
+└── .env.example
+```
 
 ---
 
-## 🐛 Troubleshooting
+## Solución de problemas frecuentes
 
-### Error: "Model not found"
+**"Model not found"**
 ```bash
 rasa train --fixed-model-name model
 ```
 
-### Error: "Action server not reachable"
-Verificar que `endpoints.yml` tenga la URL correcta del action server.
+**"Action server not reachable"**
+Verificar que `endpoints.yml` apunte a `http://localhost:5055/webhook`.
 
-### Error: "Spacy model not found"
+**"spaCy model not found"**
 ```bash
 python -m spacy download es_core_news_md
 ```
 
----
-
-## 📝 Licencia
-
-Este proyecto es propiedad de la Universidad Distrital Francisco José de Caldas.
+**"Redis no disponible"**
+Normal en desarrollo — el adaptador cae a sesiones en memoria automáticamente.
 
 ---
 
-## 👥 Autores
+## Licencia
 
--JORGE EDISON VELANDIA LOZANO
+Propiedad de la Universidad Distrital Francisco José de Caldas.
 
----
+## Autor
+
+Jorge Edison Velandia Lozano

@@ -6,6 +6,8 @@ import requests
 import os
 import json
 import logging
+import hmac
+import hashlib
 import time
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
@@ -18,6 +20,7 @@ load_dotenv()
 VERIFY_TOKEN      = os.getenv("WHATSAPP_VERIFY_TOKEN", "postgrados_ud_webhook_token_2025_")
 WHATSAPP_TOKEN    = os.getenv("WHATSAPP_ACCESS_TOKEN")
 WHATSAPP_PHONE_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
+WHATSAPP_APP_SECRET = os.getenv("WHATSAPP_APP_SECRET", "")
 RASA_URL          = os.getenv("RASA_URL", "http://localhost:5005/webhooks/rest/webhook")
 WHATSAPP_API_URL  = f"https://graph.facebook.com/v18.0/{WHATSAPP_PHONE_ID}/messages"
 
@@ -54,9 +57,9 @@ class SessionStore:
             )
             self.redis.ping()
             self.use_redis = True
-            logger.info("✅ Redis conectado - sesiones persistentes")
+            logger.info("Redis conectado - sesiones persistentes")
         except:
-            logger.warning("⚠️ Redis no disponible - usando memoria (las sesiones se perderán al reiniciar)")
+            logger.warning("Redis no disponible - usando memoria (las sesiones se perderán al reiniciar)")
     
     def get(self, phone_number):
         """Obtiene sesión"""
@@ -108,7 +111,7 @@ def registrar_actividad(phone_number: str):
         "warned": False,
         "phone": phone_number
     })
-    logger.info(f"🟢 Actividad registrada: {phone_number}")
+    logger.info(f"Actividad registrada: {phone_number}")
 
 def cerrar_sesion_en_rasa(phone_number: str):
     """Envía /reiniciar a Rasa para limpiar el estado"""
@@ -118,9 +121,9 @@ def cerrar_sesion_en_rasa(phone_number: str):
             json={"sender": phone_number, "message": "/reiniciar"},
             timeout=10
         )
-        logger.info(f"🔄 Sesión Rasa cerrada para {phone_number}")
+        logger.info(f"Sesión Rasa cerrada para {phone_number}")
     except Exception as e:
-        logger.error(f"❌ Error cerrando sesión Rasa: {e}")
+        logger.error(f"Error cerrando sesión Rasa: {e}")
 
 def verificar_inactividad():
     """Job que corre cada CHECK_INTERVAL segundos"""
@@ -133,17 +136,16 @@ def verificar_inactividad():
             segundos_inactivo = (ahora - last_activity).total_seconds()
             warned = datos.get("warned", False)
             
-            logger.debug(f"📊 {phone_number}: {segundos_inactivo:.0f}s inactivo")
+            logger.debug(f"{phone_number}: {segundos_inactivo:.0f}s inactivo")
             
             # CASO 1: Timeout - cerrar sesión
             if segundos_inactivo >= TIMEOUT_SECONDS:
-                logger.info(f"🔒 Timeout para {phone_number}")
+                logger.info(f"Timeout para {phone_number}")
                 
                 mensaje = (
-                    f"⏱️ *Sesión finalizada por inactividad*\n\n"
-                    f"Han pasado {TIMEOUT_SECONDS//60} minutos sin actividad.\n\n"
-                    f"¡Gracias por tu interés! 🎓\n"
-                    f"Escribe 'hola' para iniciar una nueva conversación."
+                    f"👋 ¡Hasta pronto!\n\n"
+                    f"Tu sesión se cerró por inactividad.\n\n"
+                    f"Cuando quieras, escribe *hola* y seguimos. 🎓"
                 )
                 
                 # Enviar mensaje de cierre
@@ -161,14 +163,13 @@ def verificar_inactividad():
                 minutos = segundos_restantes // 60
                 segundos = segundos_restantes % 60
                 
-                logger.info(f"⚠️ Advertencia para {phone_number}")
+                logger.info(f"Advertencia para {phone_number}")
                 
+                tiempo_str = f"{int(minutos)} min" if minutos >= 1 else f"{int(segundos)} seg"
                 mensaje = (
-                    f"⚠️ *Advertencia de inactividad*\n\n"
-                    f"Tu sesión se cerrará automáticamente en "
-                    f"**{minutos} minutos y {segundos} segundos** "
-                    f"si no hay actividad.\n\n"
-                    f"Escribe cualquier mensaje para continuar."
+                    f"¿Sigues ahí? 😊\n\n"
+                    f"Si no hay actividad en {tiempo_str} cierro la sesión.\n\n"
+                    f"Escribe cualquier cosa para continuar."
                 )
                 
                 send_whatsapp_message(phone_number, mensaje)
@@ -191,8 +192,37 @@ def verify_webhook():
         return challenge, 200
     return 'Forbidden', 403
 
+
+def _verificar_firma_hmac(body_crudo: bytes, firma_header: str) -> bool:
+    """Verifica X-Hub-Signature-256 usando HMAC-SHA256 sobre el body crudo.
+    Ref: https://developers.facebook.com/docs/graph-api/webhooks/getting-started#verification-requests
+    """
+    if not firma_header or not firma_header.startswith("sha256="):
+        return False
+    firma_recibida = firma_header[len("sha256="):]
+    firma_calculada = hmac.new(
+        WHATSAPP_APP_SECRET.encode("utf-8"),
+        body_crudo,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(firma_calculada, firma_recibida)
+
+
 @app.route('/webhooks/whatsapp/webhook', methods=['POST'])
 def receive_message():
+    # Verificar firma HMAC antes de procesar el payload
+    if WHATSAPP_APP_SECRET:
+        body_crudo = request.get_data()
+        firma_header = request.headers.get("X-Hub-Signature-256", "")
+        if not firma_header:
+            logger.warning("Peticion POST sin X-Hub-Signature-256 rechazada")
+            return jsonify({"error": "missing signature"}), 403
+        if not _verificar_firma_hmac(body_crudo, firma_header):
+            logger.warning("Firma HMAC invalida en peticion POST al webhook")
+            return jsonify({"error": "invalid signature"}), 403
+    else:
+        logger.warning("WHATSAPP_APP_SECRET no configurado — verificacion HMAC deshabilitada")
+
     try:
         data = request.get_json()
         
@@ -206,7 +236,7 @@ def receive_message():
                         from_number = message['from']
                         text = message['text']['body']
                         
-                        logger.info(f"📱 De {from_number}: {text}")
+                        logger.info(f"De {from_number}: {text}")
                         
                         # REGISTRAR ACTIVIDAD (esto evita el timeout)
                         registrar_actividad(from_number)
@@ -266,10 +296,10 @@ def send_whatsapp_message(to_number, text):
         )
         
         if response.status_code == 200:
-            logger.info(f"✅ Mensaje enviado a {to_number}")
+            logger.info(f"Mensaje enviado a {to_number}")
             return True
         else:
-            logger.error(f"❌ Error {response.status_code}: {response.text}")
+            logger.error(f"Error {response.status_code}: {response.text}")
             return False
     
     except Exception as e:
@@ -303,7 +333,7 @@ if __name__ == '__main__':
     port = int(os.getenv('WHATSAPP_ADAPTER_PORT', 5006))
     
     logger.info("=" * 50)
-    logger.info("🚀 Iniciando WhatsApp Adapter (con timeout gestionado)")
+    logger.info("Iniciando WhatsApp Adapter (con timeout gestionado)")
     logger.info(f"📍 Puerto: {port}")
     logger.info(f"🤖 Rasa URL: {RASA_URL}")
     logger.info(f"⏱️  Warning: {WARNING_SECONDS}s | Timeout: {TIMEOUT_SECONDS}s")

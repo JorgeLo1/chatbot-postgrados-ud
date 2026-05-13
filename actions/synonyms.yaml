@@ -1,0 +1,92 @@
+# Diccionario de sinónimos de dominio para expansión de queries FAQ.
+# Mantenido por el equipo de contenido — editar sin tocar código.
+# Formato: término_canónico: [lista de sinónimos]
+# El término canónico se usa como query de reemplazo hacia Oracle.
+
+costo:
+  - precio
+  - valor
+  - plata
+  - cuanto
+  - matricula
+  - matrícula
+  - tarifa
+  - vale
+  - inversion
+  - inversión
+  - smmlv
+  - pago
+  - cuota
+
+fecha:
+  - cuando
+  - plazo
+  - inscripcion
+  - inscripción
+  - calendario
+  - cronograma
+  - inicio
+  - apertura
+  - cierre
+
+modalidad:
+  - virtual
+  - presencial
+  - online
+  - distancia
+  - horario
+  - hibrido
+  - híbrido
+  - semipresencial
+
+requisito:
+  - documento
+  - papel
+  - necesito
+  - exigen
+  - piden
+  - admision
+  - admisión
+  - hoja vida
+  - certificado
+  - titulo
+  - título
+
+inscribir:
+  - registrar
+  - matricular
+  - aplicar
+  - postular
+  - como ingreso
+  - como me inscribo
+
+duracion:
+  - duración
+  - dura
+  - semestre
+  - año
+  - credito
+  - crédito
+  - tiempo
+
+beca:
+  - descuento
+  - ayuda
+  - apoyo
+  - subsidio
+  - financiacion
+  - financiación
+
+perfil:
+  - dirigido
+  - quien puede
+  - profesionales
+  - carreras
+  - egresado
+
+plan:
+  - pensum
+  - materias
+  - asignaturas
+  - contenido
+  - syllabus

@@ -12,20 +12,43 @@ from rasa_sdk.events import (
 import requests
 import urllib3
 import os
+import re
 import logging
+import unicodedata
+import hashlib
+import traceback
+import yaml
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-import re
+from pathlib import Path
 
 load_dotenv()
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+<<<<<<< Updated upstream
+=======
+# Configuración general
+>>>>>>> Stashed changes
 APEX_API_BASE_URL = os.getenv("APEX_API_URL", "https://oracleapex.com/ords/udchatbot/chatbot")
 APEX_TIMEOUT = int(os.getenv("APEX_TIMEOUT", "60"))
 ENABLE_CACHE = os.getenv("ENABLE_CACHE", "True").lower() == "true"
 CACHE_TTL = int(os.getenv("CACHE_TTL", "3600"))
+<<<<<<< Updated upstream
 APEX_SSL_VERIFY = os.getenv("APEX_SSL_VERIFY", "false").lower() != "false"
+=======
+# APEX_SSL_VERIFY default true — nunca false en producción
+APEX_SSL_VERIFY = os.getenv("APEX_SSL_VERIFY", "true").lower() != "false"
+
+# Feature flags Fase A
+BUSQUEDA_LOCAL_HABILITADA = os.getenv("BUSQUEDA_LOCAL_HABILITADA", "true").lower() == "true"
+FAQ_INDEX_REFRESH_MINUTES = int(os.getenv("FAQ_INDEX_REFRESH_MINUTES", "10"))
+
+# Umbrales de alerta (Fase A.7)
+FAQ_HIT_RATE_ALERT_THRESHOLD = float(os.getenv("FAQ_HIT_RATE_ALERT_THRESHOLD", "0.70"))
+FAQ_FALLBACK_RATE_THRESHOLD = float(os.getenv("FAQ_FALLBACK_RATE_THRESHOLD", "0.20"))
+FAQ_P95_MS_THRESHOLD = int(os.getenv("FAQ_P95_MS_THRESHOLD", "3000"))
+>>>>>>> Stashed changes
 
 logging.basicConfig(
     level=logging.INFO,
@@ -55,7 +78,7 @@ def get_from_cache(key: str) -> Optional[Any]:
     if key in _cache:
         value, timestamp = _cache[key]
         if datetime.now() - timestamp < timedelta(seconds=CACHE_TTL):
-            logger.info(f"✅ Cache hit para: {key}")
+            logger.info(f"Cache hit para: {key}")
             return value
         else:
             del _cache[key]
@@ -66,13 +89,13 @@ def set_in_cache(key: str, value: Any):
     """Guarda un valor en el cache"""
     if ENABLE_CACHE:
         _cache[key] = (value, datetime.now())
-        logger.info(f"💾 Valor guardado en cache: {key}")
+        logger.info(f"Valor guardado en cache: {key}")
 
 def clear_cache():
     """Limpia todo el cache"""
     global _cache
     _cache = {}
-    logger.info("🗑️ Cache limpiado")
+    logger.info("Cache limpiado")
 
 def make_api_request(
     method: str,
@@ -85,11 +108,11 @@ def make_api_request(
     url = f"{APEX_API_BASE_URL}/{endpoint_limpio}"
     
     try:
-        logger.info(f"🌐 API Request: {method} {url}")
+        logger.info(f"API Request: {method} {url}")
         if params:
-            logger.info(f"📋 Params: {params}")
+            logger.info(f"Params: {params}")
         if data:
-            logger.info(f"📋 Data: {data}")
+            logger.info(f"Data: {data}")
         
         if method.upper() == "GET":
             response = _session.get(
@@ -106,28 +129,28 @@ def make_api_request(
                 verify=APEX_SSL_VERIFY
             )
         else:
-            logger.error(f"❌ Método HTTP no soportado: {method}")
+            logger.error(f"Método HTTP no soportado: {method}")
             return None
         
-        logger.info(f"📥 Response Status: {response.status_code}")
-        logger.info(f"📦 Content-Type: {response.headers.get('Content-Type', 'N/A')}")
+        logger.info(f"Response Status: {response.status_code}")
+        logger.info(f"Content-Type: {response.headers.get('Content-Type', 'N/A')}")
         
         if response.status_code != 200:
-            logger.error(f"❌ Error HTTP {response.status_code}")
+            logger.error(f"Error HTTP {response.status_code}")
             logger.error(f"Response: {response.text[:300]}")
             return None
         
         try:
             json_data = response.json()
         except ValueError as e:
-            logger.error(f"❌ Error parseando JSON: {e}")
+            logger.error(f"Error parseando JSON: {e}")
             logger.error(f"Raw content: {response.text[:300]}")
             return None
         
         # MANEJAR ESTRUCTURA DE ORACLE APEX
         if isinstance(json_data, dict):
             if json_data.get("status") == "error":
-                logger.error(f"❌ Error del servidor APEX: {json_data.get('message')}")
+                logger.error(f"Error del servidor APEX: {json_data.get('message')}")
                 return None
             
             if json_data.get("status") == "success":
@@ -136,27 +159,26 @@ def make_api_request(
                 # CRÍTICO: Manejar array anidado [[...]]
                 if isinstance(datos, list) and len(datos) > 0:
                     if isinstance(datos[0], list):
-                        logger.warning("⚠️ Array anidado detectado. Corrigiendo...")
+                        logger.warning("Array anidado detectado. Corrigiendo...")
                         datos = datos[0]
                 
-                logger.info(f"✅ Respuesta exitosa. Registros: {len(datos) if isinstance(datos, list) else 'N/A'}")
+                logger.info(f"Respuesta exitosa. Registros: {len(datos) if isinstance(datos, list) else 'N/A'}")
                 return {"status": "success", "data": datos}
         
-        logger.warning(f"⚠️ Estructura JSON inesperada: {type(json_data)}")
+        logger.warning(f"Estructura JSON inesperada: {type(json_data)}")
         return json_data
     
     except requests.exceptions.Timeout:
-        logger.error(f"⏱️ Timeout en petición a {url}")
+        logger.error(f"Timeout en petición a {url}")
         return None
     except requests.exceptions.ConnectionError:
-        logger.error(f"🔌 Error de conexión a {url}")
+        logger.error(f"Error de conexión a {url}")
         return None
     except requests.exceptions.RequestException as e:
-        logger.error(f"❌ Error en petición: {str(e)}")
+        logger.error(f"Error en petición: {str(e)}")
         return None
     except Exception as e:
-        logger.error(f"💥 Error inesperado: {str(e)}")
-        import traceback
+        logger.error(f"Error inesperado en API request: {str(e)}")
         logger.error(traceback.format_exc())
         return None
 
@@ -176,7 +198,7 @@ def registrar_pregunta_sin_respuesta(
         data = {
             'id_postgrado':    int(postgrado_id) if postgrado_id else None,
             'pregunta_usuario': pregunta.strip()[:1000],  # nombre real del campo en la tabla
-            'usuario_telefono': usuario_telefono[:15] if usuario_telefono else None  # VARCHAR2(15) en PREGUNTAS_SIN_RESPUESTA
+            'usuario_telefono': usuario_telefono[:50] if usuario_telefono else None  # VARCHAR2(50) en PREGUNTAS_SIN_RESPUESTA
             # ESTADO='PENDIENTE' y FRECUENCIA los gestiona la API/BD
         }
         
@@ -195,8 +217,7 @@ def registrar_pregunta_sin_respuesta(
         return False
 
 def normalizar_texto(texto: str) -> str:
-    """Normaliza texto para comparaciones"""
-    import unicodedata
+    """Normaliza texto para comparaciones: minúsculas, sin tildes."""
     texto = texto.lower().strip()
     texto = ''.join(
         c for c in unicodedata.normalize('NFD', texto)
@@ -204,6 +225,264 @@ def normalizar_texto(texto: str) -> str:
     )
     return texto
 
+<<<<<<< Updated upstream
+=======
+
+# ============================================================
+# INFRAESTRUCTURA FASE A: normalización, sinónimos, spaCy, índice FAQ
+# ============================================================
+
+# --- A.3: carga de spaCy ---
+try:
+    import spacy as _spacy
+    _nlp = _spacy.load("es_core_news_md")
+    SPACY_DISPONIBLE = True
+    logger.info("spaCy es_core_news_md cargado en action server")
+except OSError:
+    logger.warning("spaCy es_core_news_md no disponible en action server — búsqueda usa fallback regex")
+    _nlp = None
+    SPACY_DISPONIBLE = False
+
+# --- A.2: imports condicionales de librerías de búsqueda local ---
+try:
+    from rapidfuzz import fuzz as _fuzz
+    RAPIDFUZZ_DISPONIBLE = True
+except ImportError:
+    _fuzz = None
+    RAPIDFUZZ_DISPONIBLE = False
+    logger.warning("rapidfuzz no instalado — búsqueda local deshabilitada")
+
+try:
+    from rank_bm25 import BM25Okapi as _BM25Okapi
+    BM25_DISPONIBLE = True
+except ImportError:
+    _BM25Okapi = None
+    BM25_DISPONIBLE = False
+    logger.warning("rank-bm25 no instalado — BM25 deshabilitado")
+
+# --- A.2: carga de sinónimos desde YAML ---
+_SINONIMOS: Dict[str, List[str]] = {}
+_SINONIMOS_PATH = Path(__file__).parent / "synonyms.yaml"
+try:
+    with open(_SINONIMOS_PATH, "r", encoding="utf-8") as _f:
+        _SINONIMOS = yaml.safe_load(_f) or {}
+    logger.info(f"Sinónimos cargados: {len(_SINONIMOS)} grupos desde {_SINONIMOS_PATH}")
+except FileNotFoundError:
+    logger.warning(f"synonyms.yaml no encontrado en {_SINONIMOS_PATH}")
+
+# --- A.2: correcciones ortográficas hardcodeadas (espejo del PL/SQL) ---
+_CORRECCIONES_ORTOGRAFICAS = {
+    "BIOINGIENERIA": "BIOINGENIERIA",
+    "BIOINGENIERIA": "BIOINGENIERIA",
+    "TELEMATICA": "TELEMATICA",
+    "AMBIENTALE": "AMBIENTAL",
+    "INFORMATICA": "INFORMATICA",
+}
+
+# --- A.2: abreviaturas de dominio (espejo del PL/SQL) ---
+_ABREVIATURAS = {
+    " TI ": " TECNOLOGIA INFORMACION ",
+    " SST ": " SEGURIDAD SALUD TRABAJO ",
+    " SIG ": " SISTEMAS INTEGRADOS GESTION ",
+    " HSST ": " HIGIENE SEGURIDAD SALUD TRABAJO ",
+}
+
+# --- A.2: stopwords (espejo del PL/SQL) ---
+_STOPWORDS = {
+    "QUE", "EL", "LA", "DE", "COMO", "PARA", "ES", "EN", "UN", "UNA",
+    "LOS", "LAS", "DEL", "AL", "POR", "CON", "SU", "SE", "ME", "TE",
+    "NOS", "MAS", "MÁS", "SON", "HAY", "LEY", "CUAL", "SER", "ESTE",
+    "ESTA", "TENGO", "TENEMOS", "PUEDE", "PUEDEN", "FAVOR", "DECIR",
+    "VER", "DIME", "DAME", "QUISIERA", "NECESITO", "QUIERO",
+}
+
+# --- A.4: índice FAQ en memoria ---
+_FAQ_INDEX: Dict[str, List[Dict]] = {}   # postgrado_id → lista de FAQs normalizadas
+_BM25_INDEX: Dict[str, Any] = {}          # postgrado_id → instancia BM25Okapi
+_FAQ_INDEX_ULTIMO_REFRESH: Optional[datetime] = None
+
+# --- A.4: negative cache (NO_ENCONTRADO en los últimos N minutos) ---
+_NEGATIVE_CACHE: Dict[str, datetime] = {}
+_NEGATIVE_CACHE_TTL_SEGUNDOS = 300  # 5 minutos
+
+
+def normalizar_query(texto: str) -> str:
+    """Replica los 7 pasos de normalización del PL/SQL buscar_faq.
+    Resultado en MAYÚSCULAS para compatibilidad con la lógica Oracle.
+    """
+    if not texto:
+        return ""
+    t = texto.upper().strip()
+    # Paso 1: acentos → ASCII (TRANSLATE Oracle)
+    traducciones = str.maketrans("ÁÉÍÓÚÜÑ", "AEIOUUN")
+    t = t.translate(traducciones)
+    # Paso 2: eliminar puntuación
+    t = re.sub(r'[?¿!¡.,;:()\"\'“”‘’]', ' ', t)
+    # Paso 3: correcciones ortográficas
+    for erronea, correcta in _CORRECCIONES_ORTOGRAFICAS.items():
+        t = t.replace(erronea, correcta)
+    # Paso 4: expandir abreviaturas
+    t = f" {t} "
+    for abrev, expansion in _ABREVIATURAS.items():
+        t = t.replace(abrev, expansion)
+    t = t.strip()
+    # Paso 5: eliminar stopwords
+    palabras = [p for p in t.split() if p not in _STOPWORDS]
+    t = ' '.join(palabras)
+    # Paso 6: limpiar espacios múltiples
+    t = re.sub(r'\s+', ' ', t).strip()
+    return t
+
+
+def _singular_es(texto: str) -> str:
+    """Singularización española simple via regex para cerrar el gap de plurales."""
+    resultado = []
+    for p in texto.split():
+        if len(p) > 4 and p.endswith('ES') and p[-3] in 'LNSDZ':
+            resultado.append(p[:-2])
+        elif len(p) > 3 and p.endswith('S') and not p.endswith('SS'):
+            resultado.append(p[:-1])
+        else:
+            resultado.append(p)
+    return ' '.join(resultado)
+
+
+def _expandir_sinonimos(texto: str) -> str:
+    """Expande la primera keyword que matchee con algún sinónimo del YAML."""
+    texto_lower = texto.lower()
+    for canonico, sinonimos in _SINONIMOS.items():
+        for sin in sinonimos:
+            if sin in texto_lower:
+                return texto_lower.replace(sin, canonico)
+    return texto_lower
+
+
+def _cache_key_faq(postgrado_id: str, texto: str) -> str:
+    """Cache key normalizado con SHA-256 (16 chars) para queries FAQ."""
+    norm = normalizar_query(texto)
+    return f"faq_{postgrado_id}_{hashlib.sha256(norm.encode()).hexdigest()[:16]}"
+
+
+def lematizar(texto: str) -> str:
+    """Lematiza usando spaCy. Fallback a singularización regex si no está disponible."""
+    if not SPACY_DISPONIBLE or _nlp is None:
+        return _singular_es(normalizar_query(texto))
+    doc = _nlp(texto)
+    return " ".join(t.lemma_.upper() for t in doc if not t.is_stop and not t.is_punct)
+
+
+def extraer_terminos_clave(texto: str) -> str:
+    """Extrae sustantivos, verbos y nombres propios (POS tagging) con spaCy."""
+    if not SPACY_DISPONIBLE or _nlp is None:
+        return normalizar_query(texto)
+    doc = _nlp(texto)
+    return " ".join(t.lemma_.upper() for t in doc if t.pos_ in ("NOUN", "VERB", "PROPN"))
+
+
+def cargar_faq_index() -> None:
+    """Pre-carga todas las FAQs activas desde GET /faq en _FAQ_INDEX y _BM25_INDEX."""
+    global _FAQ_INDEX_ULTIMO_REFRESH
+    try:
+        resp = make_api_request("GET", "faq")
+        if not resp or resp.get("status") != "success":
+            logger.warning("cargar_faq_index: no se pudo obtener FAQs desde API")
+            return
+        _FAQ_INDEX.clear()
+        _BM25_INDEX.clear()
+        for f in resp.get("data", []):
+            pid = str(f.get("ID_POSTGRADO", ""))
+            if not pid:
+                continue
+            _FAQ_INDEX.setdefault(pid, []).append({
+                "id_faq":        f.get("ID_FAQ"),
+                "pregunta_norm": normalizar_query(f.get("PREGUNTA", "")),
+                "respuesta":     f.get("RESPUESTA", ""),
+                "veces":         f.get("VECES_CONSULTADA", 0),
+            })
+        if BM25_DISPONIBLE and _BM25Okapi is not None:
+            for pid, faqs in _FAQ_INDEX.items():
+                corpus = [f["pregunta_norm"].split() for f in faqs if f["pregunta_norm"]]
+                if corpus:
+                    _BM25_INDEX[pid] = _BM25Okapi(corpus)
+        total = sum(len(v) for v in _FAQ_INDEX.values())
+        _FAQ_INDEX_ULTIMO_REFRESH = datetime.now()
+        logger.info(
+            "Índice FAQ cargado",
+            extra={"total_faqs": total, "programas": len(_FAQ_INDEX)}
+        )
+    except Exception as e:
+        logger.error(f"Error cargando índice FAQ: {e}")
+
+
+def _buscar_en_indice_local(postgrado_id: str, query_norm: str) -> Optional[str]:
+    """Búsqueda local con rapidfuzz + BM25. Retorna respuesta o None si no supera umbral."""
+    if not BUSQUEDA_LOCAL_HABILITADA or not RAPIDFUZZ_DISPONIBLE or _fuzz is None:
+        return None
+    faqs = _FAQ_INDEX.get(str(postgrado_id), [])
+    if not faqs:
+        return None
+
+    scores_fuzz = [
+        (faq, _fuzz.token_set_ratio(query_norm, faq["pregunta_norm"]))
+        for faq in faqs
+    ]
+
+    if BM25_DISPONIBLE and postgrado_id in _BM25_INDEX:
+        bm25_scores = _BM25_INDEX[postgrado_id].get_scores(query_norm.split())
+        max_bm25 = max(bm25_scores) if any(s > 0 for s in bm25_scores) else 1
+        scores_finales = []
+        for idx, (faq, sf) in enumerate(scores_fuzz):
+            sb_norm = (bm25_scores[idx] / max_bm25) * 100 if max_bm25 > 0 else 0
+            score = 0.6 * sf + 0.4 * sb_norm
+            scores_finales.append((faq, score))
+    else:
+        scores_finales = scores_fuzz
+
+    if not scores_finales:
+        return None
+
+    mejor_faq, mejor_score = max(scores_finales, key=lambda x: (x[1], x[0]["veces"]))
+
+    if mejor_score >= 80:
+        return mejor_faq["respuesta"]
+    return None  # score 60-79 o <60 → delegar a Oracle
+
+
+def inferir_postgrado(tracker: Tracker) -> Optional[str]:
+    """Infiere el postgrado_id desde el contexto conversacional cuando no hay slot activo."""
+    pid = tracker.get_slot("postgrado_id")
+    if pid:
+        return pid
+    if not SPACY_DISPONIBLE or _nlp is None:
+        return None
+    for evento in list(tracker.events)[-10:][::-1]:
+        if evento.get("event") == "user":
+            texto = evento.get("text", "")
+            if not texto:
+                continue
+            doc = _nlp(texto)
+            candidatos = [ent.text for ent in doc.ents if ent.label_ in ("ORG", "MISC", "PER")]
+            for candidato in candidatos:
+                cand_norm = normalizar_texto(candidato)
+                for pid_c, faqs in _FAQ_INDEX.items():
+                    if not faqs:
+                        continue
+                    pass
+    return None
+
+
+def enviar_alerta_metrica(nombre: str, valor: float, umbral: float, unidad: str = "") -> None:
+    """Stub de alerta de métricas FAQ. Implementación real en Fase 5 (Prometheus).
+    Por ahora registra en WARNING para visibilidad operativa.
+    """
+    logger.warning(
+        "Alerta métrica FAQ",
+        extra={"metrica": nombre, "valor": valor, "umbral": umbral, "unidad": unidad}
+    )
+
+
+# ============================================
+>>>>>>> Stashed changes
 # ACTION: Saludo Inicial 
 class ActionSaludoMejorado(Action):
     """Saludo inicial que pregunta por el programa de interés"""
@@ -218,7 +497,13 @@ class ActionSaludoMejorado(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
+<<<<<<< Updated upstream
         logger.info("👋 Ejecutando action_saludo_mejorado")
+=======
+        logger.info("Ejecutando action_saludo_mejorado")
+        
+        # --- MENSAJE 1: El Saludo ---
+>>>>>>> Stashed changes
         dispatcher.utter_message(text=(
             "¡Bienvenido! 🎓\n"
             "Soy tu asistente virtual de Postgrados de la Facultad de Ingeniería."
@@ -245,7 +530,7 @@ class ActionListarPostgrados(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("🚀 Ejecutando action_listar_postgrados")
+        logger.info("Ejecutando action_listar_postgrados")
         
         cache_key = "postgrados_list"
         postgrados = get_from_cache(cache_key)
@@ -258,10 +543,10 @@ class ActionListarPostgrados(Action):
                 
                 if postgrados:
                     set_in_cache(cache_key, postgrados)
-                    logger.info(f"✅ {len(postgrados)} postgrados obtenidos y cacheados")
+                    logger.info(f"{len(postgrados)} postgrados obtenidos y cacheados")
             
             if not postgrados:
-                logger.warning("⚠️ No se obtuvieron postgrados de la API")
+                logger.warning("No se obtuvieron postgrados de la API")
                 dispatcher.utter_message(
                     text="Lo siento, no pude obtener la lista de programas en este momento. Por favor, intenta más tarde."
                 )
@@ -326,7 +611,7 @@ class ActionSeleccionarPostgrado(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("🔍 Ejecutando action_seleccionar_postgrado")
+        logger.info("Ejecutando action_seleccionar_postgrado")
         
         postgrado_nombre = next(tracker.get_latest_entity_values("postgrado_nombre"), None)
         
@@ -353,7 +638,6 @@ class ActionSeleccionarPostgrado(Action):
         
         texto_busqueda = str(postgrado_nombre).strip().lower()
     
-        import re
         numero_match = re.search(r'\b(\d+)\b', texto_busqueda)
         
         if numero_match:
@@ -502,11 +786,10 @@ class ActionSeleccionarNumero(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("🔢 Ejecutando action_seleccionar_numero")
+        logger.info("Ejecutando action_seleccionar_numero")
         
         mensaje = tracker.latest_message.get("text", "")
         
-        import re
         numero_match = re.search(r'\b(\d+)\b', mensaje)
         
         if not numero_match:
@@ -567,6 +850,7 @@ class ActionSeleccionarNumero(Action):
             SlotSet("ultima_lista_postgrados", None)
         ]
 
+<<<<<<< Updated upstream
 # ACTION: Buscar FAQ 
 class ActionBuscarFAQ(Action):
 
@@ -618,6 +902,29 @@ class ActionBuscarFAQ(Action):
             "queries": ["financiacion", "cuotas", "opciones pago"]
         }
     }
+=======
+
+# ============================================
+# ACTION: Buscar FAQ (unificada — reemplaza ActionBuscarFAQ y ActionBuscarFaqLibre)
+# ============================================
+
+class ActionBuscarFaq(Action):
+    """Búsqueda FAQ unificada con índice local, normalización Oracle y pipeline spaCy.
+
+    Implementa Fase A (A.1–A.6) del plan de mejoramiento.
+    Ambos nombres antiguos (action_buscar_faq, action_buscar_faq_libre) siguen
+    registrados en domain.yml; las clases alias al final de esta sección los cubren.
+    """
+
+    # Palabras clave universales que indican pregunta aplicable a todos los programas
+    _KEYWORDS_UNIVERSALES = {
+        "becas", "beca", "convocatoria", "requisitos generales",
+        "inscripcion general", "admision general"
+    }
+
+    def name(self) -> Text:
+        return "action_buscar_faq"
+>>>>>>> Stashed changes
 
     def run(
         self,
@@ -625,17 +932,28 @@ class ActionBuscarFAQ(Action):
         tracker: Tracker,
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
-        
-        logger.info("❓ Ejecutando action_buscar_faq (MEJORADA)")
-        
+        inicio = datetime.now()
+        sender_id = tracker.sender_id[:20]
+        intent = tracker.latest_message.get("intent", {}).get("name", "")
+        confidence = tracker.latest_message.get("intent", {}).get("confidence", 0.0)
+        user_message = tracker.latest_message.get("text", "").strip()
+
         postgrado_id = tracker.get_slot("postgrado_id")
         postgrado_nombre = tracker.get_slot("postgrado_nombre") or "el programa"
-        
+
+        # A.6: intentar inferir programa si no hay slot
         if not postgrado_id:
+            postgrado_id = inferir_postgrado(tracker)
+
+        if not postgrado_id:
+            # A.6: detectar preguntas universales antes de pedir contexto
+            if self._es_pregunta_universal(user_message):
+                return self._responder_faq_global(dispatcher, user_message, sender_id, inicio)
             dispatcher.utter_message(
                 text="Por favor, primero dime sobre qué programa necesitas información."
             )
             return [FollowupAction("action_listar_postgrados")]
+<<<<<<< Updated upstream
         
         # Obtener intent y mensaje original
         intent = tracker.latest_message.get("intent", {}).get("name")
@@ -718,11 +1036,72 @@ class ActionBuscarFAQ(Action):
         # No encontrado
         logger.warning(f"❌ No se encontró respuesta")
         if postgrado_id:
+=======
+
+        if len(user_message) < 3:
+            dispatcher.utter_message(text="Tu pregunta es muy corta. ¿Podrías ser más específico?")
+            return []
+
+        # A.1: log de inicio de búsqueda
+        logger.info(
+            "Búsqueda FAQ iniciada",
+            extra={
+                "sender_id": sender_id,
+                "postgrado_id": postgrado_id,
+                "intent": intent,
+                "confidence": round(confidence, 3),
+                "query_original": user_message,
+            }
+        )
+
+        # Negative cache: si ya intentamos esta query hace <5 min y no encontramos nada
+        nc_key = _cache_key_faq(postgrado_id, user_message)
+        if nc_key in _NEGATIVE_CACHE:
+            tiempo_neg = (datetime.now() - _NEGATIVE_CACHE[nc_key]).total_seconds()
+            if tiempo_neg < _NEGATIVE_CACHE_TTL_SEGUNDOS:
+                logger.info(
+                    "Negative cache hit — omitiendo búsqueda",
+                    extra={"sender_id": sender_id, "cache_key": nc_key}
+                )
+                self._enviar_sugerencias(dispatcher, postgrado_nombre, user_message)
+                return []
+
+        # Pipeline de queries: máximo 2 llamadas a Oracle
+        query_1 = normalizar_query(user_message)
+        query_2 = _singular_es(_expandir_sinonimos(query_1)) if query_1 else ""
+
+        respuesta, fuente, n_intentos = self._buscar(
+            postgrado_id, user_message, query_1, query_2, sender_id
+        )
+
+        duracion_ms = int((datetime.now() - inicio).total_seconds() * 1000)
+        encontrada = respuesta is not None
+
+        # A.1: log de resultado
+        logger.info(
+            "Búsqueda FAQ completada",
+            extra={
+                "sender_id": sender_id,
+                "postgrado_id": postgrado_id,
+                "intent": intent,
+                "n_intentos": n_intentos,
+                "respuesta_encontrada": encontrada,
+                "tipo_respuesta": "valida" if encontrada else "no_encontrada",
+                "duracion_ms_total": duracion_ms,
+                "fuente": fuente,
+            }
+        )
+
+        if not encontrada:
+            # Negative cache + registro en PREGUNTAS_SIN_RESPUESTA
+            _NEGATIVE_CACHE[nc_key] = datetime.now()
+>>>>>>> Stashed changes
             registrar_pregunta_sin_respuesta(
                 postgrado_id=postgrado_id,
                 pregunta=user_message,
-                usuario_telefono=tracker.sender_id
+                usuario_telefono=sender_id
             )
+<<<<<<< Updated upstream
         mensaje = self._mensaje_no_encontrado(intent, postgrado_nombre, user_message)
         dispatcher.utter_message(text=mensaje)
         
@@ -777,8 +1156,148 @@ class ActionBuscarFAQ(Action):
                 respuesta = respuesta[:corte + 1]
             else:
                 respuesta = respuesta[:WHATSAPP_MAX]
+=======
+            self._enviar_sugerencias(dispatcher, postgrado_nombre, user_message)
+            return []
+
+        # A.4: truncar CLOB (límite WhatsApp 4096 chars)
+        WHATSAPP_MAX = 3800
+        if len(respuesta) > WHATSAPP_MAX:
+            corte = max(
+                respuesta.rfind(". ", 0, WHATSAPP_MAX),
+                respuesta.rfind("\n", 0, WHATSAPP_MAX)
+            )
+            respuesta = respuesta[:corte + 1] if corte > WHATSAPP_MAX // 2 else respuesta[:WHATSAPP_MAX]
+>>>>>>> Stashed changes
             respuesta += "\n\n_[Para más detalles, escríbenos al correo del programa.]_"
 
+        mensaje = self._formatear_respuesta(respuesta, intent, postgrado_nombre)
+        dispatcher.utter_message(text=mensaje)
+        return [SlotSet("ultima_respuesta", respuesta)]
+
+    def _buscar(
+        self,
+        postgrado_id: str,
+        user_message: str,
+        query_norm: str,
+        query_2: str,
+        sender_id: str,
+    ):
+        """Ejecuta el pipeline de búsqueda: cache → índice local → Oracle (máx 2 calls).
+        Retorna (respuesta, fuente, n_intentos).
+        """
+        # 1. Cache positivo
+        ck = _cache_key_faq(postgrado_id, user_message)
+        cached = get_from_cache(ck)
+        if cached:
+            return cached, "cache", 0
+
+        # 2. Índice local
+        if BUSQUEDA_LOCAL_HABILITADA and query_norm:
+            resp_local = _buscar_en_indice_local(postgrado_id, query_norm)
+            if resp_local:
+                set_in_cache(ck, resp_local)
+                return resp_local, "local_faq", 0
+
+        # 3. Oracle — intento 1: query normalizada
+        n = 0
+        if query_norm:
+            n += 1
+            t_api = datetime.now()
+            resp = make_api_request("GET", f"faq/buscar/{postgrado_id}", params={"pregunta": query_norm})
+            ms_api = int((datetime.now() - t_api).total_seconds() * 1000)
+            logger.info(
+                "Llamada API Oracle FAQ",
+                extra={"sender_id": sender_id, "intento": n, "query": query_norm, "duracion_ms_api": ms_api}
+            )
+            resultado = self._extraer_respuesta_valida(resp)
+            if resultado:
+                set_in_cache(ck, resultado)
+                return resultado, "oracle", n
+
+        # 4. Oracle — intento 2: query con singularización + sinónimos
+        if query_2 and query_2 != query_norm:
+            n += 1
+            t_api = datetime.now()
+            resp2 = make_api_request("GET", f"faq/buscar/{postgrado_id}", params={"pregunta": query_2})
+            ms_api = int((datetime.now() - t_api).total_seconds() * 1000)
+            logger.info(
+                "Llamada API Oracle FAQ",
+                extra={"sender_id": sender_id, "intento": n, "query": query_2, "duracion_ms_api": ms_api}
+            )
+            resultado2 = self._extraer_respuesta_valida(resp2)
+            if resultado2:
+                set_in_cache(ck, resultado2)
+                return resultado2, "oracle", n
+
+        return None, "fallback", n
+
+    def _extraer_respuesta_valida(self, response: Optional[Dict]) -> Optional[str]:
+        """Extrae y valida la respuesta del dict de make_api_request."""
+        if not response or not isinstance(response, dict):
+            return None
+        data = response.get("data", {})
+        if isinstance(data, list):
+            data = data[0] if data else {}
+        if isinstance(data, dict):
+            respuesta = data.get("respuesta") or data.get("RESPUESTA") or ""
+        elif isinstance(data, str):
+            respuesta = data.strip()
+        else:
+            return None
+        respuesta = str(respuesta).strip()
+        if len(respuesta) < 15:
+            return None
+        resp_lower = respuesta.lower()
+        # Indicadores de error o no-encontrado
+        errores = [
+            'error interno', 'código:', 'sqlcode', 'ora-', 'exception',
+            'no encontré', 'intenta reformular', 'no hay preguntas frecuentes',
+            'no tengo información', 'no dispongo'
+        ]
+        return None if any(e in resp_lower for e in errores) else respuesta
+
+    def _es_pregunta_universal(self, mensaje: str) -> bool:
+        """Detecta si la pregunta aplica a todos los programas (sin nombre específico)."""
+        msg_lower = mensaje.lower()
+        return any(kw in msg_lower for kw in self._KEYWORDS_UNIVERSALES)
+
+    def _responder_faq_global(
+        self,
+        dispatcher: CollectingDispatcher,
+        user_message: str,
+        sender_id: str,
+        inicio: datetime,
+    ) -> List[Dict]:
+        """Consulta GET /faq para preguntas universales sin contexto de programa."""
+        resp = make_api_request("GET", "faq", params={"pregunta": normalizar_query(user_message)})
+        resultado = self._extraer_respuesta_valida(resp) if resp else None
+        duracion_ms = int((datetime.now() - inicio).total_seconds() * 1000)
+        logger.info(
+            "Búsqueda FAQ global (sin contexto)",
+            extra={
+                "sender_id": sender_id,
+                "query_original": user_message,
+                "respuesta_encontrada": resultado is not None,
+                "duracion_ms_total": duracion_ms,
+                "fuente": "oracle_global",
+            }
+        )
+        if resultado:
+            dispatcher.utter_message(
+                text=f"ℹ️ *Información general*\n\n{resultado}\n\n"
+                     "_Esta información aplica a todos los programas de postgrado. "
+                     "¿Sobre cuál te gustaría detalles específicos?_"
+            )
+        else:
+            dispatcher.utter_message(
+                text="Para darte información precisa, necesito saber sobre qué programa preguntas.\n\n"
+                     "Escribe 'ver programas' para ver las opciones disponibles."
+            )
+            return [FollowupAction("action_listar_postgrados")]
+        return []
+
+    def _formatear_respuesta(self, respuesta: str, intent: str, postgrado_nombre: str) -> str:
         emoji_map = {
             "consultar_costos": "💰",
             "consultar_requisitos": "📋",
@@ -789,13 +1308,10 @@ class ActionBuscarFAQ(Action):
             "solicitar_link_inscripcion": "🔗",
             "consultar_dirigido": "👥",
             "consultar_becas": "🎓",
-            "consultar_financiacion": "💳"
+            "consultar_financiacion": "💳",
         }
-        
         emoji = emoji_map.get(intent, "ℹ️")
         mensaje = f"{emoji} *{postgrado_nombre}*\n\n{respuesta}\n\n"
-        
-        # Sugerencias contextuales
         if intent == "consultar_costos":
             mensaje += "También: 📋 Requisitos • 📅 Fechas • 💳 Financiación"
         elif intent == "consultar_modalidad":
@@ -804,29 +1320,29 @@ class ActionBuscarFAQ(Action):
             mensaje += "También: 💻 Modalidad • 📚 Plan estudios • 💰 Costos"
         else:
             mensaje += "También: 💰 Costos • 📋 Requisitos • 📅 Fechas"
-        
         mensaje += "\n\n🏠 'menú principal' para otros programas"
-        
         return mensaje
-    
-    def _mensaje_no_encontrado(self, intent: str, postgrado: str, pregunta: str) -> str:
-        """Mensaje cuando no hay respuesta"""
-        
-        mensaje = f"🤔 No encontré información sobre:\n*\"{pregunta}\"*\n\n"
-        
-        # Sugerencias según intent
-        if intent == "consultar_modalidad":
-            mensaje += "💡 Intenta:\n• 'modalidad'\n• 'es virtual o presencial'\n• 'horarios'\n\n"
-        elif intent == "consultar_duracion":
-            mensaje += "💡 Intenta:\n• 'cuanto dura'\n• 'duracion'\n• 'semestres'\n\n"
-        elif intent == "consultar_proceso_admision":
-            mensaje += "💡 Intenta:\n• 'como inscribirme'\n• 'proceso inscripcion'\n• 'link inscripcion'\n\n"
+
+    def _enviar_sugerencias(
+        self, dispatcher: CollectingDispatcher, postgrado_nombre: str, pregunta: str
+    ) -> None:
+        preg_lower = pregunta.lower()
+        mensaje = f"No encontré información sobre:\n*\"{pregunta}\"*\n\npara *{postgrado_nombre}*.\n\n"
+        if any(w in preg_lower for w in ["parquea", "cafeteria", "wifi", "instalacion"]):
+            mensaje += "Esta información requiere asesoría personalizada.\nEscribe 'contactar asesor'.\n\n"
+        elif any(w in preg_lower for w in ["convenio", "intercambio", "movilidad"]):
+            mensaje += "Escribe 'contactar asesor' para detalles actualizados.\n\n"
         else:
-            mensaje += "💡 Puedo ayudarte con:\n💰 Costos • 📋 Requisitos • 📅 Fechas\n💻 Modalidad • ⏱️ Duración • 🔗 Inscripción\n\n"
-        
+            mensaje += "💡 Temas disponibles:\n💰 Costos • 📋 Requisitos • 📅 Fechas\n⏱️ Duración • 💻 Modalidad • 🔗 Inscripción\n\n"
         mensaje += "O escribe 'contactar asesor' para ayuda personalizada."
-        
-        return mensaje
+        dispatcher.utter_message(text=mensaje)
+
+
+class ActionBuscarFAQ(ActionBuscarFaq):
+    """Alias de compatibilidad hacia ActionBuscarFaq. No eliminar hasta migrar domain.yml."""
+
+    def name(self) -> Text:
+        return "action_buscar_faq"
 
 # ACTION: Manejar Pregunta General
 class ActionManejarPreguntaGeneral(Action):
@@ -842,7 +1358,7 @@ class ActionManejarPreguntaGeneral(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("ℹ️ Ejecutando action_manejar_pregunta_general")
+        logger.info("Ejecutando action_manejar_pregunta_general")
         
         postgrado_id = tracker.get_slot("postgrado_id")
         postgrado_nombre = tracker.get_slot("postgrado_nombre") or "el programa"
@@ -909,7 +1425,7 @@ class ActionGuardarHistorial(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("💾 Ejecutando action_guardar_historial")
+        logger.info("Ejecutando action_guardar_historial")
         
         usuario_telefono = tracker.sender_id or "desconocido"
         # USUARIO es VARCHAR2(20) NOT NULL — truncar a 20 chars por seguridad
@@ -939,9 +1455,9 @@ class ActionGuardarHistorial(Action):
         response = make_api_request("POST", "historial", data=data)
         
         if response:
-            logger.info("✅ Historial guardado correctamente")
+            logger.info("Historial guardado correctamente")
         else:
-            logger.warning("⚠️ No se pudo guardar el historial")
+            logger.warning("No se pudo guardar el historial")
         
         return []
 
@@ -1068,7 +1584,7 @@ class ActionDefaultFallback(Action):
         # ========== 5. CLASIFICACIÓN FINAL ==========
         es_pregunta = confianza >= 0.4
         
-        logger.info(f"📊 Análisis: es_pregunta={es_pregunta}, tipo={tipo_detectado}, confianza={confianza:.2f}")
+        logger.info(f"Análisis: es_pregunta={es_pregunta}, tipo={tipo_detectado}, confianza={confianza:.2f}")
         
         return (es_pregunta, tipo_detectado, min(confianza, 1.0))
     
@@ -1131,7 +1647,7 @@ class ActionDefaultFallback(Action):
         ]
         
         if any(despedida in mensaje_usuario.lower() for despedida in despedidas_implicitas):
-            logger.info("✅ Despedida implícita detectada")
+            logger.info("Despedida implícita detectada")
             dispatcher.utter_message(
                 text="¡Perfecto! Si necesitas algo más, aquí estaré. ¡Hasta pronto! 👋"
             )
@@ -1143,7 +1659,7 @@ class ActionDefaultFallback(Action):
         
         # ========== CASO 1: Es una pregunta válida ==========
         if es_pregunta and confianza >= 0.5:
-            logger.info(f"✅ Pregunta detectada (confianza: {confianza:.2f})")
+            logger.info(f"Pregunta detectada (confianza: {confianza:.2f})")
             
             # ¿Tiene programa seleccionado?
             if not postgrado_id:
@@ -1164,7 +1680,7 @@ class ActionDefaultFallback(Action):
                 logger.info(f"📚 Redirigiendo a action_buscar_faq_libre (categoría: {categoria})")
                 accion_destino = "action_buscar_faq_libre"
             else:
-                logger.info(f"📋 Redirigiendo a action_buscar_faq (categoría: {categoria})")
+                logger.info(f"Redirigiendo a action_buscar_faq (categoría: {categoria})")
                 accion_destino = "action_buscar_faq"
             
             # Mensaje de feedback mientras busca
@@ -1178,7 +1694,7 @@ class ActionDefaultFallback(Action):
         
         # ========== CASO 2: Parece pregunta pero confianza media ==========
         elif es_pregunta and confianza >= 0.3:
-            logger.info(f"⚠️ Pregunta con confianza media ({confianza:.2f})")
+            logger.info(f"Pregunta con confianza media ({confianza:.2f})")
             
             if postgrado_id:
                 mensaje = (
@@ -1200,7 +1716,7 @@ class ActionDefaultFallback(Action):
         
         # ========== CASO 3: No es pregunta, escalamiento gradual ==========
         contador += 1
-        logger.info(f"📊 No es pregunta válida. Contador: {contador}/3")
+        logger.info(f"No es pregunta válida. Contador: {contador}/3")
         
         if contador == 1:
             mensaje = "🤔 No estoy seguro de entender.\n\n"
@@ -1284,7 +1800,7 @@ class ActionReiniciarConversacion(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("🔄 Ejecutando action_reiniciar_conversacion")
+        logger.info("Ejecutando action_reiniciar_conversacion")
         
         mensaje = ("🔄 *Conversación reiniciada*\n\n"
                  "¡Hola! Soy tu asistente virtual de Postgrados. 👋\n\n"
@@ -1309,7 +1825,7 @@ class ActionDespedida(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("👋 Ejecutando action_despedida")
+        logger.info("Ejecutando action_despedida")
         
         postgrado_nombre = tracker.get_slot("postgrado_nombre")
         intent = tracker.latest_message.get("intent", {}).get("name", "")
@@ -1335,7 +1851,7 @@ class ActionDespedida(Action):
         eventos_usuario = [e for e in tracker.events if e.get("event") == "user"]
         
         if len(eventos_usuario) > 2:  # Si hubo más de 2 mensajes del usuario
-            logger.info("💾 Guardando historial antes de despedirse")
+            logger.info("Guardando historial antes de despedirse")
             # Guardar historial
             usuario_telefono = tracker.sender_id
             postgrado_id = tracker.get_slot("postgrado_id")
@@ -1396,7 +1912,6 @@ class ValidateDatosContactoForm(FormValidationAction):
         domain: Dict[Text, Any],
     ) -> Dict[Text, Any]:
         
-        import re
         
         if not slot_value:
             dispatcher.utter_message(
@@ -1422,7 +1937,6 @@ class ValidateDatosContactoForm(FormValidationAction):
         domain: Dict[Text, Any],
     ) -> Dict[Text, Any]:
         
-        import re
         
         if not slot_value:
             dispatcher.utter_message(
@@ -1504,7 +2018,7 @@ class ActionEnviarDatosContacto(Action):
         
         elif response and response.get("status") == "error":
             error_msg = response.get("message", "Error desconocido")
-            logger.error(f"❌ Error del servidor: {error_msg}")
+            logger.error(f"Error del servidor: {error_msg}")
             
             dispatcher.utter_message(
                 text=(
@@ -1541,7 +2055,7 @@ class ActionObtenerInfoEspecifica(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("ℹ️ Ejecutando action_obtener_info_especifica")
+        logger.info("Ejecutando action_obtener_info_especifica")
         
         postgrado_id = tracker.get_slot("postgrado_id")
         
@@ -1600,13 +2114,31 @@ class ActionObtenerInfoEspecifica(Action):
         
         return []
 
+<<<<<<< Updated upstream
 # ACTION: Buscar FAQ Libre
 class ActionBuscarFaqLibre(Action):
     """Búsqueda FAQ mejorada con registro de preguntas sin respuesta"""
+=======
+
+# ============================================
+# ACTION: Buscar FAQ Libre (alias de ActionBuscarFaq)
+# ============================================
+
+class ActionBuscarFaqLibre(ActionBuscarFaq):
+    """Alias de compatibilidad hacia ActionBuscarFaq. No eliminar hasta migrar domain.yml.
+
+    Flujo completo del feedback loop (A.5):
+        Usuario pregunta → bot no encuentra → registra en PREGUNTAS_SIN_RESPUESTA (ESTADO='PENDIENTE')
+        Admin responde en APEX → escribe directo a FAQ (ACTIVO='S') + ESTADO='RESPONDIDA'
+        Máximo 10 min → refresh del índice local (_FAQ_INDEX)
+        Siguiente query similar → bot responde correctamente
+    """
+>>>>>>> Stashed changes
 
     def name(self) -> Text:
         return "action_buscar_faq_libre"
 
+<<<<<<< Updated upstream
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
@@ -1941,6 +2473,9 @@ class ActionBuscarFaqLibre(Action):
             "• O 'menú principal' para volver al inicio"
         ))
 
+=======
+# ============================================
+>>>>>>> Stashed changes
 # ACTION: Reiniciar Slots
 class ActionReiniciarSlots(Action):
     """Limpia todos los slots para volver al menú principal"""
@@ -1955,7 +2490,7 @@ class ActionReiniciarSlots(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("🧹 Ejecutando action_reiniciar_slots")
+        logger.info("Ejecutando action_reiniciar_slots")
         
         return [
             SlotSet("postgrado_id", None),
@@ -1982,7 +2517,7 @@ class ActionConfirmarCambioPostgrado(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("🔄 Ejecutando action_confirmar_cambio_postgrado")
+        logger.info("Ejecutando action_confirmar_cambio_postgrado")
         
         postgrado_anterior = tracker.get_slot("postgrado_nombre")
         
@@ -2016,7 +2551,6 @@ class ActionValidarEmail(Action):
         if not email:
             return []
         
-        import re
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         
         if not re.match(email_pattern, email):
@@ -2027,7 +2561,7 @@ class ActionValidarEmail(Action):
             )
             return [SlotSet("email", None)]
         
-        logger.info(f"✅ Email válido: {email}")
+        logger.info(f"Email válido: {email}")
         return []
 
 # ACTION: Manejar Negación
@@ -2044,7 +2578,7 @@ class ActionManejarNegacion(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("❌ Ejecutando action_manejar_negacion")
+        logger.info("Ejecutando action_manejar_negacion")
         
         postgrado_id = tracker.get_slot("postgrado_id")
         ultima_lista = tracker.get_slot("ultima_lista_postgrados")
@@ -2080,7 +2614,7 @@ class ActionManejarAfirmacion(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("✅ Ejecutando action_manejar_afirmacion")
+        logger.info("Ejecutando action_manejar_afirmacion")
         
         # Obtener el último bot event para entender el contexto
         eventos = list(tracker.events)
@@ -2122,7 +2656,7 @@ class ActionEscalarAHumano(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("👤 Ejecutando action_escalar_a_humano")
+        logger.info("Ejecutando action_escalar_a_humano")
         
         mensaje = ("😔 Disculpa, parece que no estoy pudiendo ayudarte correctamente.\n\n"
                      "🤝 *¿Te gustaría hablar con un asesor humano?*\n\n"
@@ -2147,7 +2681,7 @@ class ActionLimpiarSlotsAntiguos(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("🧹 Ejecutando action_limpiar_slots_antiguos")
+        logger.info("Ejecutando action_limpiar_slots_antiguos")
         
         # Limpiar solo slots temporales, mantener postgrado seleccionado
         return [
@@ -2170,13 +2704,13 @@ class ActionLogUnknownIntent(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("❓ Ejecutando action_log_unknown_intent")
+        logger.info("Ejecutando action_log_unknown_intent")
         
         mensaje_usuario = tracker.latest_message.get("text", "")
         intent = tracker.latest_message.get("intent", {}).get("name", "unknown")
         confidence = tracker.latest_message.get("intent", {}).get("confidence", 0)
         
-        logger.warning(f"🔍 Intent desconocido detectado:")
+        logger.warning(f"Intent desconocido detectado:")
         logger.warning(f"   Mensaje: '{mensaje_usuario}'")
         logger.warning(f"   Intent: {intent}")
         logger.warning(f"   Confidence: {confidence:.2f}")
@@ -2196,7 +2730,7 @@ class ActionSolicitarPrograma(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         
-        logger.info("📋 Ejecutando action_solicitar_programa")
+        logger.info("Ejecutando action_solicitar_programa")
         
         # Obtener lista de postgrados
         cache_key = "postgrados_list"
@@ -2254,3 +2788,36 @@ class ActionRenovarSesion(Action):
         domain: Dict[Text, Any],
     ) -> List[Dict[Text, Any]]:
         return []
+
+
+# ============================================================
+# INICIALIZACIÓN DEL ÍNDICE FAQ Y SCHEDULER (Fase A.4)
+# ============================================================
+
+def _iniciar_scheduler_faq() -> None:
+    """Inicia APScheduler para refrescar el índice local de FAQs cada N minutos."""
+    try:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(
+            cargar_faq_index,
+            trigger="interval",
+            minutes=FAQ_INDEX_REFRESH_MINUTES,
+            id="refresh_faq_index",
+            replace_existing=True,
+        )
+        scheduler.start()
+        logger.info(
+            "Scheduler FAQ iniciado",
+            extra={"intervalo_minutos": FAQ_INDEX_REFRESH_MINUTES}
+        )
+    except Exception as e:
+        logger.warning(f"No se pudo iniciar scheduler FAQ: {e}")
+
+
+# Carga inicial del índice al importar el módulo (best-effort, no bloquea el arranque)
+try:
+    cargar_faq_index()
+    _iniciar_scheduler_faq()
+except Exception as _e:
+    logger.warning(f"Carga inicial de índice FAQ falló (se reintentará en el scheduler): {_e}")

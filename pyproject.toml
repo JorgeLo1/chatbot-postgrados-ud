@@ -1,0 +1,17 @@
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]  # líneas largas — black las gestiona
+
+[tool.ruff.per-file-ignores]
+"actions/actions.py" = ["F841"]  # variables sin usar en stubs de compatibilidad
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+skip-string-normalization = true
+
+[tool.isort]
+profile = "black"
+line_length = 100
